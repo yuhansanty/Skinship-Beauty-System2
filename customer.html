@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>alam mo CUSTOMER DETAILS kaso hindi ka naman nag ffirst move ?_?</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body { /* main body */
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      background-color: #fddad6;
+      overflow: hidden;
+    }
+    .container { /* side bar style */
+      display: flex;
+      height: 100vh;
+    }   
+    .sidebar { /* side baer */
+      width: 80px;
+      border-radius: 0 20px 20px 0;
+      background-color: #f8c4bb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+    }
+    .sidebar img { /* side bar img style */
+      margin: 10px 0;
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+    }
+    .main { /* content of the customer details (style) */
+      flex: 1;
+      padding: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    header { /* header properties */
+      display: flex;
+      justify-content: space-between;
+      background-color: #c45d71;
+      color: white;
+      padding: 1rem;
+      border-radius: 20px 20px 20px 20px;
+    }
+    header h1 { /* ung customer properties */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+    }
+    .user-controls { /* notification side properties */
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .user-controls img { /* notification side image properties */
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+    }
+    .username { /* nilagay ko incase na mag poport na tayo sa firebase */
+      font-weight: bold;
+    }
+    .dropdown-icon::after { /* yung drop down non functional pa kaya nag lagay muna ng wireframe */
+      content: '\25BC';
+      font-size: 10px;
+      margin-left: 5px;
+    }
+    .tabs-container { /* propterties ng slidebar tng inang youtube na to 1 hour para lang dito gagao ./. */ 
+      overflow-x: auto;
+      white-space: nowrap;
+      background-color: #f8c4bb;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .tab-button { /* slidebar button proerpties */
+      display: inline-block;
+      background-color: #d6707b;
+      color: white;
+      padding: 10px 15px;
+      margin-right: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .tab-button.active { /* after pressing */
+      background-color: #8c2c3d;
+    }
+    .table-container {  /* content of the customer details 1 rem eyy coder */
+      overflow-y: auto;
+      flex: 1;
+      margin-top: 10px;
+      background-color: white;
+      border-radius: 10px;
+      padding: 1rem;
+    }
+    .table-controls {  /* table padding */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .search-input { /* proterties of search bar */
+      padding: 8px 12px;
+      width: 300px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .edit-button { /* customer editts bowton proptereis */
+      padding: 8px 16px;
+      background-color: #c45d71;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    table { /* table proterpies ng customer details */
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td { /* table padding */
+      text-align: left;
+      padding: 8px;
+      border-bottom: 1px solid #ddd;
+    }
+
+
+    /* sidebar, control sa taas pati, yung sa search bar .customer table then ung buttons */
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <img src="123transparent.png" alt="Logo">
+      <img src="placeholder_dashboard.png" alt="Dashboard">
+      <img src="placeholder_calendar.png" alt="Calendar">
+      <img src="placeholder_customer.png" alt="Customer">
+      <img src="placeholder_staff.png" alt="Staff">
+      <img src="placeholder_invoice.png" alt="Invoices">
+      <img src="placeholder_inventory.png" alt="Inventory">
+      <img src="placeholder_services.png" alt="Services">
+      <img src="placeholder_sales.png" alt="Sales">
+      <img src="placeholder_order.png" alt="Order">
+    </div>
+
+    <div class="main">
+      <header>
+        <h1>ginaya ko na ung ui sa dashboard wag na gawin ung ui sa figma</h1>
+        <div class="user-controls">
+          <img src="placeholder_bell.png" alt="Notifications">
+          <img src="placeholder_user.png" alt="User Icon">
+          <span class="username">Username "pero poport to sa firebase" </span>
+          <span class="dropdown-icon"></span>
+        </div>
+      </header>
+      <div class="tabs-container" id="tabBar"></div>
+      <div class="table-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="What if ayaw ko mag search?">
+        <button class="edit-button">Customer EDIT</button>
+        <div class="table-controls"></div>
+        <table id="customerTable">
+          <thead>
+            <tr>
+              <th>Customer name</th>
+              <th>Customer ID</th>
+              <th>Customer Email</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Contact number</th>
+              <th>Assigned Employee</th>
+              <th>Customer assigned date</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const services = [
+      "HAIRCUT", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES",
+      "FLEEK EYELASH", "THERAPEUTIC HEAT", "WAX – OUT", "ES-FACIALY FOR YOU",
+      "LASER HAIR REMOVAL / WHITENING", "PICOSURE LASER TREATMENT", "FACE AND BODY CONTOURING",
+      "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)", "CO2 FRACTIONAL LASER LAY-AWAY"
+    ];
+    /* customer data pero sa firebase to*/
+
+    const customerData = {
+      "HAIRCUT": [
+        ["Castamar", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer’s No.", "Employee’s Name", "4:00 PM, May 12, 2025"],
+        ["Castamar", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer’s No.", "Employee’s Name", "3:00 PM, May 12, 2025"],
+        ["Castamar", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer’s No.", "Employee’s Name", "2:00 PM, May 12, 2025"],
+        ["Castamar", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer’s No.", "Employee’s Name", "1:00 PM, May 12, 2025"],
+        ["Castamar", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer’s No.", "Employee’s Name", "12:00 PM, May 12, 2025"]
+      ],
+      "BROWMAZING": [
+        ["Castamar daw po", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer’s No.", "Employee’s Name", "4:00 PM, May 12, 2025"],
+        ["Castamar daw po", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer’s No.", "Employee’s Name", "3:00 PM, May 12, 2025"],
+        ["Castamar daw po", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer’s No.", "Employee’s Name", "2:00 PM, May 12, 2025"],
+        ["Castamar daw po", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer’s No.", "Employee’s Name", "1:00 PM, May 12, 2025"],
+        ["Castamar daw po", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer’s No.", "Employee’s Name", "12:00 PM, May 12, 2025"]
+      ],
+      "WOKE UP LIKE THIS": [
+        ["Example lang naman", "123", "n/a","n/a","n/a","n/a","n/a","n/a"],
+        ["Example lang naman", "456", "n/a","n/a","n/a","n/a","n/a","n/a"]
+      ]
+    };
+
+    /* buttons ng tab bar */
+
+    let activeService = "HAIRCUT";
+
+    const tabBar = document.getElementById('tabBar');
+    const customerTableBody = document.querySelector('#customerTable tbody');
+    const searchInput = document.getElementById('searchInput');
+
+    services.forEach(service => {
+      const button = document.createElement('button');
+      button.className = 'tab-button';
+      button.textContent = service;
+      button.onclick = () => {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        activeService = service;
+        loadCustomerData(service);
+      };
+      tabBar.appendChild(button);
+    });
+
+    function loadCustomerData(service, searchTerm = '') {
+      customerTableBody.innerHTML = '';
+      const rows = customerData[service] || [];
+      rows.filter(row => row.some(cell => cell.toLowerCase().includes(searchTerm.toLowerCase())))
+          .forEach(data => {
+        const tr = document.createElement('tr');
+        data.forEach(cell => {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        customerTableBody.appendChild(tr);
+      });
+    }
+
+    searchInput.addEventListener('input', () => {
+      loadCustomerData(activeService, searchInput.value);
+    });
+
+    document.querySelectorAll('.tab-button')[0].click();
+  </script>
+</body>
+</html>
+
+ngayon kung nabasa mo hanggang dito iisipin mo na nag chat gpt ako? haha shempre d tayo panggap par ang hirap ng slide bar par haha tng ina ayaw ko mag netflix and chill tapos yung title ng movie slide bar, im just a girl. https://www.youtube.com/watch?v=PHzOOQfhPFg&list=RDPHzOOQfhPFg&start_radio=1 
+
+pov ni powder:
+
+ ░░▒▒░  ░     ░     ░                      ░             ░     ▓                                    
+░██████████▓██████▓██▒ ░░▒▓▓▓▓█▓░▒█▓▓▓▓▒▓▓██       ▒▓   ██████  ███▒▒▒▓██▒▒▒▒▓▓▓▓▓▓▒▒░█░▒▒▓▓▒▓▓▓▒▓▓ 
+░█▓▓████████▓▓█▓█▓▓██▒░░▒█▓▓▓▓█▓░▓█████████          █    █████  ▓█▓▒▓▒▒█▓▓▓▓▓▓▓█▓▓▒▒░██▒▓▓▓▒▓▓▓█▒▒ 
+░█▓▓▓██████▓█▓▓▓▓███▒█░░▒▓▒▓▓▒▓█████▒  ░██            █    ░█████ ▒██▓▓▒▓██▓█▒▒▒▓▓█▓▒▒▒█ ▒▓▓▒▓▓▓▓▒█ 
+░▓▓▓████▓████▓▓███   █▒▒▓▓▓█████                       ░█    █████░░▒▓▓▒▒▒▒▓█▓▓▓▒▒▒▒▒▒▒█▒▒▒▒▓▓▓▒█▓▓ 
+▒███▓██▓███▓████    █▓▒░▒▓▓▒▓█           ███████          █    ▒████▓▓▒▓▓▒▒▓▓▓▓▓▓▓██▓▓▓██▓▓▓▒▓▓▓▓█▒ 
+░▓▓▓███████████ ▓ ░   ▒▓█████ ░           ░██████████▒      ██    ████▓▓▓▓▒▒▒▓▓▒▓▓▒▒▒▒▓███████▓▓▓█▓ 
+░████▓▓█▓████    ███████      ▒         █░     ▒████████░      ██   ████▒▒▓▓▒░██▓▓▓▓▓▓▓▓██░  █▓▓▓█▒ 
+░█▓██████▓██ ░██████     ░░░░░▒▓        █▒▓░         █████████    █    ███▓███▒▓▓█▓▓▓█▒▓▒ █  █▓▒▒█░ 
+░▓██▓███████████      ░▒░░░░▒░▒▓    ░▒ ░▓░░▒▒░░           ████████████   ██▒▒▓▓▓██▓▓▓██▒▒░ ███▓▒▒█▒ 
+▒██▓▓█▓███    ▒           ░▒░░░▓   ░   ░▒░░░░▓▒ ░░░                ░████  █▓▓█▓▓█████▒░▓▓▓▓░  █▓░█▓ 
+░████████    █████████░    ░▒▒▒▒▓      ▒▓▒░░░░▒▓░ ░░░░ ░                  ██  ░           ▓█░█▓▓▓█▓ 
+░▓▓▓▓▓▓██ ░████▒ ▒█  █████  ░▒▒▒█      ▒▒░░░░░░▒▒██▓▒▒                     ██ ▒█▓▓█ ███████▓▓█▓▓▒█▓ 
+░██████▓█ ███  █  ████  ███▓  ▓▓▓   ░░ ░▒░░░▒░▒█▒▒     ██████▓█████▒▓░▒    ████▓▓▒▒██▓▒▒░▓█▒█▒▓▓▒▓▓ 
+▒██▓█████  █  █████████    ██  ██▓  ░  ░░▒░░░▒█     ███  █▓ ███    ██   ██░█▓▒▒▓▓▓▓█▓█▓▓▒▒█▓█▓▓▓▒▒▓ 
+ ██▓██▓██ ▓ █   ███████     █   █▓ ░░░░░░░░░░▒     ███    ▓██████    ▓█     █▓█▓▒▓▓▓▓▒▓▒▒▓█▒█▓▓▓▒▒█ 
+ ██▓█▓▓██ ▒  █  ██         ██   ░▒░ ░▒▒▓▒ ░▒▒▓   ▒██▒  ██████████       █▓  ██▓▓▒▓▓███▓▓▒▒█▒▒▓▒▓▒▓▓ 
+ █▓▓████▓     ▒    ▒████████ ▒▓▒▒▒░     ▒▒░░▒█   ▓█░▒     ████        ▒     █░█▓▒▒▓██▓▒▓█▓█▒█▓▓▓▒▒█ 
+ ██▓█▓███     ░▓█▒        ▒▓█▓  ░              ░█▓█▓████            ▓█▓     █ ██▓▓▓▓█▓▓▒▓▒███▓▒▓▒░█ 
+ ██▒█████   ██▒▒▒██████████      ░              ▒█▓████▓▒▒░   ░██████       █ █▓▓█▒█▓▓▓▓▒▓█▒█▒▒█▓░█ 
+ ██▓█████                        ░                    ███████████▒          █ ██ █▒██▓▓▓▓▓▓▒█▓▓▓▓░█ 
+ █▓▒▓████ ░█▒░             ░░░  ░                                           ████ ██▓▓▒▓▓▓▓▓▒█▓▓▓▓▒█ 
+ ██▓█████  ░░░      ░░ ▒░  ░░                        ░                      ▓███ █▓██▒█▓▓▓▓▓█▒▒▓▒░█ 
+ ▒▓▓▓█▓▓█                                             ░                     ██▓  ████▒▓▓▓▓▒▒█▒▓▓▓▓▓ 
+ ▓█▓█████        ░        ██▓░                                              ██   ████░▓▓▒▒▓▒█▒▓▓▓▓▓ 
+ ▒▓██▓▓██               ███                ░▓███░          ░                █░   ██▒█▒▒▓▓▓▓▒█▓▒▓▒█▓ 
+ ▒▒▓██▓▓██            ██▓                  ░    ████       ░                █    ██▓█▓█▒███▓█▓▓▓▒▓▒ 
+ ▓▒░▒███▓██         ░██   ▓                     ▒▒ ░███                     ▒    ▒█▓█▒▓▒██▓█▓▓▓▓▓▓▒ 
+ ▓▓▓█▓▓█████   ░░▒▓▓█▒    ▓███               ▒██▒     ▒█▓          ░       ▓     ░███▓█▓▓███▒▓▓▓█▓█ 
+ ▓▒▓█████▓███░  ▒████▒▒░     ▒██       ░█████▓░       ░░▒██               ░░     ▒██▓▓█▒▓▓▓█▒▓▓▒▒▒▒ 
+ ▓▓▒▒░░██▓▓▓██      ░█▒▒░       ░████████░              ░░▓██░░░▒▒▒▒░░░   ▒      ███▓▓█▓▓▒██▒█▒▒█▓▓ 
+ ▓▓▓█▓▓█████████     ▓█▒▓███████▒                           ░██░░░░░ ░           ███▒█▓▓▓▓▓█▒▓▒▓▓▒▓ 
+ ▓▓▓▒▒▓▓███▓▓██▓█▒    █▒   ██  ▒████████████████████████████ ▒█                 ██▓█▒██▒▓▓▓▓▒▓▓▒▓▓▓ 
+ ▒▒▓▒▓▓▓███▓▓██░███▒   █    █▓   ▓   ▒▓    ░   █       ████░░▓█     ░ ░       ▓██▓█▓▓▓▒▓▒▓▓▓█▓▒▒▓▒▒ 
+ ░▒▓▒▒▓▒██▓████░  ░██  ░█    ███                  █░ ████    █    ░░        ████▓▒▒▒▓█▒▓▓▓▓▒▒▓█▓▓▓█ 
+ ░░░░░░▒█▓██▓███▓█████   ▒   ░█  ██░ █     █ ███████ ██      █ ░          ▒  ███▓▓▓███▓▓▓▓▓▓▒▒▓▓█▓▓ 
+ ░    ████▓▓▓█▓█████████     ▓██     ░░█▓▓█         █  █   ░▒▒ ░░       ▓▓▒▒   ███▓▓▒▒▒▒▓▒▓▓▓▓▓▓▓▓▓ 
+   ▒███▓▓██▓▓█▓▓▓▓▓▓▓▓████    ▒▒█▓              ███▓ █▓    ▒▒        ▒▓▓▒░░░   ▓ ████▓█░████▒▒▒▓▓▓▓ 
+ ▓████▓▓▓██▓▓█▓▓▓█▓▓▓▓▓████    ░░▒█████████▓▓███▓  ▓█     ▒        ▒▒▒░ ░     █▒█  █████▒  ███▓▒▒▒▒ 
+███▓▓▓▓▓▓███▓█▓▓▓▓▓█▓▓▓█████    ░░             ▒███             ▒▒▒░          ██▒  █   ▓█▓░█▒▓█▓███░
+ ▓▓▓▓▓▓▓██████▓▓███▓▓▓▓▓▓████    ░░▓███████████       ░    ▓▓▒▒▒░░   ░       ██    █     ███▓█▓▓▓▓▓ 
+ █▓▓▓██▓▒▓▓▓██▓▓▓▓██▓▓█▒▓██▓█░ ▓                ░  ░░    ██▓░▒░   ░░░  ░    ▒█    █      ██▒▓▓▓▓█▓▓ 
+░▓███▓▓▓▓██▓█▓▒▓▓▓▓▓█▓▓▓█▓▓███ ▒█                     ░██▒░░░░  ░░░                     ██████▓▓███ 
+  ░      ▒░░░░░░░░  ░   ░▒░░░▓   ░                                                     ██░░░ ░░░  ░ 
