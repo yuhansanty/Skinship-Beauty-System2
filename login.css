@@ -1,0 +1,192 @@
+body {
+  background-color: #f7d4d0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.login-container {
+  max-width: 1000px;
+  width: 100%;
+  display: flex;
+  gap: 60px;
+  align-items: center;
+  justify-content: space-between;
+  color: #2b2b2b;
+}
+
+.form-section {
+  max-width: 450px;
+  flex: 1;
+}
+
+.logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 1.9rem;
+  margin-bottom: 3px;
+  letter-spacing: 0.05em;
+  text-align: left;
+  max-width: 160px;
+  position: relative;
+}
+
+.logo svg {
+  position: absolute;
+  top: -32px;
+  left: 0;
+  width: 85px;
+  height: 85px;
+  stroke: #2b2b2b;
+  fill: none;
+  stroke-width: 1.7;
+}
+
+.welcome-text {
+  font-weight: 800;
+  color: #000000cc;
+  margin-top: 0;
+  font-size: 2.3rem;
+  letter-spacing: 4px;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 6px;
+  user-select: none;
+}
+
+.subtext {
+  font-size: 0.85rem;
+  color: #000000cc;
+  margin-bottom: 25px;
+  user-select: none;
+}
+
+label {
+  font-weight: 700;
+  font-size: 1.05rem;
+  display: block;
+  margin-bottom: 5px;
+  user-select: none;
+}
+
+input[type="text"],
+input[type="password"] {
+  display: block;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid #b89a96;
+  border-radius: 15px;
+  font-size: 1rem;
+  color: #2b2b2b;
+  background-color: #f7d4d0;
+  outline-offset: 4px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  user-select: text;
+}
+
+input[type="text"]::placeholder,
+input[type="password"]::placeholder {
+  color: #af9d99cc;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  border-color: #da5c73;
+  box-shadow: 0 0 10px #e88ea4cc;
+  background-color: #fbe7eb;
+}
+
+.checkbox-group {
+  margin-top: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #2b2b2bcc;
+  user-select: none;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #da5c73;
+  cursor: pointer;
+}
+
+.forgot-password {
+  margin-left: auto;
+  font-weight: 700;
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: #2b2b2bcc;
+  user-select: none;
+  transition: color 0.25s ease;
+}
+
+.forgot-password:hover {
+  color: #da5c73;
+  text-decoration: underline;
+}
+
+button.signin-btn {
+  width: 100%;
+  padding: 14px 0;
+  background-color: #da5c73;
+  border: none;
+  border-radius: 15px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: 1.8px;
+  color: black;
+  cursor: pointer;
+  transition: background-color 0.35s ease;
+  user-select: none;
+}
+
+button.signin-btn:hover {
+  background-color: #e2798d;
+}
+
+.image-section {
+  width: 420px;
+  height: 420px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 3px;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
+  user-select: none;
+}
+
+.image-section > div {
+  overflow: hidden;
+  position: relative;
+}
+.image-section > div img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.4s ease;
+}
+
+.image-section > div:hover img {
+  transform: scale(1.1);
+}
+
+/* Top shapes to replicate the diamond shape clipped look */
+.image-section > div:nth-child(2),
+.image-section > div:nth-child(3) {
+  clip-path: polygon(0 0, 100% 100%, 0% 100%);
+}
+.image-section > div:nth-child(1),
+.image-section > div:nth-child(4) {
+  clip-path: polygon(100% 0, 0 100%, 100% 100%);
+} 

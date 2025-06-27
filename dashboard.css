@@ -1,0 +1,25 @@
+.sidebar-btn {
+  background: none;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 0.75rem 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background 0.2s;
+}
+.sidebar-btn:hover, .sidebar-btn:focus {
+  background: #e6bfc7;
+  border-radius: 1rem;
+}
+
+/* Hide default button styles for sidebar */
+.sidebar-btn i {
+  color: #2b2b2b;
+  transition: color 0.2s;
+}
+.sidebar-btn:hover i, .sidebar-btn:focus i {
+  color: #da5c73;
+} 
