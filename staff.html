@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Staff | Skinship Beauty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <!-- Sidebar -->
+  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign"></i></button>
+    <button class="sidebar-btn active" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn mt-auto mb-2" title="Logout" onclick="window.location.href='Login.html'"><i class="fa-solid fa-sign-out-alt"></i></button>
+  </aside>
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col items-center justify-start p-8 w-full">
+    <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
+      <div class="flex justify-between items-center mb-6">
+        <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+        <div class="flex items-center gap-4">
+          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+          <span class="font-semibold text-lg">Username</span>
+          <i class="fa-solid fa-user-circle text-2xl"></i>
+        </div>
+      </div>
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-[#b97b8b]">STAFF</h1>
+      <div class="overflow-x-auto rounded-lg mt-4 flex-1">
+        <table class="min-w-full text-center text-sm bg-white">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2">Staff's Name</th>
+              <th class="px-4 py-2">Picture</th>
+              <th class="px-4 py-2">Gender</th>
+              <th class="px-4 py-2">Availability</th>
+              <th class="px-4 py-2">Mobile No.</th>
+              <th class="px-4 py-2">Checked in</th>
+              <th class="px-4 py-2">Checked out</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b">
+              <td class="px-4 py-2">Employee's Name</td>
+              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
+              <td class="px-4 py-2">Male</td>
+              <td class="px-4 py-2 text-green-600">Available</td>
+              <td class="px-4 py-2">09061301185</td>
+              <td class="px-4 py-2">07:05 AM</td>
+              <td class="px-4 py-2">08:10 PM</td>
+            </tr>
+            <tr class="border-b">
+              <td class="px-4 py-2">Employee's Name</td>
+              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/2.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
+              <td class="px-4 py-2">Male</td>
+              <td class="px-4 py-2 text-red-600">Not Available</td>
+              <td class="px-4 py-2">09061301185</td>
+              <td class="px-4 py-2">N/A</td>
+              <td class="px-4 py-2">N/A</td>
+            </tr>
+            <tr class="border-b">
+              <td class="px-4 py-2">Employee's Name</td>
+              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/3.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
+              <td class="px-4 py-2">Male</td>
+              <td class="px-4 py-2 text-green-600">Available</td>
+              <td class="px-4 py-2">09061301185</td>
+              <td class="px-4 py-2">07:06 AM</td>
+              <td class="px-4 py-2">10:30 PM</td>
+            </tr>
+            <tr class="border-b">
+              <td class="px-4 py-2">Employee's Name</td>
+              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/4.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
+              <td class="px-4 py-2">Male</td>
+              <td class="px-4 py-2 text-red-600">Not Available</td>
+              <td class="px-4 py-2">09061301185</td>
+              <td class="px-4 py-2">N/A</td>
+              <td class="px-4 py-2">N/A</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2">Employee's Name</td>
+              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/5.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
+              <td class="px-4 py-2">Male</td>
+              <td class="px-4 py-2 text-green-600">Available</td>
+              <td class="px-4 py-2">09061301185</td>
+              <td class="px-4 py-2">07:20 AM</td>
+              <td class="px-4 py-2">09:15 PM</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</body>
+</html> 

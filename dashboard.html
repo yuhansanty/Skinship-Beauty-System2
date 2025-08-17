@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skinship Beauty Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <!-- Sidebar -->
+  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn active" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn mt-auto mb-2" title="Logout" onclick="window.location.href='Login.html'"><i class="fa-solid fa-sign-out-alt"></i></button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6 w-full">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg relative h-full">
+      <!-- Top bar -->
+      <div class="flex justify-end items-center gap-4 mb-4">
+        <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+        <i class="fa-regular fa-envelope text-xl cursor-pointer"></i>
+        <span class="font-semibold text-lg">Username</span>
+        <i class="fa-solid fa-user-circle text-2xl"></i>
+      </div>
+      <!-- Status Cards -->
+      <div class="grid grid-cols-3 gap-4 mb-4">
+        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
+          <span class="text-green-600 font-bold text-lg">08</span>
+          <span class="text-xs font-semibold">Completed</span>
+        </div>
+        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
+          <span class="text-yellow-500 font-bold text-lg">03</span>
+          <span class="text-xs font-semibold">Pending</span>
+        </div>
+        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
+          <span class="text-red-500 font-bold text-lg">01</span>
+          <span class="text-xs font-semibold">Cancelled</span>
+        </div>
+      </div>
+      <!-- Main Dashboard Grid -->
+      <div class="grid grid-cols-4 gap-4">
+        <!-- Reservation Table -->
+        <div class="col-span-2 bg-white rounded-xl p-4 shadow">
+          <div class="flex justify-between items-center mb-2">
+            <span class="font-bold">Reservation</span>
+            <a href="#" class="text-xs text-[#da5c73] font-semibold">View all</a>
+          </div>
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-left text-gray-500">
+                <th>Haircut</th>
+                <th>Board trim</th>
+                <th>Hair Color</th>
+                <th>Razor Shave</th>
+                <th>Highlights</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Customer's name</td>
+                <td>4:00 PM - 5:00 PM</td>
+                <td>Pending</td>
+                <td></td>
+                <td>Employee's Name</td>
+              </tr>
+              <tr>
+                <td>Customer's name</td>
+                <td>1:00 PM - 2:00 PM</td>
+                <td>Pending</td>
+                <td></td>
+                <td>Employee's Name</td>
+              </tr>
+              <tr>
+                <td>Customer's name</td>
+                <td>10:00 AM - 11:00 AM</td>
+                <td>Pending</td>
+                <td></td>
+                <td>Employee's Name</td>
+              </tr>
+              <tr>
+                <td>Customer's name</td>
+                <td>9:30 AM - 9:50 AM</td>
+                <td>Cancelled</td>
+                <td></td>
+                <td>Employee's Name</td>
+              </tr>
+              <tr>
+                <td>Customer's name</td>
+                <td>8:30 AM - 9:50 AM</td>
+                <td>Completed</td>
+                <td></td>
+                <td>Employee's Name</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <!-- Last week Top Day Visitor -->
+        <div class="bg-white rounded-xl p-4 shadow flex flex-col items-center">
+          <span class="font-semibold text-xs mb-2">Last week Top DAY Visitor</span>
+          <div class="bg-[#b97b8b] text-white rounded-lg px-4 py-2 text-center">
+            <div class="font-bold text-lg">Sunday</div>
+            <div class="text-2xl font-bold">53</div>
+          </div>
+        </div>
+        <!-- Revenue -->
+        <div class="bg-white rounded-xl p-4 shadow flex flex-col">
+          <span class="font-semibold text-xs mb-2">Revenue</span>
+          <div class="flex-1">
+            <div>Monday: <span class="float-right">₱2,540.00</span></div>
+            <div>Tuesday: <span class="float-right">₱950.00</span></div>
+            <div>Wednesday: <span class="float-right">₱2,600.00</span></div>
+            <div>Thursday: <span class="float-right">₱1,200.00</span></div>
+            <div>Friday: <span class="float-right">₱1,000.00</span></div>
+            <div>Saturday: <span class="float-right">₱0.00</span></div>
+            <div>Sunday: <span class="float-right">₱0.00</span></div>
+          </div>
+          <div class="font-bold text-right text-[#da5c73] mt-2">Total of: ₱ 23,280.00</div>
+        </div>
+        <!-- Right Column -->
+        <div class="col-span-1 flex flex-col gap-4">
+          <!-- Recent deals -->
+          <div class="bg-white rounded-xl p-4 shadow">
+            <span class="font-semibold text-xs mb-2">Recent deals:</span>
+            <div class="bg-[#f7d4d0] rounded p-2 mt-2">
+              <div class="font-semibold">Customer's name</div>
+              <div class="text-xs">Haircut</div>
+            </div>
+          </div>
+          <!-- Availability of staffs -->
+          <div class="bg-white rounded-xl p-4 shadow">
+            <span class="font-semibold text-xs mb-2">Availability of staffs</span>
+            <div class="bg-[#f7d4d0] rounded p-2 mt-2 flex flex-col gap-1">
+              <div class="font-semibold">Employee's Name</div>
+              <div class="font-semibold">Employee's Name</div>
+            </div>
+          </div>
+          <!-- Today's Agenda -->
+          <div class="bg-white rounded-xl p-4 shadow flex-1">
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-semibold text-xs">Today's Agenda</span>
+              <a href="#" class="text-xs text-[#da5c73] font-semibold">View all</a>
+            </div>
+            <ul class="text-xs list-disc ml-4">
+              <li>4:00 PM - Customer's name - Haircut</li>
+              <li>1:00 PM - Customer's name - Haircut</li>
+              <li>10:00 PM - Customer's name - Haircut</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- User Avatar -->
+      <div class="absolute bottom-6 left-6">
+        <div class="w-12 h-12 rounded-full bg-[#4a4a6a] flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow">M</div>
+      </div>
+    </div>
+  </main>
+</body>
+</html> 

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customer Details | Skinship Beauty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <div class="container">
+    <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl sidebar">
+      <div class="mb-6 mt-2">
+        <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+      </div>
+      <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+      <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+      <button class="sidebar-btn active" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+      <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign"></i></button>
+      <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+      <button class="sidebar-btn" title="Services"><i class="fa-solid fa-scissors"></i></button>
+      <button class="sidebar-btn" title="Reports"><i class="fa-solid fa-chart-line"></i></button>
+      <button class="sidebar-btn mt-auto mb-2" title="Logout" onclick="window.location.href='Login.html'"><i class="fa-solid fa-sign-out-alt"></i></button>
+    </aside>
+
+    <div class="main">
+      <header>
+        <h1>Customer Details</h1>
+        <div class="user-controls">
+          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+          <span class="username">Username</span>
+          <i class="fa-solid fa-user-circle text-2xl"></i>
+        </div>
+      </header>
+      <div class="tabs-container" id="tabBar"></div>
+      <div class="table-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search customers...">
+        <button class="edit-button">Customer EDIT</button>
+        <div class="table-controls"></div>
+        <table id="customerTable">
+          <thead>
+            <tr>
+              <th>Customer name</th>
+              <th>Customer ID</th>
+              <th>Customer Email</th>
+              <th>Service</th>
+              <th>Status</th>
+              <th>Contact number</th>
+              <th>Assigned Employee</th>
+              <th>Customer assigned date</th>
+            </tr>
+          </thead>
+          <tbody>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const services = [
+      "HAIRCUT", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES",
+      "FLEEK EYELASH", "THERAPEUTIC HEAT", "WAX – OUT", "ES-FACIALY FOR YOU",
+      "LASER HAIR REMOVAL / WHITENING", "PICOSURE LASER TREATMENT", "FACE AND BODY CONTOURING",
+      "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)", "CO2 FRACTIONAL LASER LAY-AWAY"
+    ];
+    /* customer data pero sa firebase to*/
+
+    const customerData = {
+      "HAIRCUT": [
+        ["Castamar", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer's No.", "Employee's Name", "4:00 PM, May 12, 2025"],
+        ["Castamar", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "3:00 PM, May 12, 2025"],
+        ["Castamar", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "2:00 PM, May 12, 2025"],
+        ["Castamar", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer's No.", "Employee's Name", "1:00 PM, May 12, 2025"],
+        ["Castamar", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer's Name", "12:00 PM, May 12, 2025"]
+      ],
+      "BROWMAZING": [
+        ["Castamar daw po", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer's No.", "Employee's Name", "4:00 PM, May 12, 2025"],
+        ["Castamar daw po", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "3:00 PM, May 12, 2025"],
+        ["Castamar daw po", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "2:00 PM, May 12, 2025"],
+        ["Castamar daw po", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer's No.", "Employee's Name", "1:00 PM, May 12, 2025"],
+        ["Castamar daw po", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer's Name", "12:00 PM, May 12, 2025"]
+      ],
+      "WOKE UP LIKE THIS": [
+        ["Example lang naman", "123", "n/a","n/a","n/a","n/a","n/a","n/a"],
+        ["Example lang naman", "456", "n/a","n/a","n/a","n/a","n/a","n/a"]
+      ]
+    };
+
+    /* buttons ng tab bar */
+
+    let activeService = "HAIRCUT";
+
+    const tabBar = document.getElementById('tabBar');
+    const customerTableBody = document.querySelector('#customerTable tbody');
+    const searchInput = document.getElementById('searchInput');
+
+    services.forEach(service => {
+      const button = document.createElement('button');
+      button.className = 'tab-button';
+      button.textContent = service;
+      button.onclick = () => {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        activeService = service;
+        loadCustomerData(service);
+      };
+      tabBar.appendChild(button);
+    });
+
+    function loadCustomerData(service, searchTerm = '') {
+      customerTableBody.innerHTML = '';
+      const rows = customerData[service] || [];
+      rows.filter(row => row.some(cell => cell.toLowerCase().includes(searchTerm.toLowerCase())))
+          .forEach(data => {
+        const tr = document.createElement('tr');
+        data.forEach(cell => {
+          const td = document.createElement('td');
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
+        customerTableBody.appendChild(tr);
+      });
+    }
+
+    searchInput.addEventListener('input', () => {
+      loadCustomerData(activeService, searchInput.value);
+    });
+
+    document.querySelectorAll('.tab-button')[0].click();
+  </script>
+</body>
+</html> 
