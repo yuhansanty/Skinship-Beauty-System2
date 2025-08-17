@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Login Page",
+            "file": "${workspaceFolder}/Login.html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Dashboard",
+            "file": "${workspaceFolder}/dashboard.html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Main Page",
+            "file": "${workspaceFolder}/index.html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Customer Page",
+            "file": "${workspaceFolder}/customer.html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Staff Page",
+            "file": "${workspaceFolder}/staff.html"
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open Calendar Page",
+            "file": "${workspaceFolder}/calendar.html"
+        }
+    ]
+}
