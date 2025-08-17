@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Report | Skinship Beauty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <!-- Sidebar -->
+  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn active" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn" title="Registration" onclick="window.location.href='registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn mt-auto mb-2" title="Logout" onclick="window.location.href='Login.html'"><i class="fa-solid fa-sign-out-alt"></i></button>
+  </aside>
+  <!-- Main Content -->
+  <main class="flex-1 p-0 w-full flex flex-col items-stretch justify-stretch">
+    <div class="bg-[#b97b8b] rounded-3xl p-4 shadow-lg w-full h-full flex flex-col min-h-screen">
+      <!-- Top bar -->
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+        </div>
+        <div class="flex items-center gap-4">
+          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+          <span class="font-semibold text-lg">Username</span>
+          <i class="fa-solid fa-user-circle text-2xl"></i>
+        </div>
+      </div>
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-white drop-shadow">SALES</h1>
+      <!-- Sales Table -->
+      <div class="flex-1 flex justify-center items-stretch min-h-0">
+        <div class="w-full h-full bg-white rounded-2xl shadow p-2 overflow-auto flex flex-col">
+          <div class="flex-1 overflow-auto">
+            <table class="w-full text-center min-w-max h-full">
+              <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
+                <tr>
+                  <th class="py-3 px-2 text-sm font-bold">TRANSACTION ID</th>
+                  <th class="py-3 px-2 text-sm font-bold">Invoice Number</th>
+                  <th class="py-3 px-2 text-sm font-bold">item #</th>
+                  <th class="py-3 px-2 text-sm font-bold">Service/Item sold</th>
+                  <th class="py-3 px-2 text-sm font-bold">Quantity</th>
+                  <th class="py-3 px-2 text-sm font-bold">Price</th>
+                  <th class="py-3 px-2 text-sm font-bold">Date of Purchase</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="border-b">
+                  <td class="py-4 px-2">31293-93221</td>
+                  <td class="py-4 px-2">21M&KFFKNXBS6PT6N</td>
+                  <td class="py-4 px-2">123-456</td>
+                  <td class="py-4 px-2">Hair-Color</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 499</td>
+                  <td class="py-4 px-2">THURSDAY , MAY 8 ,2025</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-4 px-2">71233-32164</td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2">Haircut</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 499</td>
+                  <td class="py-4 px-2">TUESDAY, MAY 13 ,2025</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-4 px-2">92125-61268</td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2">Foot Massage</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 499</td>
+                  <td class="py-4 px-2">FRIDAY , MAY 9 ,2025</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-4 px-2">71204-51152</td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2">Manicure</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 499</td>
+                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-4 px-2">91230-05235</td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2">EYELASH NATURAL (1 SIZE)</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 499</td>
+                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
+                </tr>
+                <tr>
+                  <td class="py-4 px-2">91230-05235</td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2"></td>
+                  <td class="py-4 px-2">EYELASH DOLLEYE (2 SIZE)</td>
+                  <td class="py-4 px-2">1</td>
+                  <td class="py-4 px-2">₱ 599</td>
+                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>
