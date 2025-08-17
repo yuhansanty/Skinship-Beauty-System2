@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Inventory</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <!-- Sidebar -->
+  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn active" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box"></i></button>
+    <button class="sidebar-btn mt-auto mb-2" title="Logout" onclick="window.location.href='Login.html'"><i class="fa-solid fa-sign-out-alt"></i></button>
+  </aside>
+
+  <main class="flex-1 flex flex-col items-center justify-start p-8 w-full">
+  <div class="main">
+    <header>
+      <h1>Inventory</h1>
+      <div class="user-controls">
+        <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+          <span class="username">Username</span>
+          <i class="fa-solid fa-user-circle text-2xl"></i>
+        </div>
+      </header>
+      <div class="table-container">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search inventory...">
+        <div class="table-controls"></div>
+        <table id="inventoryTable">
+          <thead>
+            <tr>
+              <th>Item #</th>
+              <th>Description</th>
+              <th>Company</th>
+              <th>Quantity</th>
+              <th>Price</th>
+              <th>Expiration date</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="border-b">
+                <td class="px-4 py-2">1234-5678</td>
+                <td class="px-4 py-2">Hair Color (Blue)</td>
+                <td class="px-4 py-2">Company ano</td>
+                <td class="px-4 py-2">11</td>
+                <td class="px-4 py-2">₱40</td>
+                <td class="px-4 py-2">May 14, 2026</td>
+              </tr>
+              <tr class="border-b">
+                <td class="px-4 py-2">1234-5678</td>
+                <td class="px-4 py-2">Shampoo</td>
+                <td class="px-4 py-2">Company san</td>
+                <td class="px-4 py-2">12</td>
+                <td class="px-4 py-2">₱60</td>
+                <td class="px-4 py-2">May 3, 2026</td>
+              </tr>
+              <tr class="border-b">
+                <td class="px-4 py-2">1234-5678</td>
+                <td class="px-4 py-2">Hair Color (Red)</td>
+                <td class="px-4 py-2">Company san</td>
+                <td class="px-4 py-2">10</td>
+                <td class="px-4 py-2">₱40</td>
+                <td class="px-4 py-2">June 11, 2026</td>
+              </tr>
+              <tr class="border-b">
+                <td class="px-4 py-2">1234-5678</td>
+                <td class="px-4 py-2">Hair Color (Green)</td>
+                <td class="px-4 py-2">Company san</td>
+                <td class="px-4 py-2">10</td>
+                <td class="px-4 py-2">₱40</td>
+                <td class="px-4 py-2">December 14, 2026</td>
+              </tr>
+              <tr class="border-b">
+                <td class="px-4 py-2">1234-5678</td>
+                <td class="px-4 py-2">Keratin</td>
+                <td class="px-4 py-2">Company san</td>
+                <td class="px-4 py-2">19</td>
+                <td class="px-4 py-2">₱40</td>
+                <td class="px-4 py-2">December 2, 2026</td>
+              </tr>
+        </tbody>
+        </table>
+      </div>
+  </div>
+  </main>
+</body>
+</html>
