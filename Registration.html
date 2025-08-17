@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <style>
+    
+    .input {
+      @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#da5c73];
+    }
+    
+    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registration with Sidebar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex">
+  <!-- Sidebar -->
+  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-4 shadow-lg rounded-r-3xl">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns text-2xl"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check text-2xl"></i></button>
+    <button class="sidebar-btn" title="Customers"><i class="fa-solid fa-users text-2xl"></i></button>
+    <button class="sidebar-btn" title="Revenue"><i class="fa-solid fa-peso-sign text-2xl"></i></button>
+    <button class="sidebar-btn" title="Staff"><i class="fa-solid fa-user-tie text-2xl"></i></button>
+    <button class="sidebar-btn" title="Services"><i class="fa-solid fa-scissors text-2xl"></i></button>
+    <button class="sidebar-btn" title="Reports"><i class="fa-solid fa-chart-line text-2xl"></i></button>
+    <button class="sidebar-btn mt-auto mb-2" title="Settings"><i class="fa-solid fa-gear text-2xl"></i></button>
+  </aside>
+
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col items-center justify-center p-8">
+    
+    <div class="bg-white rounded-3xl shadow-lg p-12 w-full max-w-2xl">
+        <h1 class="text-center text-4xl font-bold tracking-widest mb-8 text-[#b97b8b] w-full mt-6">REGISTRATION</h1>
+      <!-- Tabs -->
+      <div class="flex mb-6 border-b border-gray-200">
+        <button class="tab-btn px-8 py-4 font-semibold text-[#da5c73] border-b-2 border-[#da5c73]" onclick="showTab(0)">Create account</button>
+        <button class="tab-btn px-8 py-4 font-semibold text-gray-500" onclick="showTab(1)">Change password</button>
+        <button class="tab-btn px-8 py-4 font-semibold text-gray-500" onclick="showTab(2)">Remove account</button>
+      </div>
+      <!-- Tab Contents -->
+      
+
+      <div class="tab-content">
+        <form class="flex flex-col gap-4">
+          <input type="text" placeholder="Username" class="input" required>
+          <input type="email" placeholder="Email" class="input" required>
+          <input type="password" placeholder="Password" class="input" required>
+          <input type="password" placeholder="Confirm Password" class="input" required>
+          <button type="submit" class="bg-[#da5c73] text-white py-2 rounded-lg font-bold">Create Account</button>
+        </form>
+      </div>
+      <div class="tab-content hidden">
+        <form class="flex flex-col gap-4">
+          <input type="text" placeholder="Username or Email" class="input" required>
+          <input type="password" placeholder="Old Password" class="input" required>
+          <input type="password" placeholder="New Password" class="input" required>
+          <input type="password" placeholder="Confirm New Password" class="input" required>
+          <button type="submit" class="bg-[#da5c73] text-white py-2 rounded-lg font-bold">Change Password</button>
+        </form>
+      </div>
+      <div class="tab-content hidden">
+        <form class="flex flex-col gap-4">
+          <input type="text" placeholder="Username or Email" class="input" required>
+          <input type="password" placeholder="Password" class="input" required>
+          <input type="password" placeholder="Confirm Password" class="input" required>
+          <button type="submit" class="bg-red-500 text-white py-2 rounded-lg font-bold">Remove Account</button>
+        </form>
+      </div>
+  </main>
+  <script>
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    function showTab(idx) {
+      tabBtns.forEach((btn, i) => {
+        btn.classList.toggle('text-[#da5c73]', i === idx);
+        btn.classList.toggle('border-[#da5c73]', i === idx);
+        btn.classList.toggle('text-gray-500', i !== idx);
+        btn.classList.toggle('border-transparent', i !== idx);
+        btn.classList.toggle('border-b-2', true);
+      });
+      tabContents.forEach((content, i) => {
+        content.classList.toggle('hidden', i !== idx);
+      });
+    }
+    // Set default tab
+    showTab(0);
+  </script>
+ 
+  </style>
+</body>
+</html>
