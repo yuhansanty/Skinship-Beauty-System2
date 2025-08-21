@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>castamar biew</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: #f9d6d6;
+    }
+    .container {
+      display: flex;
+      justify-content: space-between;
+      padding: 40px;
+      gap: 30px;
+    }
+
+    /* Left section */
+    .left { width: 55%; }
+    .logo img { width: 150px; margin-bottom: 100px; }
+    .services-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .services-bar select,
+    .services-bar input,
+    .services-bar button {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    /* Slider */
+    .slider-container {
+      border: 2px solid black;
+      padding: 10px;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      white-space: nowrap;
+    }
+    .slider { display: flex; gap: 20px; }
+    .service { flex: 0 0 auto; min-width: 150px; text-align: center; }
+    .service img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto;
+    }
+    .service p { margin-top: 8px; font-weight: bold; }
+
+    /* Right section ung inquiry form */
+    .right { width: 50%; padding: 30px; border-radius: 12px; }
+    .form-group { margin-bottom: 23px; }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+      font-size: 15px;
+    }
+    .submit-btn {
+      width: 100%;
+      margin-left: 15px;
+      padding: 16px;
+      border: none;
+      border-radius: 20px;
+      background-color: #da5c73;
+      color: white;
+      font-weight: bold;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .submit-btn:hover { background-color: #a53346; }
+
+    /* 2fa */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-content {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      width: 360px;
+      position: relative;
+      z-index: 2;
+    }
+    .popup-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .popup-header img {
+      width: 50px;
+      height: 50px;
+    }
+    .popup input {
+      width: 100%;
+      padding: 12px;
+      margin: 12px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    .popup-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+    }
+    .popup button {
+      flex: 1;
+      padding: 14px 0;
+      border: none;
+      border-radius: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .popup button.verify {
+      background: #da5c73;
+      color: white;
+    }
+    .popup button.cancel {
+      background: #ccc;
+      color: black;
+    }
+    .popup button.verify:hover { background: #a53346; }
+    .popup button.cancel:hover { background: #999; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Left section logo -->
+    <div class="left">
+      <div class="logo">
+        <img src="123transparent.png" alt="Skinship Logo">
+      </div>
+      <div class="services-bar">
+        <button>Services</button>
+        <input type="text" placeholder="Search Here">
+        <select>
+          <option>Category</option>
+        </select>
+      </div>
+
+      <!-- ung slider -->
+      <div class="slider-container" id="slider-container">
+        <div class="slider">
+          <div class="service"><img src="Example ng product.jpg"><p>example #1</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #2</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #3</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #4</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #5</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #6</p></div>
+          <div class="service"><img src="Example ng product.jpg"><p>example #7</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right section -->
+    <div class="right">
+      <p>Welcome Back! Please enter your details</p>
+      <h3>Inquiry Form</h3>
+      <form id="inquiryForm">
+        <div class="form-group"><input type="text" placeholder="Enter your name" required></div>
+        <div class="form-group"><input type="email" placeholder="Enter your e-mail" required></div>
+        <div class="form-group"><input type="text" placeholder="Enter your contact number" required></div>
+        <div class="form-group"><input type="text" placeholder="Service" required></div>
+        <div class="form-group"><input type="text" placeholder="Preferred Date and Time" required></div>
+        <button type="submit" class="submit-btn">SEND INQUIRY</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 2FA popup -->
+  <div class="popup" id="twofa-popup">
+    <div class="popup-content">
+      <div class="popup-header">
+        <img src="smartphone.png" alt="Phone">
+        <div>
+          <h3>2FA Verification</h3>
+          <p>Verification of email was sent to the email provided.
+            Please enter the code below. 123456 yong password</p>
+        </div>
+      </div>
+      <input type="text" id="otpInput" placeholder="Enter code">
+      <div class="popup-buttons">
+        <button class="cancel" onclick="cancelOTP()">Cancel</button>
+        <button class="verify" onclick="verifyOTP()">Verify</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sliderContainer = document.getElementById('slider-container');
+    const form = document.getElementById('inquiryForm');
+    const popup = document.getElementById('twofa-popup');
+    const otpInput = document.getElementById('otpInput');
+
+    // slider
+    sliderContainer.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      sliderContainer.scrollBy({
+        left: event.deltaY < 0 ? -100 : 100,
+        behavior: 'smooth'
+      });
+    });
+
+    // pop ap up uppppp
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      popup.style.display = 'flex';
+    });
+
+    // pop up going outside
+    popup.addEventListener('click', function(e) {
+      if (e.target === popup) {
+        popup.style.display = 'none';
+      }
+    });
+
+    // Cancel button 
+    function cancelOTP() {
+      popup.style.display = 'none';
+      form.reset();
+    }
+
+    // thank you next
+    function verifyOTP() {
+      if (otpInput.value === "123456") {
+        window.location.href = "thankyounext.html";
+      } else {
+        alert("haha ./.");
+      }
+    }
+  </script>
+</body>
+</html>
+
+<!-- 
+
+░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒░▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒░▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒░▒▒▒░░▒▒▒▒▒▒▒▒▒░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒░▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒░░░░░░░░░░░
+░░░░░░░░░░░░░░▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▒▒▒░░░░░░░░░░░░░░░░░░▒░░▒░▒░▒▒░▒░▒▒▓▓███████████▓▓▓▒▒▒▒▒▒▒▒▒▒░░░░░░░░░
+░░░░░░░░░░░░▒▒▒▒▒▒▒▓▓▓███████▓▒▒▒░▒░▒░░▒░░▒░░▒░▒░▒░░▒░▒░▒░▒░▒▒▒▒░▒▒▓▓▓▓▓▓▓▓▓▓█████▓▓▓▒▒▒▒▒▒▒▒░░░░░░░
+░░░░░░░░░░▒▒▒▒▒▒▓▓████▓▓▓▓▓▓▒▒▒▒▒▒░▒░▒░░▒▒░▒▒▒░▒░▒▒▒▒▒▒▒▒░▒░▒▒▒▒▒░▒░░░░░▒▒▒▒▒▒▓▓▓▓███▓▓▒▒▒▒▒▒▒▒░░░░░
+░░░░░░░░░▒▒▒▒▒▓▓██▓▓▓▒▒▒▒▒▒░▒▒▒▒▒▒▒▒▒▒▒▒░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░▒▒▒▒▒▒▒▒▒▓▓███▓▓▒▒▒▒▒▒░░░░
+░░░░░░░▒▒▒▒▒▓▓█▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓█▓▓▒▒▒▒▒░░░
+░░░░░░▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓█▓▓▒▒▒▒░░
+░░░░▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒▒
+░░░░▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▒▒▒▒
+░░▒▒▒▒▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+░░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+░▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒
+▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒
+▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒
+▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒
+▒▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒
+▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒
+▒▒▒▓▓▒▒▒▒░░░░░░▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░▒░▒▒▒▓▓▓▓
+▒▒▓▓▒▒▒░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░▒▒▓▓
+▒▓▓▒▒▒░░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░▒▒▓
+▒▓▓▒░░░░░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░▒░░░░░░░░░░░░░░░░░░░░░░░░░▒▒
+▒▓▒▒░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒
+▓▓▒▒░░░░░░▒▒░░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░▒
+▓▒▒░░░░▒▒▓▓▓▓▒▒░░░░░░░░░░░░▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒░░░░░░░
+▓▒▒░░░▒▓██████▓▒▒░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒░░░░░░░░░░░░░▒▒▓▓███████▓▒▒░░░░░░
+▒▒▒░░░▒█████████▓▒░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░▒▓▓███████████▓▒░░░░░
+▓▓▒░░▒▒██████████▓▒░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░░▒▓▓████████████▓▒░░░░░
+▒▓▒░░░▒██████████▓▒░░░░░░░░░░▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░▒▒▓██████████████▒░░░░░
+▓▒▒▒░░▒▓██████████▓░░░░░░░░░░▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒░░░░░░░░░░░░▒▓██████████████▓▒░░░░▒
+▓▓▓▒░░▒▓██████████▓▒░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░▒▓██████████████▓▒░░░░▒
+▓▓▓▒▒░░▒▓█████████▒▒░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░▒▓▓████████████▓▒░░░░▒▒
+▒▓▓▓▒▒░░▒▓███████▓▒░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒▒░░░░░░░░░░░▒▓███████████▓▒░░░░░▒▓
+▒▓▓▓▓▒▒░░▒▒▓▓▓▓▓▓▒░░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒░░░░░░░░░░░░░▒▓▓███████▓▒▒░░░░▒▒▓▓
+▒▒▓▓▓▓▒▒░░░░░▒▒▒░░░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░░░▒▒▓▓▓▓▓▓▒▒░░░░░▒▒▓▓▓
+░▒▒▓▓▓▓▒▒░░░░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░▒▒░░░░░░░░▒▒▓▓▓▓
+░░▒▒▓▓▓▓▒▒▒░░░░░░░░░░░░░░░░▒▒▒▒▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓
+░░░▒▒▓▓▓▓▓▒▒▒░░░░░░░░░░░░▒▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░▒▒▓▓▓▓▓▓▓
+░░░░▒▓▓▓▓▓▓▓▒▒▒▒░░░░░░▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒▒░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓▓▓▓▒
+░░░░░▒▒▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒▒▒▒░░░░░░░░░░▒▒▒▒▓▓▓▓▓▓▓▓▒▒░
+░░░░░░▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▒▒░░
+░░░░░░░░▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░
+░░░░░░░░░▒▒▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒░░░░
+░░░░░░░░░░░▒▒▓▓▓▓▓▓▓▒▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▒▒░░░░░░
+░░░░░░░░░░░░▒▒▒▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▒▒░░░░░░░░
+░░░░░░░░░░░░░░▒▒▒▓▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▒▒▒░░░░░░░░░
+░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▒▓▓▓▓▓▓▓▓▒▒░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░▒▒▓▓▓▒▒▒▒▒▒▒▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▓▓▓▓▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░░░░░▒▒▒▒▓▓▓▓▓▒▒▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▒▒▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░
+
+-->
