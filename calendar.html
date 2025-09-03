@@ -5,8 +5,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Calendar | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background-color: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .sidebar-btn:hover {
+      background-color: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+    .sidebar-btn.active {
+      background-color: #da5c73;
+      color: white;
+    }
+    .appointment-item {
+      font-size: 10px;
+      padding: 2px 4px;
+      margin: 1px 0;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .service-eyelash { background-color: #dcfce7; color: #166534; }
+    .service-manicure { background-color: #fef3c7; color: #92400e; }
+    .service-pedicure { background-color: #fecaca; color: #991b1b; }
+    .service-shaving { background-color: #fce7f3; color: #be185d; }
+    .service-threading { background-color: #e9d5ff; color: #7c2d12; }
+    .service-other { background-color: #e0e7ff; color: #3730a3; }
+    
+    .calendar-day {
+      min-height: 80px;
+      border: 1px solid #e5e7eb;
+      background: white;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .calendar-day:hover {
+      background-color: #f9fafb;
+    }
+    
+    .calendar-day.today {
+      background-color: #fef3c7;
+    }
+    
+    .day-number {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .appointments-container {
+      margin-top: 20px;
+      padding: 4px;
+      overflow-y: auto;
+      max-height: 60px;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
@@ -15,7 +84,7 @@
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
     <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
-    <button class="sidebar-btn active" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn active" title="Reservations"><i class="fa-solid fa-calendar-check"></i></button>
     <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
@@ -25,6 +94,7 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
   <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
     <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
@@ -41,11 +111,31 @@
           </div>
         </div>
       </div>
+
       <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-[#b97b8b]">CALENDAR</h1>
+      
+      <!-- Calendar Navigation -->
       <div class="flex justify-between items-center mb-4">
-        <div class="text-3xl font-bold">MAY</div>
-        <div class="text-3xl font-bold">2025</div>
+        <button id="prevMonth" class="text-2xl text-[#da5c73] hover:text-[#b97b8b] cursor-pointer">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <div class="flex items-center gap-4">
+          <div id="currentMonth" class="text-3xl font-bold"></div>
+          <div id="currentYear" class="text-3xl font-bold"></div>
+        </div>
+        <button id="nextMonth" class="text-2xl text-[#da5c73] hover:text-[#b97b8b] cursor-pointer">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
       </div>
+
+      <!-- Add Appointment Button -->
+      <div class="flex justify-center mb-4">
+        <button id="addAppointmentBtn" class="bg-[#da5c73] text-white px-6 py-2 rounded-full hover:bg-[#b97b8b] transition-colors">
+          <i class="fa-solid fa-plus mr-2"></i>Add Appointment
+        </button>
+      </div>
+
+      <!-- Day Headers -->
       <div class="grid grid-cols-7 gap-2 text-center mb-2">
         <div class="font-bold bg-gray-200 rounded py-2">SUN</div>
         <div class="font-bold bg-gray-200 rounded py-2">MON</div>
@@ -55,66 +145,270 @@
         <div class="font-bold bg-gray-200 rounded py-2">FRI</div>
         <div class="font-bold bg-gray-200 rounded py-2">SAT</div>
       </div>
-      <!-- Calendar Days -->
-      <div class="grid grid-cols-7 gap-2 text-center flex-1">
-        <!-- Row 1 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <!-- Row 2 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white flex flex-col items-center p-1"><span class="text-xs font-bold">3</span><span class="bg-green-200 text-green-900 text-xs rounded px-1 mt-1">9:30 AM<br>EYELASH NATURAL (1 SIZE)</span></div>
-        <!-- Row 3 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white flex flex-col items-center p-1"><span class="text-xs font-bold">6</span><span class="bg-green-200 text-green-900 text-xs rounded px-1 mt-1">1:30 PM<br>EYELASH DOLL EYE (2SIZE)</span></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white flex flex-col items-center p-1"><span class="text-xs font-bold">8</span><span class="bg-green-200 text-green-900 text-xs rounded px-1 mt-1">4:30 PM<br>EYELASH NATURAL (1 SIZE)</span></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <!-- Row 4 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white flex flex-col items-center p-1"><span class="text-xs font-bold">12</span><span class="bg-green-200 text-green-900 text-xs rounded px-1 mt-1">5:30 PM<br>WISPY VOLUME</span></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <!-- Row 5 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white flex flex-col items-center p-1"><span class="text-xs font-bold">22</span><span class="bg-green-200 text-green-900 text-xs rounded px-1 mt-1">3:30 PM<br>SHAVING</span></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <!-- Row 6 -->
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
-        <div class="border min-h-[60px] bg-white"></div>
+
+      <!-- Calendar Grid -->
+      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-16">
+        
       </div>
-      <!-- Events for 16th and 17th -->
-      <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex gap-2">
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-400 rounded-full inline-block"></span><span class="text-xs">Appointment</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-400 rounded-full inline-block"></span><span class="text-xs">Manicure</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-400 rounded-full inline-block"></span><span class="text-xs">Pedicure</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-pink-400 rounded-full inline-block"></span><span class="text-xs">Shaving</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-400 rounded-full inline-block"></span><span class="text-xs">Threading</span></div>
+
+      
+      <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-wrap justify-center gap-4">
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-300 rounded-full inline-block"></span><span class="text-xs">Eyelash</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-300 rounded-full inline-block"></span><span class="text-xs">Manicure</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-300 rounded-full inline-block"></span><span class="text-xs">Pedicure</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-pink-300 rounded-full inline-block"></span><span class="text-xs">Shaving</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-300 rounded-full inline-block"></span><span class="text-xs">Threading</span></div>
       </div>
     </div>
   </main>
+
+  <!-- Appointment Modal -->
+  <div id="appointmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 w-96 max-w-90vw">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="modalTitle" class="text-xl font-bold text-[#da5c73]">Add Appointment</h2>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+          <i class="fa-solid fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form id="appointmentForm">
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Customer Name *</label>
+          <input type="text" id="customerName" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Date *</label>
+          <input type="date" id="appointmentDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Time *</label>
+          <input type="time" id="appointmentTime" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Service *</label>
+          <select id="serviceType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+            <option value="">Select a service</option>
+            <option value="eyelash">Eyelash Extensions</option>
+            <option value="manicure">Manicure</option>
+            <option value="pedicure">Pedicure</option>
+            <option value="shaving">Shaving</option>
+            <option value="threading">Threading</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-2">Phone Number</label>
+          <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]">
+        </div>
+        
+        <div class="mb-6">
+          <label class="block text-sm font-medium mb-2">Notes</label>
+          <textarea id="appointmentNotes" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" rows="3"></textarea>
+        </div>
+        
+        <div class="flex gap-3">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white py-2 px-4 rounded hover:bg-[#b97b8b] transition-colors">
+            Save Appointment
+          </button>
+          <button type="button" id="deleteAppointment" class="hidden bg-red-500 text-white py-2 px-4 rounded hover:bg-red-600 transition-colors">
+            Delete
+          </button>
+          <button type="button" id="cancelModal" class="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    class Calendar {
+      constructor() {
+        this.currentDate = new Date();
+        this.appointments = [];
+        this.editingId = null;
+        this.selectedDate = null;
+        this.monthNames = [
+          "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+          "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
+        ];
+        
+        this.init();
+      }
+      
+      init() {
+        this.bindEvents();
+        this.renderCalendar();
+      }
+      
+      bindEvents() {
+        document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
+        document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
+        document.getElementById('addAppointmentBtn').addEventListener('click', () => this.openModal());
+        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+        document.getElementById('cancelModal').addEventListener('click', () => this.closeModal());
+        document.getElementById('appointmentForm').addEventListener('submit', (e) => this.saveAppointment(e));
+        document.getElementById('deleteAppointment').addEventListener('click', () => this.deleteAppointment());
+        
+        // Close model when clicking outside
+        document.getElementById('appointmentModal').addEventListener('click', (e) => {
+          if (e.target.id === 'appointmentModal') {
+            this.closeModal();
+          }
+        });
+      }
+      
+      previousMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
+        this.renderCalendar();
+      }
+      
+      nextMonth() {
+        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
+        this.renderCalendar();
+      }
+      
+      renderCalendar() {
+        const year = this.currentDate.getFullYear();
+        const month = this.currentDate.getMonth();
+        
+        document.getElementById('currentMonth').textContent = this.monthNames[month];
+        document.getElementById('currentYear').textContent = year;
+        
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const today = new Date();
+        
+        let calendarHTML = '';
+        
+        // Empty cells for days before month starts
+        for (let i = 0; i < firstDay; i++) {
+          calendarHTML += '<div class="calendar-day"></div>';
+        }
+        
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+          const isToday = today.getFullYear() === year && 
+                         today.getMonth() === month && 
+                         today.getDate() === day;
+          
+          const dayAppointments = this.appointments.filter(apt => apt.date === dateStr);
+          
+          calendarHTML += `
+            <div class="calendar-day ${isToday ? 'today' : ''}" onclick="calendar.selectDay('${dateStr}')">
+              <div class="day-number">${day}</div>
+              <div class="appointments-container">
+                ${this.renderAppointments(dayAppointments)}
+              </div>
+            </div>
+          `;
+        }
+        
+        document.getElementById('calendarGrid').innerHTML = calendarHTML;
+      }
+      
+      renderAppointments(appointments) {
+        return appointments.map(apt => {
+          const serviceClass = `service-${apt.service}`;
+          return `
+            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment(${apt.id})">
+              ${apt.time} ${apt.customerName}
+            </div>
+          `;
+        }).join('');
+      }
+      
+      selectDay(dateStr) {
+        this.selectedDate = dateStr;
+        this.openModal(dateStr);
+      }
+      
+      openModal(date = null) {
+        const modal = document.getElementById('appointmentModal');
+        const form = document.getElementById('appointmentForm');
+        
+        form.reset();
+        this.editingId = null;
+        
+        document.getElementById('modalTitle').textContent = 'Add Appointment';
+        document.getElementById('deleteAppointment').classList.add('hidden');
+        
+        if (date) {
+          document.getElementById('appointmentDate').value = date;
+        }
+        
+        modal.classList.remove('hidden');
+      }
+      
+      editAppointment(id) {
+        const appointment = this.appointments.find(apt => apt.id === id);
+        if (!appointment) return;
+        
+        this.editingId = id;
+        
+        document.getElementById('modalTitle').textContent = 'Edit Appointment';
+        document.getElementById('customerName').value = appointment.customerName;
+        document.getElementById('appointmentDate').value = appointment.date;
+        document.getElementById('appointmentTime').value = appointment.time;
+        document.getElementById('serviceType').value = appointment.service;
+        document.getElementById('phoneNumber').value = appointment.phone || '';
+        document.getElementById('appointmentNotes').value = appointment.notes || '';
+        
+        document.getElementById('deleteAppointment').classList.remove('hidden');
+        document.getElementById('appointmentModal').classList.remove('hidden');
+      }
+      
+      saveAppointment(e) {
+        e.preventDefault();
+        
+        const appointmentData = {
+          customerName: document.getElementById('customerName').value,
+          date: document.getElementById('appointmentDate').value,
+          time: document.getElementById('appointmentTime').value,
+          service: document.getElementById('serviceType').value,
+          phone: document.getElementById('phoneNumber').value,
+          notes: document.getElementById('appointmentNotes').value
+        };
+        
+        if (this.editingId) {
+          // Update existing appointment
+          const index = this.appointments.findIndex(apt => apt.id === this.editingId);
+          if (index !== -1) {
+            this.appointments[index] = { ...appointmentData, id: this.editingId };
+          }
+        } else {
+          // Create new appointment
+          const newId = Math.max(...this.appointments.map(apt => apt.id), 0) + 1;
+          this.appointments.push({ ...appointmentData, id: newId });
+        }
+        
+        this.closeModal();
+        this.renderCalendar();
+      }
+      
+      deleteAppointment() {
+        if (this.editingId && confirm('Are you sure you want to delete this appointment?')) {
+          this.appointments = this.appointments.filter(apt => apt.id !== this.editingId);
+          this.closeModal();
+          this.renderCalendar();
+        }
+      }
+      
+      closeModal() {
+        document.getElementById('appointmentModal').classList.add('hidden');
+        this.editingId = null;
+        this.selectedDate = null;
+      }
+    }
+    
+    // Initialize calendar when page loads
+    const calendar = new Calendar();
+  </script>
 </body>
-</html> 
+</html>
