@@ -1,96 +1,125 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <style>
-    
-    .input {
-      @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#da5c73];
-    }
-    
-    </style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Registration with Sidebar</title>
+  <title>Skinship Beauty Register</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
-  <!-- Sidebar -->
-  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
-    <div class="mb-6 mt-2">
-      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
-    </div>
-    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns text-2xl"></i></button>
-    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check text-2xl"></i></button>
-    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users text-2xl"></i></button>
-    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie text-2xl"></i></button>
-    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors text-2xl"></i></button>
-    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line text-2xl"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open text-2xl"></i></button>
-    <button class="sidebar-btn active" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus text-2xl"></i></button>
-    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice text-2xl"></i></button>
-    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt text-2xl"></i></button>
-  </aside>
-
-  <!-- Main Content -->
-  <main class="flex-1 flex flex-col items-center justify-center p-0 w-full h-full min-h-screen ml-20">
-    <div class="bg-white rounded-3xl shadow-lg w-full h-full flex flex-col justify-center items-center min-h-screen p-12 m-8">
-      <h1 class="text-center text-5xl font-extrabold tracking-widest mb-10 text-[#b97b8b] w-full mt-10">REGISTRATION</h1>
-      <!-- Tabs -->
-      <div class="flex mb-10 border-b-2 border-gray-300 w-full justify-center">
-        <button class="tab-btn px-12 py-6 text-2xl font-bold text-[#da5c73] border-b-4 border-[#da5c73]" onclick="showTab(0)">Create account</button>
-        <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(1)">Change password</button>
-        <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Remove account</button>
-      </div>
-      <!-- Tab Contents -->
-      <div class="tab-content w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username" class="input text-2xl py-4 px-6" required>
-          <input type="email" placeholder="Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Create Account</button>
-        </form>
-      </div>
-      <div class="tab-content hidden w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username or Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Old Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="New Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm New Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Change Password</button>
-        </form>
-      </div>
-      <div class="tab-content hidden w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username or Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-red-500 text-white py-4 text-2xl rounded-lg font-extrabold">Remove Account</button>
-        </form>
-      </div>
-    </div>
-  </main>
-  <script>
-    const tabBtns = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    function showTab(idx) {
-      tabBtns.forEach((btn, i) => {
-        btn.classList.toggle('text-[#da5c73]', i === idx);
-        btn.classList.toggle('border-[#da5c73]', i === idx);
-        btn.classList.toggle('text-gray-500', i !== idx);
-        btn.classList.toggle('border-transparent', i !== idx);
-        btn.classList.toggle('border-b-2', true);
-      });
-      tabContents.forEach((content, i) => {
-        content.classList.toggle('hidden', i !== idx);
-      });
+  <style>
+    body {
+      background-color: #f7d4d0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
     }
-    // Set default tab
-    showTab(0);
-  </script>
- 
+    .form-box {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+      max-width: 400px;
+      width: 100%;
+    }
+    .btn {
+      width: 100%;
+      padding: 14px 0;
+      background-color: #da5c73;
+      border: none;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: black;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background-color: #e2798d;
+    }
   </style>
+</head>
+<body>
+  <div class="form-box">
+    <h1 class="text-2xl font-bold mb-4">Create Account</h1>
+    <form id="registerForm">
+      <label for="username">Username</label>
+      <input id="username" type="text" class="border rounded w-full p-2 mb-3" required />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" class="border rounded w-full p-2 mb-3" required />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" class="border rounded w-full p-2 mb-3" required />
+
+      <label for="confirmPassword">Confirm Password</label>
+      <input id="confirmPassword" type="password" class="border rounded w-full p-2 mb-3" required />
+
+      <button type="submit" class="btn">Register</button>
+    </form>
+    <p id="errorMsg" class="text-red-600 mt-2 hidden"></p>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, updateProfile } 
+      from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc } 
+      from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.firebasestorage.app",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const registerForm = document.getElementById("registerForm");
+    const errorMsg = document.getElementById("errorMsg");
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      const confirmPassword = document.getElementById("confirmPassword").value;
+
+      if (password !== confirmPassword) {
+        errorMsg.textContent = "Passwords do not match!";
+        errorMsg.classList.remove("hidden");
+        return;
+      }
+
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Save username to Auth profile
+        await updateProfile(user, { displayName: username });
+
+        // Save user record in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+          uid: user.uid,
+          username: username,
+          email: email
+        });
+
+        alert("Registration successful! You can now log in.");
+        window.location.href = "login.html";
+      } catch (error) {
+        errorMsg.textContent = error.message;
+        errorMsg.classList.remove("hidden");
+      }
+    });
+  </script>
 </body>
 </html>
