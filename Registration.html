@@ -41,7 +41,7 @@
       <div class="flex mb-10 border-b-2 border-gray-300 w-full justify-center">
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-[#da5c73] border-b-4 border-[#da5c73]" onclick="showTab(0)">Create account</button>
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(1)">Change password</button>
-        <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Remove account</button>
+        <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Retrieve account</button>
       </div>
       <!-- Tab Contents -->
       <div class="tab-content w-full flex justify-center">
@@ -55,8 +55,11 @@
       </div>
       <div class="tab-content hidden w-full flex justify-center">
         <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username or Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Old Password" class="input text-2xl py-4 px-6" required>
+          <div class="flex gap-4">
+            <input type="text" placeholder="Email" class="input text-2xl py-4 px-6 flex-1" required>
+            <button type="button" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">Send Code</button>
+          </div>
+          <input type="text" placeholder="Authenticator Code (6 digits)" class="input text-2xl py-4 px-6" maxlength="6" pattern="[0-9]{6}" required>
           <input type="password" placeholder="New Password" class="input text-2xl py-4 px-6" required>
           <input type="password" placeholder="Confirm New Password" class="input text-2xl py-4 px-6" required>
           <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Change Password</button>
@@ -67,7 +70,7 @@
           <input type="text" placeholder="Username or Email" class="input text-2xl py-4 px-6" required>
           <input type="password" placeholder="Password" class="input text-2xl py-4 px-6" required>
           <input type="password" placeholder="Confirm Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-red-500 text-white py-4 text-2xl rounded-lg font-extrabold">Remove Account</button>
+          <button type="submit" class="bg-red-500 text-white py-4 text-2xl rounded-lg font-extrabold">Retrieve Account</button>
         </form>
       </div>
     </div>
