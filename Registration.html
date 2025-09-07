@@ -64,10 +64,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, updateProfile } 
+    import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } 
       from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc } 
-      from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -80,7 +78,6 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
-    const db = getFirestore(app);
 
     const registerForm = document.getElementById("registerForm");
     const errorMsg = document.getElementById("errorMsg");
@@ -103,17 +100,10 @@
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // Save username to Auth profile
         await updateProfile(user, { displayName: username });
+        await sendEmailVerification(user);
 
-        // Save user record in Firestore
-        await setDoc(doc(db, "users", user.uid), {
-          uid: user.uid,
-          username: username,
-          email: email
-        });
-
-        alert("Registration successful! You can now log in.");
+        alert("Registration successful! Please check your email to verify your account.");
         window.location.href = "login.html";
       } catch (error) {
         errorMsg.textContent = error.message;
