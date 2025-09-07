@@ -51,7 +51,7 @@
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Retrieve account</button>
       </div>
 
-      <!-- Create Account -->
+      <!-- Create Accounttab  -->
       <div class="tab-content w-full flex justify-center">
         <form id="registerForm" class="flex flex-col gap-6 w-full max-w-2xl">
           <p id="registerMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
@@ -63,7 +63,7 @@
         </form>
       </div>
 
-      <!-- Change Password -->
+      <!-- Change Password tab -->
       <div class="tab-content hidden w-full flex justify-center">
         <form id="changePassForm" class="flex flex-col gap-6 w-full max-w-2xl">
           <p id="resetMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
@@ -87,7 +87,7 @@
         </form>
       </div>
 
-      <!-- Retrieve Account -->
+      <!-- Retrieve Account tab -->
       <div class="tab-content hidden w-full flex justify-center">
         <form id="retrieveForm" class="flex flex-col gap-6 w-full max-w-2xl">
           <p id="retrieveMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
@@ -118,7 +118,7 @@
     showTab(0);
   </script>
 
-  <!-- Firebase -->
+  <!-- Firebase section po ito -->
   <script type="module">
     import { 
       initializeApp 
@@ -168,7 +168,7 @@
       }, 5000);
     }
 
-    /* Registration */
+    /* Registration kase may bago ka na */
     document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = document.getElementById("username").value.trim();
@@ -204,7 +204,7 @@
       }
     });
 
-    /* Change Password */
+    /* Change Password kase ayaw mo na sakanya */
     const emailSection = document.getElementById("emailSection");
     const authCodeSection = document.getElementById("authCodeSection");
     const authBtn = document.getElementById("authBtn");
@@ -234,7 +234,7 @@
       }
     });
 
-    /* Retrieve Account - Change Email */
+    /* Retrieve Account kase nakalimutan mo na siya */
     let pendingNewEmail = null;
     const retrieveMsg = document.getElementById("retrieveMsg");
 
@@ -268,8 +268,7 @@
         showMessage(retrieveMsg, "⚠ " + err.message, "text-red-600");
       }
     });
-
-    /* Firestore update after verification */
+    
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         await reload(user);
