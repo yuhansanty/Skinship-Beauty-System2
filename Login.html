@@ -80,7 +80,7 @@
       user-select: none;
     }
 
-    input[type="text"],
+    input[type="email"],
     input[type="password"] {
       display: block;
       width: 100%;
@@ -95,12 +95,12 @@
       user-select: text;
     }
 
-    input[type="text"]::placeholder,
+    input[type="email"]::placeholder,
     input[type="password"]::placeholder {
       color: #af9d99cc;
     }
 
-    input[type="text"]:focus,
+    input[type="email"]:focus,
     input[type="password"]:focus {
       border-color: #da5c73;
       box-shadow: 0 0 10px #e88ea4cc;
@@ -189,7 +189,6 @@
       transform: scale(1.1);
     }
 
-    /* Top shapes to replicate the diamond shape clipped look */
     .image-section > div:nth-child(2),
     .image-section > div:nth-child(3) {
       clip-path: polygon(0 0, 100% 100%, 0% 100%);
@@ -206,15 +205,14 @@
       <div class="logo" aria-label="Skinship beauty logo">
         Skinship beauty
         <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-          <!-- stylized S shape path -->
           <path d="M30 15 Q45 50 30 80 Q55 50 45 15" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <h1 class="welcome-text">WELCOME BACK!</h1>
       <p class="subtext">Please enter your login details</p>
       <form id="loginForm">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" placeholder="Enter your username" required autocomplete="username" aria-required="true"/>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email" aria-required="true"/>
         
         <label for="password" class="mt-4">Password</label>
         <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
@@ -227,6 +225,7 @@
 
         <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
       </form>
+      <p id="loginError" class="text-red-600 mt-3 hidden"></p>
     </section>
     <section class="image-section" aria-label="Decorative beauty images">
       <div><img src="https://images.unsplash.com/photo-1587502536263-3e95976f7e34?auto=format&fit=crop&w=400&q=80" alt="Woman with perfectly shaped eyebrows receiving treatment"/></div>
@@ -235,23 +234,42 @@
       <div><img src="https://images.unsplash.com/photo-1588776814546-355f5ee3ba8f?auto=format&fit=crop&w=400&q=80" alt="Man getting professional shaving and face spa treatment"/></div>
     </section>
   </main>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.firebasestorage.app",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginForm = document.getElementById("loginForm");
+    const errorMsg = document.getElementById("loginError");
+
+    loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      // Get username and password values
-      const username = document.getElementById('username').value;
-      const password = document.getElementById('password').value;
-      
-      // Simple validation (you can enhance this later)
-      if (username && password) {
-        // Redirect to dashboard
-        window.location.href = 'dashboard.html';
-      } else {
-        alert('Please enter both username and password');
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+
+        // redirect after success
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        errorMsg.textContent = error.message;
+        errorMsg.classList.remove("hidden");
       }
     });
   </script>
 </body>
 </html>
-

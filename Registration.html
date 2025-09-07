@@ -1,19 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <style>
-    
-    .input {
-      @apply border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#da5c73];
-    }
-    
-    </style>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Registration with Sidebar</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .input {
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-size: 1.25rem;
+      outline: none;
+      width: 100%;
+    }
+    .input:focus {
+      box-shadow: 0 0 0 2px #da5c73;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
@@ -37,44 +43,63 @@
   <main class="flex-1 flex flex-col items-center justify-center p-0 w-full h-full min-h-screen ml-20">
     <div class="bg-white rounded-3xl shadow-lg w-full h-full flex flex-col justify-center items-center min-h-screen p-12 m-8">
       <h1 class="text-center text-5xl font-extrabold tracking-widest mb-10 text-[#b97b8b] w-full mt-10">REGISTRATION</h1>
+      
       <!-- Tabs -->
       <div class="flex mb-10 border-b-2 border-gray-300 w-full justify-center">
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-[#da5c73] border-b-4 border-[#da5c73]" onclick="showTab(0)">Create account</button>
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(1)">Change password</button>
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Retrieve account</button>
       </div>
-      <!-- Tab Contents -->
+
+      <!-- Create Account tab po-->
       <div class="tab-content w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username" class="input text-2xl py-4 px-6" required>
-          <input type="email" placeholder="Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm Password" class="input text-2xl py-4 px-6" required>
+        <form id="registerForm" class="flex flex-col gap-6 w-full max-w-2xl">
+          <p id="registerMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
+          <input id="username" type="text" placeholder="Username" class="input" required>
+          <input id="email" type="email" placeholder="Email" class="input" required>
+          <input id="password" type="password" placeholder="Password" class="input" required>
+          <input id="confirmPassword" type="password" placeholder="Confirm Password" class="input" required>
           <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Create Account</button>
         </form>
       </div>
+
+      <!-- Change Password tab -->
       <div class="tab-content hidden w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <div class="flex gap-4">
-            <input type="text" placeholder="Email" class="input text-2xl py-4 px-6 flex-1" required>
-            <button type="button" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">Send Code</button>
+        <form id="changePassForm" class="flex flex-col gap-6 w-full max-w-2xl">
+          <p id="resetMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
+          <div id="emailSection" class="flex gap-4">
+            <input id="resetEmail" type="email" placeholder="Email" class="input flex-1" required>
+            <button type="button" id="authBtn" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">
+              Authenticator
+            </button>
           </div>
-          <input type="text" placeholder="Authenticator Code (6 digits)" class="input text-2xl py-4 px-6" maxlength="6" pattern="[0-9]{6}" required>
-          <input type="password" placeholder="New Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm New Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Change Password</button>
+          <div id="authCodeSection" class="hidden flex flex-col gap-4">
+            <div class="flex gap-4">
+              <input id="authCode" type="text" placeholder="Authenticator Code (6 digits)" class="input flex-1" maxlength="6">
+              <button type="button" id="backToEmail" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">
+                Email
+              </button>
+            </div>
+          </div>
+          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">
+            Change Password
+          </button>
         </form>
       </div>
+
+      <!-- Retrieve Account tab -->
       <div class="tab-content hidden w-full flex justify-center">
-        <form class="flex flex-col gap-8 w-full max-w-2xl">
-          <input type="text" placeholder="Username or Email" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Password" class="input text-2xl py-4 px-6" required>
-          <input type="password" placeholder="Confirm Password" class="input text-2xl py-4 px-6" required>
-          <button type="submit" class="bg-red-500 text-white py-4 text-2xl rounded-lg font-extrabold">Retrieve Account</button>
+        <form id="retrieveForm" class="flex flex-col gap-6 w-full max-w-2xl">
+          <p id="retrieveMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
+          <input id="retrieveUsername" type="text" placeholder="Username" class="input" required>
+          <input id="retrievePassword" type="password" placeholder="Password" class="input" required>
+          <input id="newEmail" type="email" placeholder="New Email Address" class="input" required>
+          <button type="submit" class="bg-red-500 text-white py-4 text-2xl rounded-lg font-extrabold">Change Email</button>
         </form>
       </div>
     </div>
   </main>
+
   <script>
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -90,10 +115,174 @@
         content.classList.toggle('hidden', i !== idx);
       });
     }
-    // Set default tab
     showTab(0);
   </script>
- 
-  </style>
+
+  <!-- Firebase section po ito  -->
+  <script type="module">
+    import { 
+      initializeApp 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { 
+      getAuth, 
+      createUserWithEmailAndPassword, 
+      sendEmailVerification,
+      sendPasswordResetEmail,
+      signInWithEmailAndPassword,
+      verifyBeforeUpdateEmail,
+      onAuthStateChanged,
+      reload
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { 
+      getFirestore, 
+      doc, 
+      setDoc, 
+      getDocs, 
+      collection, 
+      query, 
+      where, 
+      updateDoc 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.firebasestorage.app",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    function showMessage(el, text, colorClass) {
+      el.textContent = text;
+      el.className = `${colorClass} text-center font-bold text-xl transition-opacity duration-1000 opacity-100`;
+      el.classList.remove("hidden");
+      setTimeout(() => el.classList.add("opacity-0"), 4000);
+      setTimeout(() => {
+        el.classList.add("hidden");
+        el.classList.remove("opacity-0");
+      }, 5000);
+    }
+
+    /* Registration kase may bago kana */
+    document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+      const msg = document.getElementById("registerMsg");
+
+      if (password !== confirmPassword) {
+        showMessage(msg, "⚠ Passwords do not match", "text-red-600");
+        return;
+      }
+
+      try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          showMessage(msg, "⚠ Username already taken", "text-red-600");
+          return;
+        }
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        await sendEmailVerification(user);
+        await setDoc(doc(db, "users", user.uid), {
+          username,
+          email,
+          createdAt: new Date()
+        });
+        showMessage(msg, "✅ Account created! Check your email for verification link.", "text-green-600");
+        document.getElementById("registerForm").reset();
+      } catch (err) {
+        showMessage(msg, "⚠ " + err.message, "text-red-600");
+      }
+    });
+
+    /* Change password kase ayaw mo na sa kanya */
+    const emailSection = document.getElementById("emailSection");
+    const authCodeSection = document.getElementById("authCodeSection");
+    const authBtn = document.getElementById("authBtn");
+    const backToEmail = document.getElementById("backToEmail");
+    const resetMsg = document.getElementById("resetMsg");
+
+    authBtn?.addEventListener("click", () => {
+      emailSection.classList.add("hidden");
+      authCodeSection.classList.remove("hidden");
+    });
+    backToEmail?.addEventListener("click", () => {
+      authCodeSection.classList.add("hidden");
+      emailSection.classList.remove("hidden");
+    });
+    document.getElementById("changePassForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("resetEmail").value.trim();
+      if (!email) {
+        showMessage(resetMsg, "⚠ Please enter your email.", "text-red-600");
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMessage(resetMsg, "✅ Password reset email sent! Check your inbox.", "text-green-600");
+      } catch (err) {
+        showMessage(resetMsg, "⚠ " + err.message, "text-red-600");
+      }
+    });
+
+    /* Retrieve Account na kinalimutan mo na pero gusto mo parin balikan */
+    let pendingNewEmail = null;
+    const retrieveMsg = document.getElementById("retrieveMsg");
+
+    document.getElementById("retrieveForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("retrieveUsername").value.trim();
+      const password = document.getElementById("retrievePassword").value.trim();
+      const newEmail = document.getElementById("newEmail").value.trim();
+
+      try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          showMessage(retrieveMsg, "⚠ Username not found", "text-red-600");
+          return;
+        }
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+        const oldEmail = userData.email;
+
+        const userCredential = await signInWithEmailAndPassword(auth, oldEmail, password);
+        const user = userCredential.user;
+
+        await verifyBeforeUpdateEmail(user, newEmail);
+        pendingNewEmail = newEmail;
+
+        showMessage(retrieveMsg, "📧 Verification email sent to " + newEmail + ". Confirm to finish.", "text-green-600");
+        document.getElementById("retrieveForm").reset();
+
+      } catch (err) {
+        showMessage(retrieveMsg, "⚠ " + err.message, "text-red-600");
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        await reload(user);
+        if (pendingNewEmail && user.email === pendingNewEmail) {
+          try {
+            await updateDoc(doc(db, "users", user.uid), { email: pendingNewEmail });
+            showMessage(retrieveMsg, "✅ Email updated successfully in Firestore!", "text-green-600");
+            pendingNewEmail = null;
+          } catch (err) {
+            console.error("Firestore update failed:", err.message);
+          }
+        }
+      }
+    });
+  </script>
 </body>
 </html>
