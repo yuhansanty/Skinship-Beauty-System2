@@ -266,12 +266,10 @@
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
 
-        // fetch role from Firestore
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const role = userDoc.data().role;
 
-          // redirect to dashboard
           window.location.href = "dashboard.html";
         } else {
           errorMsg.textContent = "No role assigned. Contact system admin.";
