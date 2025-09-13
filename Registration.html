@@ -23,7 +23,7 @@
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside id="sidebar" class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -34,7 +34,7 @@
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors text-2xl"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line text-2xl"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open text-2xl"></i></button>
-    <button class="sidebar-btn active" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus text-2xl"></i></button>
+    <button id="registrationBtn" class="sidebar-btn active" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus text-2xl"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice text-2xl"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt text-2xl"></i></button>
   </aside>
@@ -51,15 +51,33 @@
         <button class="tab-btn px-12 py-6 text-2xl font-bold text-gray-500" onclick="showTab(2)">Retrieve account</button>
       </div>
 
-      <!-- Create Accounttab  -->
+      <!-- Create Account tab (horizontal) -->
       <div class="tab-content w-full flex justify-center">
-        <form id="registerForm" class="flex flex-col gap-6 w-full max-w-2xl">
-          <p id="registerMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
+        <form id="registerForm" class="grid grid-cols-2 gap-6 w-full max-w-4xl" enctype="multipart/form-data">
+          <p id="registerMsg" class="col-span-2 hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
+
+          <input id="fullName" type="text" placeholder="Full Name" class="input" required>
           <input id="username" type="text" placeholder="Username" class="input" required>
+
+          <input id="mobile" type="text" placeholder="Mobile Number" class="input" required>
+          <select id="gender" class="input" required>
+            <option value="" disabled selected>Select Gender</option>
+            <option value="female">Female</option>
+            <option value="male">Male</option>
+            <option value="other">Other</option>
+          </select>
+
           <input id="email" type="email" placeholder="Email" class="input" required>
           <input id="password" type="password" placeholder="Password" class="input" required>
           <input id="confirmPassword" type="password" placeholder="Confirm Password" class="input" required>
-          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Create Account</button>
+
+          <select id="role" class="input" required>
+            <option value="" disabled selected>Select Role</option>
+            <option value="admin">Admin</option>
+            <option value="staff">Staff</option>
+          </select>
+
+          <button type="submit" class="col-span-2 bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Create Account</button>
         </form>
       </div>
 
@@ -69,21 +87,15 @@
           <p id="resetMsg" class="hidden text-center font-bold text-xl transition-opacity duration-1000"></p>
           <div id="emailSection" class="flex gap-4">
             <input id="resetEmail" type="email" placeholder="Email" class="input flex-1" required>
-            <button type="button" id="authBtn" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">
-              Authenticator
-            </button>
+            <button type="button" id="authBtn" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">Authenticator</button>
           </div>
           <div id="authCodeSection" class="hidden flex flex-col gap-4">
             <div class="flex gap-4">
               <input id="authCode" type="text" placeholder="Authenticator Code (6 digits)" class="input flex-1" maxlength="6">
-              <button type="button" id="backToEmail" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">
-                Email
-              </button>
+              <button type="button" id="backToEmail" class="bg-[#b97b8b] text-white px-6 py-4 text-xl rounded-lg font-bold hover:bg-[#a56b7a] transition-colors">Email</button>
             </div>
           </div>
-          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">
-            Change Password
-          </button>
+          <button type="submit" class="bg-[#da5c73] text-white py-4 text-2xl rounded-lg font-extrabold">Change Password</button>
         </form>
       </div>
 
@@ -118,37 +130,17 @@
     showTab(0);
   </script>
 
-  <!-- Firebase section po ito -->
+  <!-- Firebase Section -->
   <script type="module">
-    import { 
-      initializeApp 
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { 
-      getAuth, 
-      createUserWithEmailAndPassword, 
-      sendEmailVerification,
-      sendPasswordResetEmail,
-      signInWithEmailAndPassword,
-      verifyBeforeUpdateEmail,
-      onAuthStateChanged,
-      reload
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { 
-      getFirestore, 
-      doc, 
-      setDoc, 
-      getDocs, 
-      collection, 
-      query, 
-      where, 
-      updateDoc 
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, verifyBeforeUpdateEmail, onAuthStateChanged, reload } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
       authDomain: "skinship-1ff4b.firebaseapp.com",
       projectId: "skinship-1ff4b",
-      storageBucket: "skinship-1ff4b.firebasestorage.app",
+      storageBucket: "skinship-1ff4b.appspot.com",
       messagingSenderId: "963752770497",
       appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
     };
@@ -168,60 +160,133 @@
       }, 5000);
     }
 
-    /* Registration kase may bago ka na */
-    document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const confirmPassword = document.getElementById("confirmPassword").value.trim();
-      const msg = document.getElementById("registerMsg");
+    // ensure DOM toggles wired after DOM ready
+    document.addEventListener('DOMContentLoaded', () => {
+      const emailSection = document.getElementById("emailSection");
+      const authCodeSection = document.getElementById("authCodeSection");
+      const authBtn = document.getElementById("authBtn");
+      const backToEmail = document.getElementById("backToEmail");
+      const authCodeInput = document.getElementById("authCode");
 
-      if (password !== confirmPassword) {
-        showMessage(msg, "⚠ Passwords do not match", "text-red-600");
+      authBtn?.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        if (emailSection) emailSection.classList.add("hidden");
+        if (authCodeSection) authCodeSection.classList.remove("hidden");
+        authCodeInput?.focus();
+      });
+
+      backToEmail?.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        if (authCodeSection) authCodeSection.classList.add("hidden");
+        if (emailSection) emailSection.classList.remove("hidden");
+        document.getElementById("resetEmail")?.focus();
+      });
+
+      authCodeInput?.addEventListener("keyup", (ev) => {
+        if (ev.key === "Escape") {
+          backToEmail?.click();
+        }
+      });
+    });
+
+    /* Registration - only admins can access page (check current user role) */
+    onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        window.location.href = "login.html";
         return;
       }
 
       try {
-        const q = query(collection(db, "users"), where("username", "==", username));
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) {
-          showMessage(msg, "⚠ Username already taken", "text-red-600");
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          window.location.href = "login.html";
           return;
         }
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        await sendEmailVerification(user);
-        await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
-          createdAt: new Date()
-        });
-        showMessage(msg, "✅ Account created! Check your email for verification link.", "text-green-600");
-        document.getElementById("registerForm").reset();
+        const currentRole = userSnap.data().role;
+        if (currentRole !== "admin") {
+          alert("⛔ Access denied: Staff cannot access Registration page.");
+          window.location.href = "dashboard.html";
+          return;
+        }
       } catch (err) {
-        showMessage(msg, "⚠ " + err.message, "text-red-600");
+        console.error("Auth check failed:", err.message);
       }
     });
 
-    /* Change Password kase ayaw mo na sakanya */
-    const emailSection = document.getElementById("emailSection");
-    const authCodeSection = document.getElementById("authCodeSection");
-    const authBtn = document.getElementById("authBtn");
-    const backToEmail = document.getElementById("backToEmail");
-    const resetMsg = document.getElementById("resetMsg");
+// ✅ Registration - stay logged in as admin
+document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fullName = document.getElementById("fullName").value.trim();
+  const username = document.getElementById("username").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
+  const gender = document.getElementById("gender").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const confirmPassword = document.getElementById("confirmPassword").value.trim();
+  const role = document.getElementById("role").value;
+  const msg = document.getElementById("registerMsg");
 
-    authBtn?.addEventListener("click", () => {
-      emailSection.classList.add("hidden");
-      authCodeSection.classList.remove("hidden");
+  if (password !== confirmPassword) {
+    showMessage(msg, "⚠ Passwords do not match", "text-red-600");
+    return;
+  }
+
+  try {
+    // Check for duplicate username
+    const q = query(collection(db, "users"), where("username", "==", username));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      showMessage(msg, "⚠ Username already taken", "text-red-600");
+      return;
+    }
+
+    // 🔑 Save current admin session
+    const adminUser = auth.currentUser;
+    if (!adminUser) {
+      showMessage(msg, "⚠ Admin session expired. Please log in again.", "text-red-600");
+      return;
+    }
+
+    // Create a temporary Firebase App to register the new user
+    const tempApp = initializeApp(firebaseConfig, "TempApp");
+    const tempAuth = getAuth(tempApp);
+
+    // Create new account inside temp app
+    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+    const newUser = userCredential.user;
+
+    // Send email verification
+    await sendEmailVerification(newUser);
+
+    // Save user data to Firestore
+    await setDoc(doc(db, "users", newUser.uid), {
+      fullName,
+      username,
+      mobile,
+      gender,
+      email,
+      role,
+      availability: false,
+      createdAt: new Date().toISOString()
     });
-    backToEmail?.addEventListener("click", () => {
-      authCodeSection.classList.add("hidden");
-      emailSection.classList.remove("hidden");
-    });
+
+    // ✅ Important: sign out from the temp app so admin stays logged in
+    await tempAuth.signOut();
+
+    showMessage(msg, "✅ Account created! Check email for verification link.", "text-green-600");
+    document.getElementById("registerForm").reset();
+
+  } catch (err) {
+    showMessage(msg, "⚠ " + err.message, "text-red-600");
+  }
+});
+
+    // Change password submit (send reset email)
     document.getElementById("changePassForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("resetEmail").value.trim();
+      const resetMsg = document.getElementById("resetMsg");
       if (!email) {
         showMessage(resetMsg, "⚠ Please enter your email.", "text-red-600");
         return;
@@ -234,7 +299,7 @@
       }
     });
 
-    /* Retrieve Account kase nakalimutan mo na siya */
+    /* Retrieve Account (change email with verification) */
     let pendingNewEmail = null;
     const retrieveMsg = document.getElementById("retrieveMsg");
 
@@ -263,12 +328,11 @@
 
         showMessage(retrieveMsg, "📧 Verification email sent to " + newEmail + ". Confirm to finish.", "text-green-600");
         document.getElementById("retrieveForm").reset();
-
       } catch (err) {
         showMessage(retrieveMsg, "⚠ " + err.message, "text-red-600");
       }
     });
-    
+
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         await reload(user);

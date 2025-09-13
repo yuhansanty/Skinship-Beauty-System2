@@ -25,86 +25,204 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
   <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
     <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
+      <!-- Top bar -->
       <div class="flex justify-between items-center mb-6">
         <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
           <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg">Username</span>
+          <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" id="logoutBtn">Logout</button>
             </div>
           </div>
         </div>
       </div>
+
       <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-[#b97b8b]">STAFF</h1>
+
+      <!-- Staff Table -->
       <div class="overflow-x-auto rounded-lg mt-4 flex-1">
         <table class="min-w-full text-center text-sm bg-white">
           <thead class="bg-gray-100">
             <tr>
-              <th class="px-4 py-2">Staff's Name</th>
-              <th class="px-4 py-2">Picture</th>
+              <th class="px-4 py-2">Full Name</th>
               <th class="px-4 py-2">Gender</th>
-              <th class="px-4 py-2">Availability</th>
               <th class="px-4 py-2">Mobile No.</th>
-              <th class="px-4 py-2">Checked in</th>
-              <th class="px-4 py-2">Checked out</th>
+              <th class="px-4 py-2">Availability</th>
+              <th class="px-4 py-2">Clock In</th>
+              <th class="px-4 py-2">Clock Out</th>
+              <th class="px-4 py-2">History</th>
             </tr>
           </thead>
-          <tbody>
-            <tr class="border-b">
-              <td class="px-4 py-2">Employee's Name</td>
-              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
-              <td class="px-4 py-2">Male</td>
-              <td class="px-4 py-2 text-green-600">Available</td>
-              <td class="px-4 py-2">09061301185</td>
-              <td class="px-4 py-2">07:05 AM</td>
-              <td class="px-4 py-2">08:10 PM</td>
-            </tr>
-            <tr class="border-b">
-              <td class="px-4 py-2">Employee's Name</td>
-              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/2.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
-              <td class="px-4 py-2">Male</td>
-              <td class="px-4 py-2 text-red-600">Not Available</td>
-              <td class="px-4 py-2">09061301185</td>
-              <td class="px-4 py-2">N/A</td>
-              <td class="px-4 py-2">N/A</td>
-            </tr>
-            <tr class="border-b">
-              <td class="px-4 py-2">Employee's Name</td>
-              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/3.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
-              <td class="px-4 py-2">Male</td>
-              <td class="px-4 py-2 text-green-600">Available</td>
-              <td class="px-4 py-2">09061301185</td>
-              <td class="px-4 py-2">07:06 AM</td>
-              <td class="px-4 py-2">10:30 PM</td>
-            </tr>
-            <tr class="border-b">
-              <td class="px-4 py-2">Employee's Name</td>
-              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/4.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
-              <td class="px-4 py-2">Male</td>
-              <td class="px-4 py-2 text-red-600">Not Available</td>
-              <td class="px-4 py-2">09061301185</td>
-              <td class="px-4 py-2">N/A</td>
-              <td class="px-4 py-2">N/A</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">Employee's Name</td>
-              <td class="px-4 py-2"><img src="https://randomuser.me/api/portraits/men/5.jpg" alt="Staff" class="w-10 h-10 rounded-full mx-auto" /></td>
-              <td class="px-4 py-2">Male</td>
-              <td class="px-4 py-2 text-green-600">Available</td>
-              <td class="px-4 py-2">09061301185</td>
-              <td class="px-4 py-2">07:20 AM</td>
-              <td class="px-4 py-2">09:15 PM</td>
-            </tr>
-          </tbody>
+          <tbody id="staffTable"></tbody>
         </table>
       </div>
     </div>
   </main>
+
+  <!-- History Popup -->
+  <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg w-[600px] p-6 relative">
+      <button class="absolute top-2 right-2 text-gray-600" onclick="closeHistory()">✖</button>
+      <h2 class="text-2xl font-bold mb-4 text-[#b97b8b]">Clock In/Out History</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full border text-sm">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="px-4 py-2 text-left">Clock In</th>
+              <th class="px-4 py-2 text-left">Clock Out</th>
+            </tr>
+          </thead>
+          <tbody id="historyList"></tbody>
+        </table>
+      </div>
+      <div class="mt-4 flex justify-start">
+        <button onclick="closeHistory()" class="bg-[#e6bfc7] text-black px-4 py-2 rounded-lg hover:bg-[#d39dab]">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { 
+      getFirestore, doc, setDoc, getDoc, collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const usernameSpan = document.getElementById("usernameDisplay");
+    const staffTable = document.getElementById("staffTable");
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    // ===== HISTORY POPUP =====
+    function openHistory(staffId) {
+      const historyList = document.getElementById("historyList");
+      historyList.innerHTML = `<tr><td colspan="2" class="px-4 py-2">Loading...</td></tr>`;
+      document.getElementById("historyModal").classList.remove("hidden");
+
+      const q = query(collection(db, "staffLogs", staffId, "history"), orderBy("timestamp", "desc"));
+      getDocs(q).then(snap => {
+        historyList.innerHTML = "";
+        snap.forEach(docSnap => {
+          const log = docSnap.data();
+          historyList.innerHTML += `
+            <tr class="border-b">
+              <td class="px-4 py-2">${log.clockIn || "N/A"}</td>
+              <td class="px-4 py-2">${log.clockOut || "<span class='text-green-600'>Still logged in</span>"}</td>
+            </tr>
+          `;
+        });
+        if (!snap.size) {
+          historyList.innerHTML = `<tr><td colspan="2" class="px-4 py-2">No history available.</td></tr>`;
+        }
+      });
+    }
+    function closeHistory() {
+      document.getElementById("historyModal").classList.add("hidden");
+    }
+    window.openHistory = openHistory;
+    window.closeHistory = closeHistory;
+
+    // ===== TOGGLE AVAILABILITY =====
+    async function toggleAvailability(staffId, current) {
+      const staffRef = doc(db, "users", staffId);
+      await updateDoc(staffRef, { availability: !current });
+    }
+    window.toggleAvailability = toggleAvailability;
+
+    // ===== AUTH =====
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "Login.html";
+        return;
+      }
+      usernameSpan.textContent = user.email;
+
+      // Ensure today's log exists
+      const today = new Date().toLocaleDateString();
+      const logsRef = collection(db, "staffLogs", user.uid, "history");
+      const todayQuery = query(logsRef, where("date", "==", today));
+      const todaySnap = await getDocs(todayQuery);
+
+      if (todaySnap.empty) {
+        await addDoc(logsRef, {
+          date: today,
+          clockIn: new Date().toLocaleString(),
+          clockOut: null,
+          timestamp: serverTimestamp()
+        });
+      }
+
+      // Listen staff list (from "users" collection)
+      onSnapshot(collection(db, "users"), async (snapshot) => {
+        staffTable.innerHTML = "";
+        for (const docSnap of snapshot.docs) {
+          const staff = docSnap.data();
+          const logsQuery = query(collection(db, "staffLogs", docSnap.id, "history"), orderBy("timestamp", "desc"));
+          const logsSnap = await getDocs(logsQuery);
+          const latest = logsSnap.docs[0]?.data() || {};
+
+          const isAvailable = staff.availability === true;
+
+          staffTable.innerHTML += `
+            <tr class="border-b">
+              <td class="px-4 py-2">${staff.fullName || "N/A"}</td>
+              <td class="px-4 py-2">${staff.gender || "N/A"}</td>
+              <td class="px-4 py-2">${staff.mobile || "N/A"}</td>
+              <td class="px-4 py-2">
+                <button 
+                  class="px-3 py-1 rounded ${isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}" 
+                  onclick="toggleAvailability('${docSnap.id}', ${isAvailable})">
+                  ${isAvailable ? "Available" : "Not Available"}
+                </button>
+              </td>
+              <td class="px-4 py-2">${latest.clockIn || "N/A"}</td>
+              <td class="px-4 py-2">${latest.clockOut || "N/A"}</td>
+              <td class="px-4 py-2">
+                <button class="text-blue-600 underline" onclick="openHistory('${docSnap.id}')">View</button>
+              </td>
+            </tr>
+          `;
+        }
+      });
+    });
+
+    // ===== LOGOUT =====
+    logoutBtn.addEventListener("click", async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const today = new Date().toLocaleDateString();
+        const logsRef = collection(db, "staffLogs", user.uid, "history");
+        const todayQuery = query(logsRef, where("date", "==", today));
+        const todaySnap = await getDocs(todayQuery);
+        if (!todaySnap.empty) {
+          const logId = todaySnap.docs[0].id;
+          await setDoc(doc(db, "staffLogs", user.uid, "history", logId), {
+            clockOut: new Date().toLocaleString()
+          }, { merge: true });
+        }
+      }
+      await signOut(auth);
+    });
+  </script>
 </body>
-</html> 
+</html>
