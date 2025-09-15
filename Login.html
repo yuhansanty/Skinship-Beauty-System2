@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skinship Beauty Login</title>
+  <title>Skinship Beauty Login kaso bakit ganun hindi mo padin siya kilala</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -238,6 +238,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -250,6 +251,7 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     const loginForm = document.getElementById("loginForm");
     const errorMsg = document.getElementById("loginError");
@@ -261,12 +263,20 @@
       const password = document.getElementById("password").value;
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
 
-        // redirect after success
-        window.location.href = "dashboard.html";
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const role = userDoc.data().role;
+
+          window.location.href = "dashboard.html";
+        } else {
+          errorMsg.textContent = "No role assigned. Contact system admin.";
+          errorMsg.classList.remove("hidden");
+        }
       } catch (error) {
-        errorMsg.textContent = error.message;
+        errorMsg.textContent = "Login failed: " + error.message;
         errorMsg.classList.remove("hidden");
       }
     });
