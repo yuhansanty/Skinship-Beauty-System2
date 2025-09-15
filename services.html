@@ -7,6 +7,71 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .service-dropdown {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 1rem;
+    }
+    
+    .dropdown-button {
+      background: #c44c66;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      min-width: 200px;
+      justify-content: space-between;
+    }
+    
+    .dropdown-button:hover {
+      background: #c44c66;
+    }
+    
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 250px;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      z-index: 1000;
+      top: 100%;
+      left: 0;
+      margin-top: 2px;
+    }
+    
+    .dropdown-content.show {
+      display: block;
+    }
+    
+    .dropdown-item {
+      color: #333;
+      padding: 10px 12px;
+      text-decoration: none;
+      display: block;
+      cursor: pointer;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .dropdown-item:hover {
+      background-color: #f8f9fa;
+    }
+    
+    .dropdown-item.selected {
+      background-color: #c44c66;
+      color: white;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
@@ -27,37 +92,39 @@
   </aside>
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg relative h-full flex flex-col">
+    <div class="bg-[#e6bfc7] rounded-3xl p-6 relative h-full flex flex-col">
       <!-- Top bar -->
-      <div class="flex justify-between items-center mb-6">
+      <div class="flex justify-between items-center mb-6 bg-[#b97b8b] rounded-3xl px-6 py-4 shadow-lg">
         <div class="flex items-center gap-2">
           <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
           <button class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">Add Service</button>
         </div>
+        <h1 class="text-center text-2xl font-bold text-white drop-shadow">Services</h1>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg">Admin</span>
+          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+          <span class="font-semibold text-lg text-white">Admin</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
             </div>
           </div>
         </div>
       </div>
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-4 text-white drop-shadow">Service</h1>
-      <!-- Category Tabs -->
-      <div class="flex mb-4">
-        <button class="px-6 py-2 font-bold border-b-4 border-black bg-[#e6bfc7] text-black">FLEEK EYELASH</button>
-        <button class="px-6 py-2 font-bold border-b-4 border-transparent bg-[#e6bfc7] text-black">BROWMAZING</button>
-        <button class="px-6 py-2 font-bold border-b-4 border-transparent bg-[#e6bfc7] text-black">WOKE UP LIKE THIS</button>
-        <button class="px-6 py-2 font-bold border-b-4 border-transparent bg-[#e6bfc7] text-black">EXPRESS OFFERS</button>
-        <button class="px-6 py-2 font-bold border-b-4 border-transparent bg-[#e6bfc7] text-black">HAPPY NAILS</button>
-        <button class="px-6 py-2 font-bold border-b-4 border-transparent bg-[#e6bfc7] text-black">PROMO PACKAGES</button>
+      <!-- Category Dropdown -->
+      <div class="px-4 py-2">
+        <div class="service-dropdown">
+          <button class="dropdown-button" onclick="toggleDropdown()">
+            <span id="selectedService">FLEEK EYELASH</span>
+            <i class="fa-solid fa-chevron-down" id="dropdownIcon"></i>
+          </button>
+          <div class="dropdown-content" id="serviceDropdown">
+          </div>
+        </div>
       </div>
       <!-- Services Table -->
       <div class="flex-1 overflow-auto">
-        <table class="w-full bg-white rounded-xl shadow text-center">
+        <table id="servicesTable" class="w-full bg-white rounded-xl shadow text-center">
           <thead>
             <tr class="bg-[#f7d4d0]">
               <th class="py-4 px-6 text-lg font-bold border-b border-black">SERVICES</th>
@@ -94,5 +161,123 @@
       </div>
     </div>
   </main>
+
+  <script>
+    const services = [
+      "FLEEK EYELASH", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES"
+    ];
+
+    // Service data for each category
+    const serviceData = {
+      'FLEEK EYELASH': [
+        { service: 'EYELASH NATURAL (1 SIZE)', price: '₱ 499' },
+        { service: 'EYELASH NATURAL VOLUME', price: '₱ 599' },
+        { service: 'EYELASH DOLL EYE (2 SIZE)', price: '₱ 599' },
+        { service: 'EYELASH CAT EYE (3 SIZE)', price: '₱ 699' },
+        { service: 'WISPY NATURAL', price: '₱ 699' },
+        { service: 'WISPY VOLUME', price: '₱ 799' },
+        { service: 'EYELASH REMOVAL', price: 'IN 100/ OUT 200'},
+        { service: 'LASH LIFT', price: '₱ 499 WITH TINT ₱ 599'}
+      ],
+      'BROWMAZING': [
+        { service: 'THREADING', price: '₱ 200' },
+        { service: 'SHAVING', price: '₱ 150' },
+        { service: 'BROWLAMINATION', price: '₱ 499 WITH TINT ₱ 699' },
+        { service: 'BROWWAXING', price: '₱ 249' }
+      ],
+      'WOKE UP LIKE THIS': [
+        { service: 'MICROBLADING', price: '₱ 1499 (2 SESSIONS)' },
+        { service: 'COMBI/OMBRE/COMBIBROWS', price: '₱ 2499 (2 SESSIONS)' },
+        { service: 'TOP/LOWER EYELINER', price: '₱ 1999 (2 SESSIONS)' },
+        { service: 'KOREAN BBGLOW', price: '₱ 1499 (PER SESSIONS)' },
+        { service: 'LIP TATTOO/ LIP PIGMENTATION', price: '₱ 2999 (2 SESSIONS)' }
+      ],
+      'EXPRESS OFFERS': [
+        { service: 'tuloy ko later hehe 3 days nako nilalagnat, sana wag dengue:(', price: '₱' },
+      ],
+      'HAPPY NAILS': [
+        { service: '', price: '₱' },
+      ],
+      'PROMO PACKAGES': [
+        { service: '', price: '₱' },]
+    };
+
+    let activeService = "FLEEK EYELASH";
+    const serviceDropdown = document.getElementById('serviceDropdown');
+    const selectedServiceSpan = document.getElementById('selectedService');
+
+    function initializeDropdown() {
+      services.forEach(service => {
+        const item = document.createElement('a');
+        item.className = 'dropdown-item';
+        item.textContent = service;
+        item.onclick = () => selectService(service);
+        serviceDropdown.appendChild(item);
+      });
+      
+      serviceDropdown.children[0].classList.add('selected');
+    }
+
+    function toggleDropdown() {
+      const dropdown = document.getElementById('serviceDropdown');
+      const icon = document.getElementById('dropdownIcon');
+      
+      dropdown.classList.toggle('show');
+      icon.classList.toggle('fa-chevron-down');
+      icon.classList.toggle('fa-chevron-up');
+    }
+
+    function selectService(service) {
+      activeService = service;
+      selectedServiceSpan.textContent = service;
+      
+      document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      event.target.classList.add('selected');
+      
+      document.getElementById('serviceDropdown').classList.remove('show');
+      document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
+      document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
+      
+      // Update the services table with the selected category
+      updateServicesTable(service);
+    }
+
+    function updateServicesTable(category) {
+      const tableBody = document.querySelector('#servicesTable tbody');
+      const services = serviceData[category] || [];
+      
+      tableBody.innerHTML = '';
+      
+      services.forEach((service, index) => {
+        const row = document.createElement('tr');
+        row.className = index < services.length - 1 ? 'border-b border-black' : '';
+        row.innerHTML = `
+          <td class="py-6 px-6 font-bold text-lg">${service.service}</td>
+          <td class="py-6 px-6 font-bold text-lg">${service.price}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.dropdown-button') && !event.target.matches('.dropdown-button *')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+            document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
+            document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
+          }
+        }
+      }
+    }
+
+    initializeDropdown();
+    // Initialize with default service
+    updateServicesTable(activeService);
+  </script>
 </body>
 </html>
