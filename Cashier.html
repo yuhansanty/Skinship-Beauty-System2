@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cashier | Skinship Beauty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f7d4d0 0%, #e6bfc7 100%);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 80px;
+      background-color: #f7d4d0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+      border-radius: 0 20px 20px 0;
+      height: 100%;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 100;
+    }
+
+    .sidebar-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background-color: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 5px 0;
+    }
+
+    .sidebar-btn:hover {
+      background-color: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .sidebar-btn.active {
+      background-color: #da5c73;
+      color: white;
+    }
+
+    .main-content {
+      margin-left: 80px;
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow-y: auto;
+    }
+
+    .pos-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      background-color: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      height: 100%;
+      max-height: 90vh;
+      flex: 1;
+    }
+
+    .pos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      flex: 1;
+      overflow-y: hidden;
+    }
+
+    .service-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .service-categories {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .service-category {
+      background-color: #fce4ec;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #d81b60;
+    }
+
+    .service-category.active {
+      background-color: #da5c73;
+      color: white;
+    }
+
+    .service-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    .service-item {
+      background-color: white;
+      border: 1px solid #f8bbd9;
+      border-radius: 8px;
+      padding: 10px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      transition: background-color 0.2s;
+    }
+
+    .service-item:hover {
+      background-color: #f8bbd9;
+    }
+
+    .cart-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .cart-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 50vh;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 10px;
+      background-color: #fff;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .cart-item button {
+      color: #da5c73;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .calculator-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: 100%;
+    }
+
+    .calculator {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      background-color: #fce4ec;
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .calculator button {
+      background-color: white;
+      border: 1px solid #f8bbd9;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .calculator button:hover {
+      background-color: #f8bbd9;
+    }
+
+    .calculator-display {
+      background-color: white;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: right;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .total-display {
+      background-color: white;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: right;
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    .pay-button {
+      background-color: #da5c73;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    .pay-button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 768px) {
+      .pos-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        width: 60px;
+      }
+
+      .main-content {
+        margin-left: 60px;
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'">
+      <i class="fa-solid fa-table-columns"></i>
+    </button>
+    <button class="sidebar-btn active" title="Cashier">
+      <i class="fa-solid fa-cash-register"></i>
+    </button>
+    </button>
+    </button>
+    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'">
+      <i class="fa-solid fa-scissors"></i>
+    </button>
+    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'">
+      <i class="fa-solid fa-chart-line"></i>
+    </button>
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'">
+      <i class="fa-solid fa-box-open"></i>
+    </button>
+    </button>
+    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'">
+      <i class="fa-solid fa-file-invoice"></i>
+    </button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-[#b97b8b]">CASHIER</h1>
+    <div class="pos-container">
+      <div class="pos-grid">
+        <!-- Service Selection Panel -->
+        <div class="service-panel">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search Services..."
+            class="w-full p-2 border rounded"
+            onkeyup="filterServices()"
+          />
+          <div class="service-categories">
+            <button class="service-category active" onclick="renderServices(services)">All Services</button>
+            <button class="service-category" onclick="filterByCategory('FLEEK EYELASH')">FLEEK EYELASH</button>
+            <button class="service-category" onclick="filterByCategory('WOKE UP LIKE THIS')">WOKE UP LIKE THIS</button>
+            <button class="service-category" onclick="filterByCategory('BROWMAZING')">BROWMAZING</button>
+          </div>
+          <div id="serviceItems" class="service-items">
+            <!-- Services will be inserted here by JavaScript -->
+          </div>
+        </div>
+
+        <!-- Cart/Receipt Area -->
+        <div class="cart-panel">
+          <h2 class="text-xl font-bold mb-4 text-center">CART</h2>
+          <div id="cartItems" class="cart-items"></div>
+          <div class="total-display">
+            TOTAL: ₱<span id="cartTotal">0.00</span>
+          </div>
+          <input
+            type="number"
+            id="paymentAmount"
+            placeholder="Enter payment amount"
+            class="w-full p-2 border rounded"
+            min="0"
+            oninput="validatePayment(this)"
+          />
+          <button id="payButton" class="pay-button" onclick="checkout()" disabled>
+            PAY ₱<span id="payAmount">0.00</span>
+          </button>
+        </div>
+
+        <!-- Calculator Keypad -->
+        <div class="calculator-panel">
+          <div class="calculator-display" id="calculatorDisplay">0</div>
+          <div class="calculator">
+            <button onclick="clearCalculator()" class="bg-white p-2 rounded-lg">C</button>
+            <button class="bg-white p-2 rounded-lg">(</button>
+            <button class="bg-white p-2 rounded-lg">)</button>
+            <button class="bg-white p-2 rounded-lg">/</button>
+            <button onclick="appendToDisplay('7')" class="bg-white p-2 rounded-lg">7</button>
+            <button onclick="appendToDisplay('8')" class="bg-white p-2 rounded-lg">8</button>
+            <button onclick="appendToDisplay('9')" class="bg-white p-2 rounded-lg">9</button>
+            <button class="bg-white p-2 rounded-lg">*</button>
+            <button onclick="appendToDisplay('4')" class="bg-white p-2 rounded-lg">4</button>
+            <button onclick="appendToDisplay('5')" class="bg-white p-2 rounded-lg">5</button>
+            <button onclick="appendToDisplay('6')" class="bg-white p-2 rounded-lg">6</button>
+            <button class="bg-white p-2 rounded-lg">-</button>
+            <button onclick="appendToDisplay('1')" class="bg-white p-2 rounded-lg">1</button>
+            <button onclick="appendToDisplay('2')" class="bg-white p-2 rounded-lg">2</button>
+            <button onclick="appendToDisplay('3')" class="bg-white p-2 rounded-lg">3</button>
+            <button class="bg-white p-2 rounded-lg">+</button>
+            <button onclick="appendToDisplay('0')" class="bg-white p-2 rounded-lg">0</button>
+            <button class="bg-white p-2 rounded-lg">.</button>
+            <button class="bg-white p-2 rounded-lg">=</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Sample services data
+    const services = [
+      { name: "Microblading", price: 120, category: "FLEEK EYELASH" },
+      { name: "Combiombre/Combibrows", price: 150, category: "FLEEK EYELASH" },
+      { name: "Top/Lower Eyeliner", price: 80, category: "FLEEK EYELASH" },
+      { name: "Korean BBGlow", price: 200, category: "WOKE UP LIKE THIS" },
+      { name: "Lip Tattoo/Lip Pigmentation", price: 180, category: "WOKE UP LIKE THIS" },
+      { name: "Eyebrow Tattoo", price: 100, category: "BROWMAZING" },
+      { name: "Eyebrow Shaping", price: 50, category: "BROWMAZING" },
+    ];
+
+    let cart = [];
+
+    // Render all services
+    function renderServices(serviceList) {
+      const serviceItems = document.getElementById('serviceItems');
+      serviceItems.innerHTML = '';
+      serviceList.forEach((service, index) => {
+        const div = document.createElement('div');
+        div.className = 'service-item';
+        div.innerHTML = `
+          <span>${service.name}</span>
+          <span>₱${service.price}</span>
+        `;
+        div.onclick = () => addToCart(service.name, service.price);
+        serviceItems.appendChild(div);
+      });
+
+      // Update active category button
+      const categoryButtons = document.querySelectorAll('.service-category');
+      categoryButtons.forEach(button => {
+        button.classList.remove('active');
+      });
+      document.querySelector('.service-category').classList.add('active');
+    }
+
+    // Filter services by search input
+    function filterServices() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const filteredServices = services.filter(service =>
+        service.name.toLowerCase().includes(searchTerm)
+      );
+      renderServices(filteredServices);
+    }
+
+    // Filter services by category
+    function filterByCategory(category) {
+      const filteredServices = services.filter(service =>
+        service.category === category
+      );
+      renderServices(filteredServices);
+
+      // Update active category button
+      const categoryButtons = document.querySelectorAll('.service-category');
+      categoryButtons.forEach(button => {
+        button.classList.remove('active');
+        if (button.textContent === category) {
+          button.classList.add('active');
+        }
+      });
+    }
+
+    // Add service to cart
+    function addToCart(name, price) {
+      cart.push({ name, price });
+      updateCart();
+    }
+
+    // Remove service from cart
+    function removeFromCart(index) {
+      cart.splice(index, 1);
+      updateCart();
+    }
+
+    // Update cart display
+    function updateCart() {
+      const cartItems = document.getElementById('cartItems');
+      cartItems.innerHTML = '';
+      let total = 0;
+
+      cart.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'cart-item';
+        div.innerHTML = `
+          <span>${item.name}</span>
+          <div>
+            <span>₱${item.price.toFixed(2)}</span>
+            <button onclick="removeFromCart(${index})"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        `;
+        cartItems.appendChild(div);
+        total += item.price;
+      });
+
+      document.getElementById('cartTotal').textContent = total.toFixed(2);
+      document.getElementById('payAmount').textContent = total.toFixed(2);
+
+      // Enable or disable the pay button
+      const payButton = document.getElementById('payButton');
+      payButton.disabled = cart.length === 0;
+    }
+
+    // Validate payment input to prevent negative numbers
+    function validatePayment(input) {
+      if (input.value < 0) {
+        input.value = '';
+        document.getElementById('calculatorDisplay').textContent = '0';
+      }
+    }
+
+    // Calculator functions
+    function appendToDisplay(value) {
+      const display = document.getElementById('calculatorDisplay');
+      if (display.textContent === '0' && value !== '.') {
+        display.textContent = value;
+      } else {
+        display.textContent += value;
+      }
+      document.getElementById('paymentAmount').value = display.textContent;
+    }
+
+    function clearCalculator() {
+      document.getElementById('calculatorDisplay').textContent = '0';
+      document.getElementById('paymentAmount').value = '';
+    }
+
+    // Generate PDF receipt
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      let y = 20;
+
+      doc.setFontSize(16);
+      doc.text("RECEIPT", 105, y, { align: 'center' });
+      y += 10;
+      doc.text("Skinship Beauty", 105, y, { align: 'center' });
+      y += 10;
+
+      doc.text("Items:", 10, y);
+      y += 10;
+
+      let total = 0;
+      cart.forEach(item => {
+        doc.text(`${item.name} - ₱${item.price.toFixed(2)}`, 10, y);
+        y += 10;
+        total += item.price;
+      });
+
+      const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+      doc.text(`Total: ₱${total.toFixed(2)}`, 10, y);
+      y += 10;
+      doc.text(`Payment: ₱${paymentAmount.toFixed(2)}`, 10, y);
+      y += 10;
+      doc.text(`Change: ₱${(paymentAmount - total).toFixed(2)}`, 10, y);
+
+      doc.save('receipt.pdf');
+    }
+
+    // Checkout and validate payment
+    function checkout() {
+      const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+
+      if (paymentAmount < total) {
+        alert('Insufficient payment!');
+        return;
+      }
+
+      generatePDF();
+      alert('Payment successful! Receipt generated.');
+      cart = [];
+      updateCart();
+      clearCalculator();
+    }
+
+    // Initial render
+    renderServices(services);
+    // Gusto ko na magmahal my pookie bear
+  </script>
+</body>
+</html>
+
+
