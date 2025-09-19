@@ -5,9 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Services | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <style>
+    .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s }
+    .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
+    .sidebar-btn.active { background:#da5c73;color:white }
+    
     .service-dropdown {
       position: relative;
       display: inline-block;
@@ -83,13 +90,15 @@
     <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
     <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
-    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn active" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <!-- Registration button (only admin can see) -->
+    <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+  
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
     <div class="bg-[#e6bfc7] rounded-3xl p-6 relative h-full flex flex-col">
@@ -102,11 +111,11 @@
         <h1 class="text-center text-2xl font-bold text-white drop-shadow">Services</h1>
         <div class="flex items-center gap-4">
           <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
-          <span class="font-semibold text-lg text-white">Admin</span>
+          <span class="font-semibold text-lg text-white" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
             </div>
           </div>
         </div>
@@ -193,10 +202,26 @@
         { service: 'LIP TATTOO/ LIP PIGMENTATION', price: '₱ 2999 (2 SESSIONS)' }
       ],
       'EXPRESS OFFERS': [
-        { service: 'tuloy ko later hehe 3 days nako nilalagnat, sana wag dengue:(', price: '₱' },
+        { service: 'BACK MASSAGE', price: '₱ 399' },
+        { service: 'HEAD MASSAGE', price: '₱ 399' },
+        { service: 'FOOT MASSAGE', price: '₱ 399' },
+        { service: 'HAND MASSAGE', price: '₱ 399' },
+        { service: 'FOOT REFLEX', price: '₱ 499' },
+        { service: 'HAND REFLEX', price: '₱ 499' },
+        { service: 'HEAD MASSAGE + EAR CANDLING', price: '₱ 499' },
+        { service: 'EAR CANDLING', price: '₱ 199' }
       ],
       'HAPPY NAILS': [
-        { service: '', price: '₱' },
+        { service: 'BASIC MANICURE', price: '₱ 120' },
+        { service: 'BASIC PEDICURE', price: '₱ 170' },
+        { service: 'FOOTSPA', price: '₱ 300' },
+        { service: 'HANDSPA', price: '₱ 300' },
+        { service: 'GEL REMOVAL', price: 'IN 100 / OUT 200' },
+        { service: 'SOFT GEL REMOVAL', price: 'IN 200 /  OUT 300' },
+        { service: 'SOFTGEL NAIL EXTENSIONS', price: '₱ 1700' },
+        { service: 'GEL MANICURE', price: '₱ 550' },
+        { service: 'GEL PEDICURE', price: '₱ 650' },
+        { service: 'FOOTSPA OR HANDSPA WITH WITHENING SCRUB', price: '₱ 400 WITH CALLUS REMOVAL ₱ 450' }
       ],
       'PROMO PACKAGES': [
         { service: '', price: '₱' },]
@@ -278,6 +303,38 @@
     initializeDropdown();
     // Initialize with default service
     updateServicesTable(activeService);
+
+    // Firebase configuration and auth
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID"
+    };
+    const app = firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        window.location.href = "Login.html";
+        return;
+      }
+      document.getElementById("usernameDisplay").textContent = user.email;
+
+      const doc = await db.collection("users").doc(user.uid).get();
+      if (doc.exists) {
+        const role = doc.data().role;
+        if (role !== "admin") {
+          document.getElementById("registrationBtn").style.display = "none";
+        }
+      }
+    });
+
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "Login.html";
+      });
+    }
   </script>
 </body>
 </html>
