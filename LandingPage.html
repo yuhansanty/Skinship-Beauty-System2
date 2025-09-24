@@ -25,7 +25,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             color: var(--text-color);
             line-height: 1.6;
-            background-color: var(--white);
+            background-color: var(--light-pink);
         }
         
         .container {
@@ -36,48 +36,94 @@
         
         /* Header Styles */
         header {
-            background-color: var(--white);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            background-color: var(--light-pink);
+            color: var(--text-color);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        
-        .header-container {
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 0;
+            padding: 18px 0 8px 0;
         }
-        
-        .logo {
+        .header-logo {
+            display: flex;
+            align-items: center;
+        }
+        .header-logo .logo {
             font-size: 28px;
             font-weight: 700;
             color: var(--primary-pink);
+            letter-spacing: 1px;
         }
-        
-        .logo span {
+        .header-contact {
+            text-align: right;
+        }
+        .header-contact .contact-phone {
+            font-weight: bold;
+            font-size: 18px;
+            color: var(--primary-pink);
+        }
+        .header-contact .contact-label {
+            font-size: 13px;
             color: var(--dark-pink);
         }
-        
-        nav ul {
+        .header-contact .contact-hours {
+            font-weight: bold;
+            font-size: 18px;
+            margin-left: 30px;
+            color: var(--primary-pink);
+        }
+        .header-contact .contact-days {
+            font-size: 13px;
+            color: var(--dark-pink);
+        }
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--primary-pink);
+            padding: 0 0 0 0;
+            background: var(--light-pink);
+        }
+        .header-nav ul {
             display: flex;
             list-style: none;
+            padding: 0;
+            margin: 0;
         }
-        
-        nav ul li {
-            margin-left: 25px;
+        .header-nav ul li {
+            margin-right: 40px;
         }
-        
-        nav ul li a {
+        .header-nav ul li:last-child {
+            margin-right: 0;
+        }
+        .header-nav ul li a {
+            color: var(--dark-pink);
             text-decoration: none;
-            color: var(--text-color);
-            font-weight: 500;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 1px;
             transition: color 0.3s;
         }
-        
-        nav ul li a:hover {
+        .header-nav ul li a:hover {
             color: var(--primary-pink);
+        }
+        .header-social {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .header-social a {
+            color: var(--primary-pink);
+            font-size: 22px;
+            transition: color 0.3s;
+        }
+        .header-social a:hover {
+            color: var(--dark-pink);
         }
         
         /* Hero Section */
@@ -140,7 +186,8 @@
         
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 1fr);
             gap: 30px;
         }
         
@@ -342,17 +389,30 @@
 <body>
     <!-- Header -->
     <header>
-        <div class="container header-container">
-            <div class="logo">Skinship <span>Beauty</span></div>
-            <nav>
+        <div class="container">
+            <div class="header-top">
+                <div class="header-logo">
+                    <div class="logo">Skinship <span style="color:var(--primary-pink)">Beauty</span></div>
+                </div>
+                <div class="header-contact">
+                    <span class="contact-phone">0992 595 0241</span>
+                    <span class="contact-label"><br>Inquiries / Scheduling</span>
+                    <span class="contact-hours" style="margin-left:40px;">Monday - Sunday</span>
+                    <span class="contact-days"><br>10:00 AM - 8:00 PM</span>
+                </div>
+            </div>
+            <div class="header-nav">
                 <ul>
-                    <li><a href="#home">Home</a></li>
-                    <li><a href="#services">Services</a></li>
-                    <li><a href="#about">About</a></li>
-                    <li><a href="#testimonials">Testimonials</a></li>
-                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#services">SERVICES</a></li>
+                    <li><a href="#testimonials">TESTIMONIALS</a></li>
+                    <li><a href="#about">ABOUT</a></li>
+                    <li><a href="#contact">BOOK NOW</a></li>
                 </ul>
-            </nav>
+                <div class="header-social">
+                    <a href="https://www.facebook.com/theskinshipbeauty"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/skinship_ph/"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -360,7 +420,7 @@
     <section class="hero" id="home">
         <div class="container">
             <h1>Welcome to Skinship Beauty</h1>
-            <p>Your premium destination for exceptional grooming services. We specialize in manicures, pedicures, hair treatments, and more to help you look and feel your best.</p>
+            <p>Aesthetics Clinic- non invasive procedures, Face and Body Contouring, SPA, 6D microblading, IPL, Eyelashes, Nails services, pico & diode laser, hairremoval, melasma treatment</p>
             <a href="#contact" class="btn">Book an Appointment</a>
         </div>
     </section>
@@ -375,51 +435,59 @@
             <div class="services-grid">
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-hand-sparkles"></i>
+                        <i class="fas fa-user-md"></i>
                     </div>
-                    <h3>Manicure</h3>
-                    <p>Professional nail care and polish application to keep your hands looking flawless.</p>
-                    <p class="placeholder-text">[Add detailed description of your manicure services here]</p>
+                    <h3>HIFU Face Lift</h3>
+                    <p>Non-surgical facelift using High-Intensity Focused Ultrasound to lift and tighten skin for a youthful appearance.</p>
                 </div>
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-foot"></i>
+                        <i class="fas fa-lightbulb"></i>
                     </div>
-                    <h3>Pedicure</h3>
-                    <p>Relaxing foot care treatments that leave your feet soft, smooth, and rejuvenated.</p>
-                    <p class="placeholder-text">[Add detailed description of your pedicure services here]</p>
+                    <h3>Diode Whitening & Hair Removal</h3>
+                    <p>Advanced diode laser technology for effective skin whitening and permanent hair reduction.</p>
                 </div>
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-spa"></i>
+                        <i class="fas fa-eye"></i>
                     </div>
-                    <h3>Hair Treatment</h3>
-                    <p>Nourishing hair treatments designed to strengthen and beautify your hair.</p>
-                    <p class="placeholder-text">[Add detailed description of your hair treatment services here]</p>
+                    <h3>Eyelash Extension</h3>
+                    <p>Enhance your natural beauty with long-lasting, voluminous eyelash extensions.</p>
                 </div>
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-star"></i>
+                        <i class="fas fa-dumbbell"></i>
                     </div>
-                    <h3>Facial Care</h3>
-                    <p>Rejuvenating facial treatments to refresh and revitalize your skin.</p>
-                    <p class="placeholder-text">[Add detailed description of your facial care services here]</p>
+                    <h3>EMSCULPT Fat Reduction & Body Toning</h3>
+                    <p>Body contouring and muscle toning using electromagnetic energy for visible fat reduction and sculpted physique.</p>
                 </div>
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-magic"></i>
+                        <i class="fas fa-heart"></i>
                     </div>
-                    <h3>Waxing</h3>
-                    <p>Professional waxing services for smooth, hair-free skin.</p>
-                    <p class="placeholder-text">[Add detailed description of your waxing services here]</p>
+                    <h3>Exilis Face & Body Skin Tightening</h3>
+                    <p>Radiofrequency and ultrasound technology to tighten skin and boost collagen for a firmer, youthful look.</p>
                 </div>
                 <div class="service-card">
                     <div class="service-icon">
-                        <i class="fas fa-crown"></i>
+                        <i class="fas fa-pen-fancy"></i>
                     </div>
-                    <h3>Premium Packages</h3>
-                    <p>Special packages combining multiple services for the ultimate grooming experience.</p>
-                    <p class="placeholder-text">[Add detailed description of your premium packages here]</p>
+                    <h3>Microblading</h3>
+                    <p>Semi-permanent eyebrow enhancement for natural-looking, fuller brows.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-paint-brush"></i>
+                    </div>
+                    <h3>Gel Manicure</h3>
+                    <p>Long-lasting gel polish for beautiful, chip-resistant nails with a glossy finish.</p>
+                </div>
+                <div class="service-card">
+                    <div class="service-icon">
+                        <i class="fas fa-shoe-prints"></i>
+                    </div>
+                    <h3>Gel Pedicure</h3>
+                    <p>Luxurious gel pedicure for smooth, pampered feet and vibrant, durable color.</p>
                 </div>
             </div>
         </div>
@@ -467,7 +535,7 @@
                     <p class="placeholder-text">[Include information about your team, their expertise, and commitment to quality service.]</p>
                 </div>
                 <div class="about-image">
-                    <p class="placeholder-text" style="background-color: #ffe6f0; padding: 30px; border-radius: 10px; text-align: center;">[Placeholder for salon image or team photo]</p>
+                    <img src="store.jpg" alt="Skinship Beauty Store" style="width:100%; border-radius:10px; background-color: #ffe6f0; padding: 0; display: block;" />
                 </div>
             </div>
         </div>
@@ -514,10 +582,8 @@
                     <h3>Skinship Beauty</h3>
                     <p>Premium grooming services for the modern individual.</p>
                     <div class="social-icons">
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
-                        <a href="#"><i class="fab fa-pinterest"></i></a>
+                        <a href="https://www.facebook.com/theskinshipbeauty"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/skinship_ph/"><i class="fab fa-instagram"></i></a>
                     </div>
                 </div>
                 <div class="footer-section">
@@ -532,9 +598,9 @@
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
-                    <p class="placeholder-text">[Your Salon Address Here]</p>
-                    <p class="placeholder-text">[Your Phone Number Here]</p>
-                    <p class="placeholder-text">[Your Email Address Here]</p>
+                    <p class="placeholder-text">primark towncenter cainta, Cainta, Philippines, 1900</p>
+                    <p class="placeholder-text">0992 595 0241</p>
+                    <p class="placeholder-text">skinshipbyk@gmail.com</p>
                     <p class="placeholder-text">[Your Business Hours Here]</p>
                 </div>
             </div>
