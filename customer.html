@@ -8,13 +8,11 @@
   <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-
     .service-dropdown {
       position: relative;
       display: inline-block;
       margin-bottom: 1rem;
     }
-    
     .dropdown-button {
       background: #c44c66;
       color: white;
@@ -29,11 +27,6 @@
       min-width: 200px;
       justify-content: space-between;
     }
-    
-    .dropdown-button:hover {
-      background: #c44c66;
-    }
-    
     .dropdown-content {
       display: none;
       position: absolute;
@@ -49,11 +42,7 @@
       left: 0;
       margin-top: 2px;
     }
-    
-    .dropdown-content.show {
-      display: block;
-    }
-    
+    .dropdown-content.show { display: block; }
     .dropdown-item {
       color: #333;
       padding: 10px 12px;
@@ -63,11 +52,7 @@
       font-size: 14px;
       border-bottom: 1px solid #f0f0f0;
     }
-    
-    .dropdown-item:hover {
-      background-color: #f8f9fa;
-    }
-    
+    .dropdown-item:hover { background-color: #f8f9fa; }
     .dropdown-item.selected {
       background-color: #c44c66;
       color: white;
@@ -107,16 +92,13 @@
         </div>
       </header>
       
-
       <div class="px-4 py-2">
         <div class="service-dropdown">
           <button class="dropdown-button" onclick="toggleDropdown()">
-            <span id="selectedService">HAIRCUT</span>
+            <span id="selectedService">All Services</span>
             <i class="fa-solid fa-chevron-down" id="dropdownIcon"></i>
           </button>
-          <div class="dropdown-content" id="serviceDropdown">
-
-          </div>
+          <div class="dropdown-content" id="serviceDropdown"></div>
         </div>
       </div>
       
@@ -137,127 +119,121 @@
               <th>Customer assigned date</th>
             </tr>
           </thead>
-          <tbody>
-          </tbody>
+          <tbody></tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script>
-    const services = [
-      "HAIRCUT", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES",
-      "FLEEK EYELASH", "THERAPEUTIC HEAT", "WAX-OUT", "ES-FACIALY FOR YOU",
-      "LASER HAIR REMOVAL / WHITENING", "PICOSURE LASER TREATMENT", "FACE AND BODY CONTOURING",
-      "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)", "CO2 FRACTIONAL LASER LAY-AWAY"
-    ];
-    
-    /* customer data pero sa firebase to*/
-    const customerData = {
-      "HAIRCUT": [
-        ["Castamar", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer's No.", "Employee's Name", "4:00 PM, May 12, 2025"],
-        ["Castamar", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "3:00 PM, May 12, 2025"],
-        ["Castamar", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "2:00 PM, May 12, 2025"],
-        ["Castamar", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer's No.", "Employee's Name", "1:00 PM, May 12, 2025"],
-        ["Castamar", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer's Name", "12:00 PM, May 12, 2025"]
-      ],
-      "BROWMAZING": [
-        ["Castamar daw po", "52315", "ex***le@gmail.com", "Haircut", "Pending", "Customer's No.", "Employee's Name", "4:00 PM, May 12, 2025"],
-        ["Castamar daw po", "11235", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "3:00 PM, May 12, 2025"],
-        ["Castamar daw po", "03214", "ex***le@gmail.com", "Haircut", "Cancelled", "Customer's No.", "Employee's Name", "2:00 PM, May 12, 2025"],
-        ["Castamar daw po", "83214", "ex***le@gmail.com", "Haircut", "Finished", "Customer's No.", "Employee's Name", "1:00 PM, May 12, 2025"],
-        ["Castamar daw po", "94189", "ex***le@gmail.com", "Haircut", "Finished", "Customer's Name", "12:00 PM, May 12, 2025"]
-      ],
-      "WOKE UP LIKE THIS": [
-        ["Example lang naman", "123", "n/a","n/a","n/a","n/a","n/a","n/a"],
-        ["Example lang naman", "456", "n/a","n/a","n/a","n/a","n/a","n/a"]
-      ]
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
     };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    let activeService = "HAIRCUT";
+    const services = [
+      "All Services","FLEEK EYELASH","BROWMAZING","WOKE UP LIKE THIS","EXPRESS OFFER (30 MINS.)","HAPPY NAILS – CLASSICS","PROMO PACKAGES",
+      "THERAPEUTIC HEAT","WAX – OUT","ES-FACIALY FOR YOU","FACE AND BODY CONTOURING","LASER HAIR REMOVAL / WHITENING","PICOSURE LASER TREATMENT",
+      "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)","CO2 FRACTIONAL LASER LAY-AWAY"
+    ];
+
+    let activeService = "All Services";
     const customerTableBody = document.querySelector('#customerTable tbody');
     const searchInput = document.getElementById('searchInput');
     const serviceDropdown = document.getElementById('serviceDropdown');
     const selectedServiceSpan = document.getElementById('selectedService');
+    let allCustomers = [];
 
+    // Build dropdown
     function initializeDropdown() {
       services.forEach(service => {
         const item = document.createElement('a');
         item.className = 'dropdown-item';
         item.textContent = service;
-        item.onclick = () => selectService(service);
+        item.onclick = (event) => selectService(service, event);
         serviceDropdown.appendChild(item);
       });
-      
       serviceDropdown.children[0].classList.add('selected');
     }
 
     function toggleDropdown() {
       const dropdown = document.getElementById('serviceDropdown');
       const icon = document.getElementById('dropdownIcon');
-      
       dropdown.classList.toggle('show');
       icon.classList.toggle('fa-chevron-down');
       icon.classList.toggle('fa-chevron-up');
     }
 
-    function selectService(service) {
-
+    function selectService(service, event) {
       activeService = service;
       selectedServiceSpan.textContent = service;
-      
-
-      document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.classList.remove('selected');
-      });
+      document.querySelectorAll('.dropdown-item').forEach(item => item.classList.remove('selected'));
       event.target.classList.add('selected');
-      
-
       document.getElementById('serviceDropdown').classList.remove('show');
       document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
       document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
-      
-
-      loadCustomerData(service, searchInput.value);
+      renderTable();
     }
-
 
     window.onclick = function(event) {
       if (!event.target.matches('.dropdown-button') && !event.target.matches('.dropdown-button *')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
-          const openDropdown = dropdowns[i];
-          if (openDropdown.classList.contains('show')) {
-            openDropdown.classList.remove('show');
-            document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
-            document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
-          }
+          dropdowns[i].classList.remove('show');
+          document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
+          document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
         }
       }
     }
 
+    // Fetch customers from Firestore
+    async function fetchCustomers() {
+      const snapshot = await db.collection("customers").orderBy("createdAt","desc").get();
+      allCustomers = snapshot.docs.map(doc => doc.data());
+      renderTable();
+    }
 
-    function loadCustomerData(service, searchTerm = '') {
+    // Render table
+    function renderTable() {
       customerTableBody.innerHTML = '';
-      const rows = customerData[service] || [];
-      rows.filter(row => row.some(cell => cell.toLowerCase().includes(searchTerm.toLowerCase())))
-          .forEach(data => {
+      const searchTerm = searchInput.value.toLowerCase();
+
+      const filtered = allCustomers.filter(c => {
+        const matchesService = activeService === "All Services" || c.service === activeService;
+        const matchesSearch = Object.values(c).some(v => String(v).toLowerCase().includes(searchTerm));
+        return matchesService && matchesSearch;
+      });
+
+      filtered.forEach(c => {
         const tr = document.createElement('tr');
-        data.forEach(cell => {
-          const td = document.createElement('td');
-          td.textContent = cell;
-          tr.appendChild(td);
-        });
+        tr.innerHTML = `
+          <td>${c.name || ''}</td>
+          <td>${c.customerId || ''}</td>
+          <td>${c.email || ''}</td>
+          <td>${c.service || ''}</td>
+          <td>${c.status || ''}</td>
+          <td>${c.phone || ''}</td>
+          <td>${c.staff || ''}</td>
+          <td>${c.appointment || ''}</td>
+        `;
         customerTableBody.appendChild(tr);
       });
     }
 
-    searchInput.addEventListener('input', () => {
-      loadCustomerData(activeService, searchInput.value);
-    });
+    searchInput.addEventListener('input', renderTable);
 
     initializeDropdown();
-    loadCustomerData(activeService);
+    fetchCustomers();
   </script>
 </body>
 </html>

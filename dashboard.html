@@ -3,14 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skinship Beauty Dashboard na ginawa mong lahat para makilala siya kaso ayaw ka pa din</title>
+  <title>Skinship Beauty Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    .sidebar-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+    }
+    .sidebar-btn:hover {
+      background: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+    .sidebar-btn.active {
+      background: #da5c73;
+      color: white;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -20,11 +42,7 @@
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    
-    <!-- Registration button with ID for JS -->
-    <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
-    
+    <button class="sidebar-btn" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
@@ -32,11 +50,10 @@
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg relative h-full">
-      <!-- Top bar -->
-      <div class="flex justify-end items-center gap-4 mb-4">
+      <!-- Topbar -->
+      <div class="flex justify-end items-center gap-4 mb-6">
         <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-        <i class="fa-regular fa-envelope text-xl cursor-pointer"></i>
-        <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
+        <span class="font-semibold text-lg" id="usernameDisplay">admin</span>
         <div class="relative">
           <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
           <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
@@ -45,149 +62,110 @@
         </div>
       </div>
 
-      <!-- Status Cards -->
-      <div class="grid grid-cols-3 gap-4 mb-4">
-        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
-          <span class="text-green-600 font-bold text-lg">08</span>
-          <span class="text-xs font-semibold">Completed</span>
+      <!-- Dashboard content -->
+      <div class="grid grid-cols-12 gap-6">
+        <!-- Completed -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+          <p class="text-green-600 font-bold text-lg">01</p>
+          <div class="font-bold">Completed</div>
         </div>
-        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
-          <span class="text-yellow-500 font-bold text-lg">03</span>
-          <span class="text-xs font-semibold">Pending</span>
-        </div>
-        <div class="bg-white rounded-xl p-4 flex flex-col items-center shadow">
-          <span class="text-red-500 font-bold text-lg">01</span>
-          <span class="text-xs font-semibold">Cancelled</span>
-        </div>
-      </div>
 
-      <!-- Dashboard Content Grid -->
-      <div class="grid grid-cols-4 gap-4">
-        <!-- Reservation Table -->
-        <div class="col-span-2 bg-white rounded-xl p-4 shadow">
-          <div class="flex justify-between items-center mb-2">
-            <span class="font-bold">Reservation</span>
-            <a href="#" class="text-xs text-[#da5c73] font-semibold">View all</a>
+        <!-- Pending -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+          <p class="text-yellow-600 font-bold text-lg">01</p>
+          <div class="font-bold">Pending</div>
+        </div>
+
+        <!-- Cancelled -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+          <p class="text-red-600 font-bold text-lg">01</p>
+          <div class="font-bold">Cancelled</div>
+        </div>
+        
+        <!-- Recent Deals -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-4">
+          <h2 class="font-bold mb-2">Recent Deals</h2>
+          <div class="bg-rose-100 p-2 rounded mb-2">Customer's Name</div>
+          <div class="bg-rose-100 p-2 rounded">Service:</div>
+        </div>
+
+        <!-- Reservation -->
+        <div class="col-span-9 bg-white rounded-lg shadow p-4 h-80">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="font-bold">Reservation</h2>
+            <a href="customer.html" class="text-sm text-rose-500">View all</a>
           </div>
-          <table class="w-full text-xs">
-            <thead>
-              <tr class="text-left text-gray-500">
-                <th>Haircut</th>
-                <th>Board trim</th>
-                <th>Hair Color</th>
-                <th>Razor Shave</th>
-                <th>Highlights</th>
+          <table class="w-full text-sm">
+            <thead class="text-left font-semibold">
+              <tr>
+                <th>Customer</th>
+                <th>Time</th>
+                <th>Status</th>
+                <th>Service</th>
+                <th>Staff</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="reservationTable">
               <tr>
-                <td>Customer's name</td>
-                <td>4:00 PM - 5:00 PM</td>
-                <td>Pending</td>
-                <td></td>
-                <td>Employee's Name</td>
-              </tr>
-              <tr>
-                <td>Customer's name</td>
-                <td>1:00 PM - 2:00 PM</td>
-                <td>Pending</td>
-                <td></td>
-                <td>Employee's Name</td>
-              </tr>
-              <tr>
-                <td>Customer's name</td>
-                <td>10:00 AM - 11:00 AM</td>
-                <td>Pending</td>
-                <td></td>
-                <td>Employee's Name</td>
-              </tr>
-              <tr>
-                <td>Customer's name</td>
-                <td>9:30 AM - 9:50 AM</td>
-                <td>Cancelled</td>
-                <td></td>
-                <td>Employee's Name</td>
-              </tr>
-              <tr>
-                <td>Customer's name</td>
-                <td>8:30 AM - 9:50 AM</td>
-                <td>Completed</td>
-                <td></td>
-                <td>Employee's Name</td>
+                <td colspan="5" class="text-center text-gray-500 italic">Loading reservations...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
+        <!-- Staff Availability -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-3">
+          <h2 class="font-bold mb-2">Staff Availability</h2>
+          <div id="staffAvailabilityList">
+            <p class="text-gray-500 italic">Loading...</p>
+          </div>
+        </div>
+
         <!-- Last week Top Day Visitor -->
-        <div class="bg-white rounded-xl p-4 shadow flex flex-col items-center">
-          <span class="font-semibold text-xs mb-2">Last week Top DAY Visitor</span>
-          <div class="bg-[#b97b8b] text-white rounded-lg px-4 py-2 text-center">
-            <div class="font-bold text-lg">Sunday</div>
-            <div class="text-2xl font-bold">53</div>
+        <div class="col-span-3 bg-white rounded-lg shadow p-4 text-center">
+          <h2 class="font-bold mb-2">Last week Top Day Visitor</h2>
+          <div class="bg-rose-200 rounded-lg p-4">
+            <p class="font-bold text-lg">Sunday</p>
+            <p class="text-2xl font-bold">53</p>
           </div>
         </div>
 
         <!-- Revenue -->
-        <div class="bg-white rounded-xl p-4 shadow flex flex-col">
-          <span class="font-semibold text-xs mb-2">Revenue</span>
-          <div class="flex-1">
-            <div>Monday: <span class="float-right">₱2,540.00</span></div>
-            <div>Tuesday: <span class="float-right">₱950.00</span></div>
-            <div>Wednesday: <span class="float-right">₱2,600.00</span></div>
-            <div>Thursday: <span class="float-right">₱1,200.00</span></div>
-            <div>Friday: <span class="float-right">₱1,000.00</span></div>
-            <div>Saturday: <span class="float-right">₱0.00</span></div>
-            <div>Sunday: <span class="float-right">₱0.00</span></div>
-          </div>
-          <div class="font-bold text-right text-[#da5c73] mt-2">Total of: ₱ 23,280.00</div>
+        <div class="col-span-6 bg-white rounded-lg shadow p-4">
+          <h2 class="font-bold mb-2">Revenue</h2>
+          <table class="w-full text-sm">
+            <tbody>
+              <tr><td>Monday:</td><td class="text-right">₱5,200.00</td></tr>
+              <tr><td>Tuesday:</td><td class="text-right">₱7,340.00</td></tr>
+              <tr><td>Wednesday:</td><td class="text-right">₱9,990.00</td></tr>
+              <tr><td>Thursday:</td><td class="text-right">₱750.00</td></tr>
+              <tr><td>Friday:</td><td class="text-right">₱0.00</td></tr>
+            </tbody>
+          </table>
+          <p class="text-right font-bold text-rose-600 mt-2">Total of: ₱23,280.00</p>
         </div>
 
-        <!-- Right Column -->
-        <div class="col-span-1 flex flex-col gap-4">
-          <!-- Recent deals -->
-          <div class="bg-white rounded-xl p-4 shadow">
-            <span class="font-semibold text-xs mb-2">Recent deals:</span>
-            <div class="bg-[#f7d4d0] rounded p-2 mt-2">
-              <div class="font-semibold">Customer's name</div>
-              <div class="text-xs">Haircut</div>
-            </div>
+        <!-- Today’s Agenda -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold">Today’s Agenda</h2>
+            <a href="calendar.html" class="text-sm text-rose-500">View all</a>
           </div>
-          <!-- Availability of staffs -->
-          <div class="bg-white rounded-xl p-4 shadow">
-            <span class="font-semibold text-xs mb-2">Availability of staffs</span>
-            <div class="bg-[#f7d4d0] rounded p-2 mt-2 flex flex-col gap-1">
-              <div class="font-semibold">Employee's Name</div>
-              <div class="font-semibold">Employee's Name</div>
-            </div>
-          </div>
-          <!-- Today's Agenda -->
-          <div class="bg-white rounded-xl p-4 shadow flex-1">
-            <div class="flex justify-between items-center mb-2">
-              <span class="font-semibold text-xs">Today's Agenda</span>
-              <a href="#" class="text-xs text-[#da5c73] font-semibold">View all</a>
-            </div>
-            <ul class="text-xs list-disc ml-4">
-              <li>4:00 PM - Customer's name - Haircut</li>
-              <li>1:00 PM - Customer's name - Haircut</li>
-              <li>10:00 PM - Customer's name - Haircut</li>
-            </ul>
-          </div>
+          <ul id="agendaList" class="list-disc list-inside text-sm">
+            <li class="text-gray-500 italic">Loading...</li>
+          </ul>
         </div>
-      </div>
-
-      <!-- User Avatar -->
-      <div class="absolute bottom-6 left-6">
-        <div class="w-12 h-12 rounded-full bg-[#4a4a6a] flex items-center justify-center text-white text-2xl font-bold border-4 border-white shadow">M</div>
       </div>
     </div>
   </main>
 
-  <!-- Firebase: Hide Registration for staff -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { 
+      getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy 
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -202,6 +180,7 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
+    // Hide registration button if not admin
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
@@ -209,13 +188,107 @@
         if (userSnap.exists()) {
           const data = userSnap.data();
           document.getElementById("usernameDisplay").textContent = data.username;
-
           if (data.role !== "admin") {
-            // Hide Registration button for staff
-            const regBtn = document.getElementById("registrationBtn");
-            if (regBtn) regBtn.style.display = "none";
+            document.getElementById("registrationBtn").style.display = "none";
           }
         }
+      }
+    });
+
+    // Staff availability
+    const staffAvailabilityList = document.getElementById("staffAvailabilityList");
+    const staffQuery = query(collection(db, "users"), where("availability", "==", true));
+
+    onSnapshot(staffQuery, (snapshot) => {
+      staffAvailabilityList.innerHTML = "";
+      if (snapshot.empty) {
+        staffAvailabilityList.innerHTML = `<p class="text-gray-500 italic">No staff available</p>`;
+        return;
+      }
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const name = data.fullName || data.username || "Unnamed";
+        const div = document.createElement("div");
+        div.className = "bg-rose-100 p-2 rounded mb-2";
+        div.textContent = name;
+        staffAvailabilityList.appendChild(div);
+      });
+    });
+
+    // Reservations list from Firestore (customers collection)
+    const reservationTable = document.getElementById("reservationTable");
+    const reservationQuery = query(collection(db, "customers"), orderBy("createdAt", "desc"));
+
+    onSnapshot(reservationQuery, (snapshot) => {
+      reservationTable.innerHTML = "";
+      if (snapshot.empty) {
+        reservationTable.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>`;
+        return;
+      }
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${data.name || "N/A"}</td>
+          <td>${data.appointment || "N/A"}</td>
+          <td>${data.status || "Pending"}</td>
+          <td>${data.service || "N/A"}</td>
+          <td>${data.staff || "N/A"}</td>
+        `;
+        reservationTable.appendChild(tr);
+      });
+    });
+
+    // Agenda: today only
+    const agendaList = document.getElementById("agendaList");
+const today = new Date();
+const todayStr = today.toISOString().split("T")[0]; // yyyy-mm-dd
+
+const apptQuery = query(collection(db, "appointments"));
+onSnapshot(apptQuery, (snapshot) => {
+  agendaList.innerHTML = "";
+  const todaysAppointments = [];
+
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    // Only today's appointments
+    if (data.date === todayStr) {
+      todaysAppointments.push(data);
+    }
+  });
+
+  // Sort by time
+  todaysAppointments.sort((a, b) => {
+    return (a.time || "").localeCompare(b.time || "");
+  });
+
+  if (todaysAppointments.length === 0) {
+    agendaList.innerHTML = `<li class="text-gray-500 italic">No appointments today</li>`;
+  } else {
+    todaysAppointments.forEach(appt => {
+      const li = document.createElement("li");
+      li.textContent = `${appt.time} - ${appt.customerName} - ${appt.service}`;
+      agendaList.appendChild(li);
+    });
+  }
+
+
+      // Sort by date+time
+      upcomingAppointments.sort((a, b) => {
+        const dateTimeA = `${a.date}T${a.time}`;
+        const dateTimeB = `${b.date}T${b.time}`;
+        return dateTimeA.localeCompare(dateTimeB);
+      });
+
+      if (upcomingAppointments.length === 0) {
+        agendaList.innerHTML = `<li class="text-gray-500 italic">No upcoming appointments</li>`;
+      } else {
+        upcomingAppointments.forEach(appt => {
+          const li = document.createElement("li");
+          li.textContent = `${appt.date} ${appt.time} - ${appt.customerName} - ${appt.service}`;
+          agendaList.appendChild(li);
+        });
       }
     });
   </script>
