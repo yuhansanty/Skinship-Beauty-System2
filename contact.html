@@ -1,140 +1,177 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - Skinship Beauty</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary-pink: #e83e8c;
-            --secondary-pink: #ff69b4;
-            --light-pink: #fff0f6;
-            --dark-pink: #c2185b;
-            --text-color: #4a2c3a;
-            --white: #ffffff;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text-color);
-            background-color: var(--light-pink);
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 60px auto;
-            background: var(--white);
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-            padding: 40px 30px;
-        }
-        .section-title h2 {
-            color: var(--dark-pink);
-            margin-bottom: 10px;
-        }
-        .section-title p {
-            margin-bottom: 30px;
-        }
-        .contact-form .form-group {
-            margin-bottom: 20px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        .form-group input,
-        .form-group textarea,
-        .form-group select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-family: inherit;
-        }
-        .form-group textarea {
-            min-height: 150px;
-        }
-        .btn {
-            background: var(--primary-pink);
-            color: #fff;
-            border: none;
-            padding: 14px 32px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn:hover {
-            background: var(--dark-pink);
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us - Skinship Beauty</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <style>
+    :root {
+      --primary-pink: #e83e8c;
+      --secondary-pink: #ff69b4;
+      --light-pink: #fff0f6;
+      --dark-pink: #c2185b;
+      --text-color: #4a2c3a;
+      --white: #ffffff;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: var(--text-color); background-color: var(--light-pink); margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 60px auto; background: var(--white); border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); padding: 40px 30px; }
+    .section-title h2 { color: var(--dark-pink); margin-bottom: 10px; }
+    .section-title p { margin-bottom: 30px; }
+    .contact-form .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; }
+    .form-group textarea { min-height: 150px; }
+    .btn { background: var(--primary-pink); color: #fff; border: none; padding: 14px 32px; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
+    .btn:hover { background: var(--dark-pink); }
+  </style>
 </head>
 <body>
-    <a href="landingpage.html" style="position: absolute; top: 24px; left: 24px; background: var(--primary-pink); color: #fff; padding: 10px 22px; border-radius: 5px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000;">&larr; Back</a>
-    <section class="contact" id="contact">
-        <div class="container">
-            <div class="section-title">
-                <h2>Contact Us</h2>
-                <p>Reach out to book an appointment or ask any questions.</p>
-            </div>
-            <form class="contact-form">
-                <div class="form-group">
-                    <label for="name">Full Name</label>
-                    <input type="text" id="name" placeholder="Enter your full name">
-                </div>
-                <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="Enter your email address">
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number</label>
-                    <input type="tel" id="phone" placeholder="Enter your phone number">
-                </div>
-                <div class="form-group">
-                    <label for="service">Service Interested In</label>
-                    <select id="service" name="service">
-                        <option value="">Select a service</option>
-                        <option value="FLEEK EYELASH">FLEEK EYELASH</option>
-                        <option value="BROWMAZING">BROWMAZING</option>
-                        <option value="WOKE UP LIKE THIS">WOKE UP LIKE THIS</option>
-                        <option value="EXPRESS OFFER (30 MINS.)">EXPRESS OFFER (30 MINS.)</option>
-                        <option value="HAPPY NAILS – CLASSICS">HAPPY NAILS – CLASSICS</option>
-                        <option value="PROMO PACKAGES">PROMO PACKAGES</option>
-                        <option value="THERAPEUTIC HEAT">THERAPEUTIC HEAT</option>
-                        <option value="WAX – OUT">WAX – OUT</option>
-                        <option value="ES-FACIALY FOR YOU">ES-FACIALY FOR YOU</option>
-                        <option value="FACE AND BODY CONTOURING">FACE AND BODY CONTOURING</option>
-                        <option value="LASER HAIR REMOVAL / WHITENING">LASER HAIR REMOVAL / WHITENING</option>
-                        <option value="PICOSURE LASER TREATMENT">PICOSURE LASER TREATMENT</option>
-                        <option value="WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)">WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)</option>
-                        <option value="CO2 FRACTIONAL LASER LAY-AWAY">CO2 FRACTIONAL LASER LAY-AWAY</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="staff">Chosen Staff</label>
-                    <select id="staff" name="staff">
-                        <option value="">Select a staff</option>
-                        <option value="Employee 1">Employee 1</option>
-                        <option value="Employee 2">Employee 2</option>
-                        <option value="Employee 3">Employee 3</option>
-                        <option value="Employee 4">Employee 4</option>
-                        <option value="Employee 5">Employee 5</option>
-                        <option value="Employee 6">Employee 6</option>
-                        <option value="Employee 7">Employee 7</option>
-                        <option value="Employee 8">Employee 8</option>
-                        <option value="Employee 9">Employee 9</option>
-                        <option value="Employee 10">Employee 10</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="message">Message</label>
-                    <textarea id="message" placeholder="Tell us about your needs or any questions you have"></textarea>
-                </div>
-                <button type="submit" class="btn">Send Message</button>
-            </form>
+  <a href="landingpage.html" style="position: absolute; top: 24px; left: 24px; background: var(--primary-pink); color: #fff; padding: 10px 22px; border-radius: 5px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000;">&larr; Back</a>
+  <section class="contact" id="contact">
+    <div class="container">
+      <div class="section-title">
+        <h2>Contact Us</h2>
+        <p>Reach out to book an appointment or ask any questions.</p>
+      </div>
+      <form class="contact-form">
+        <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" placeholder="Enter your full name"></div>
+        <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter your email address"></div>
+        <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="Enter your phone number"></div>
+        <div class="form-group">
+          <label for="service">Service Interested In</label>
+          <select id="service" name="service">
+            <option value="">Select a service</option>
+            <option value="FLEEK EYELASH">FLEEK EYELASH</option>
+            <option value="BROWMAZING">BROWMAZING</option>
+            <option value="WOKE UP LIKE THIS">WOKE UP LIKE THIS</option>
+            <option value="EXPRESS OFFER (30 MINS.)">EXPRESS OFFER (30 MINS.)</option>
+            <option value="HAPPY NAILS – CLASSICS">HAPPY NAILS – CLASSICS</option>
+            <option value="PROMO PACKAGES">PROMO PACKAGES</option>
+            <option value="THERAPEUTIC HEAT">THERAPEUTIC HEAT</option>
+            <option value="WAX – OUT">WAX – OUT</option>
+            <option value="ES-FACIALY FOR YOU">ES-FACIALY FOR YOU</option>
+            <option value="FACE AND BODY CONTOURING">FACE AND BODY CONTOURING</option>
+            <option value="LASER HAIR REMOVAL / WHITENING">LASER HAIR REMOVAL / WHITENING</option>
+            <option value="PICOSURE LASER TREATMENT">PICOSURE LASER TREATMENT</option>
+            <option value="WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)">WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)</option>
+            <option value="CO2 FRACTIONAL LASER LAY-AWAY">CO2 FRACTIONAL LASER LAY-AWAY</option>
+          </select>
         </div>
-    </section>
+        <div class="form-group">
+          <label for="staff">Chosen Staff</label>
+          <select id="staff" name="staff">
+            <option value="">Loading staff...</option>
+          </select>
+        </div>
+        <div class="form-group"><label for="appointment">Preferred Date & Time</label><input type="text" id="appointment" placeholder="Select date & time"></div>
+        <div class="form-group"><label for="message">Message</label><textarea id="message" placeholder="Tell us about your needs or any questions you have"></textarea></div>
+        <button type="submit" class="btn">Send Message</button>
+      </form>
+    </div>
+  </section>
+
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script>
+    flatpickr("#appointment", {
+      enableTime: true,
+      dateFormat: "F j, Y h:i K",
+      minDate: "today",
+      minTime: "10:00",
+      maxTime: "21:00"
+    });
+  </script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Load staff dynamically
+    async function loadStaff() {
+      const staffSelect = document.getElementById("staff");
+      staffSelect.innerHTML = `<option value="">Loading staff...</option>`;
+      try {
+        const snapshot = await db.collection("users").get();
+        if (!snapshot.empty) {
+          staffSelect.innerHTML = `<option value="">Select a staff</option>`;
+          snapshot.forEach(doc => {
+            const staff = doc.data();
+            staffSelect.innerHTML += `<option value="${staff.fullName || "Unnamed"}">${staff.fullName || "Unnamed"}</option>`;
+          });
+        } else {
+          staffSelect.innerHTML = `<option value="">No staff available</option>`;
+        }
+      } catch (err) {
+        console.error("Error loading staff: ", err);
+        staffSelect.innerHTML = `<option value="">Error loading staff</option>`;
+      }
+    }
+    loadStaff();
+
+    // Handle form submit
+    document.querySelector(".contact-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const service = document.getElementById("service").value;
+      const staff = document.getElementById("staff").value;
+      const appointment = document.getElementById("appointment").value;
+      const notes = document.getElementById("message").value.trim();
+
+      if (!name || !email || !phone || !service || !staff || !appointment) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      try {
+        const dateObj = new Date(appointment);
+
+        const newData = {
+          name,
+          email,
+          phone,
+          service,
+          staff,
+          appointment,
+          notes,
+          status: "Pending",
+          date: dateObj.toISOString().split("T")[0],
+          time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const batch = db.batch();
+
+        const custRef = db.collection("customers").doc();
+        batch.set(custRef, newData);
+
+        const apptRef = db.collection("appointments").doc();
+        batch.set(apptRef, { ...newData, customerRef: custRef.id });
+
+        await batch.commit();
+
+        alert("Your appointment has been booked successfully!");
+        e.target.reset();
+      } catch (err) {
+        console.error("Error adding document: ", err);
+        alert("Something went wrong. Please try again.");
+      }
+    });
+  </script>
 </body>
 </html>

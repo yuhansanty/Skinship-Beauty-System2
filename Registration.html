@@ -214,7 +214,7 @@
       }
     });
 
-// ✅ Registration - stay logged in as admin
+//Registration - stay logged in as admin
 document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   const fullName = document.getElementById("fullName").value.trim();
@@ -241,7 +241,7 @@ document.getElementById("registerForm")?.addEventListener("submit", async (e) =>
       return;
     }
 
-    // 🔑 Save current admin session
+    //Save current admin session
     const adminUser = auth.currentUser;
     if (!adminUser) {
       showMessage(msg, "⚠ Admin session expired. Please log in again.", "text-red-600");
@@ -271,7 +271,7 @@ document.getElementById("registerForm")?.addEventListener("submit", async (e) =>
       createdAt: new Date().toISOString()
     });
 
-    // ✅ Important: sign out from the temp app so admin stays logged in
+    //Important: sign out from the temp app so admin stays logged in
     await tempAuth.signOut();
 
     showMessage(msg, "✅ Account created! Check email for verification link.", "text-green-600");

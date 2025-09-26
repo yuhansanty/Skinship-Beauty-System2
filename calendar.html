@@ -6,10 +6,8 @@
   <title>Calendar | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
     .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s }
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
@@ -29,6 +27,7 @@
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
@@ -41,13 +40,12 @@
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <!-- Registration button (only admin can see) -->
     <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
- <!-- Main Content -->
+  <!-- Main Content -->
   <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
     <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
       <div class="flex justify-between items-center mb-6">
@@ -99,11 +97,9 @@
       </div>
 
       <!-- Calendar Grid -->
-      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-16">
-        
-      </div>
+      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-16"></div>
 
-      
+      <!-- Legend -->
       <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-wrap justify-center gap-4">
         <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-300 rounded-full inline-block"></span><span class="text-xs">Eyelash</span></div>
         <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-300 rounded-full inline-block"></span><span class="text-xs">Manicure</span></div>
@@ -139,20 +135,28 @@
           <label class="block text-sm font-medium mb-2">Time *</label>
           <input type="time" id="appointmentTime" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
         </div>
-        
+
         <div class="mb-4">
           <label class="block text-sm font-medium mb-2">Service *</label>
           <select id="serviceType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
             <option value="">Select a service</option>
-            <option value="eyelash">Eyelash Extensions</option>
-            <option value="manicure">Manicure</option>
-            <option value="pedicure">Pedicure</option>
-            <option value="shaving">Shaving</option>
-            <option value="threading">Threading</option>
-            <option value="other">Other</option>
+            <option value="fleek-eyelash">Fleek Eyelash</option>
+            <option value="browmazing">Browmazing</option>
+            <option value="woke-up-like-this">Woke Up Like This</option>
+            <option value="express-offer">Express Offer (30 mins.)</option>
+            <option value="happy-nails">Happy Nails – Classics</option>
+            <option value="promo-packages">Promo Packages</option>
+            <option value="therapeutic-heat">Therapeutic Heat</option>
+            <option value="wax-out">Wax – Out</option>
+            <option value="es-facialy-for-you">ES-Facialy For You</option>
+            <option value="face-body-contouring">Face and Body Contouring</option>
+            <option value="laser-hair-removal">Laser Hair Removal / Whitening</option>
+            <option value="picosure-laser">Picosure Laser Treatment</option>
+            <option value="warts-removal">Warts Removal Fractional Laser (Unlimited)</option>
+            <option value="co2-fractional">CO2 Fractional Laser Lay-Away</option>
           </select>
         </div>
-        
+
         <div class="mb-4">
           <label class="block text-sm font-medium mb-2">Phone Number</label>
           <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]">
@@ -180,24 +184,25 @@
 
   <script>
     class Calendar {
-      constructor() {
+      constructor(db) {
         this.currentDate = new Date();
         this.appointments = [];
         this.editingId = null;
         this.selectedDate = null;
+        this.db = db;
         this.monthNames = [
           "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
           "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
         ];
-        
         this.init();
       }
-      
-      init() {
+
+      async init() {
         this.bindEvents();
+        await this.loadAppointments();
         this.renderCalendar();
       }
-      
+
       bindEvents() {
         document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
         document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
@@ -206,52 +211,53 @@
         document.getElementById('cancelModal').addEventListener('click', () => this.closeModal());
         document.getElementById('appointmentForm').addEventListener('submit', (e) => this.saveAppointment(e));
         document.getElementById('deleteAppointment').addEventListener('click', () => this.deleteAppointment());
-        
-        // Close model when clicking outside
         document.getElementById('appointmentModal').addEventListener('click', (e) => {
-          if (e.target.id === 'appointmentModal') {
-            this.closeModal();
-          }
+          if (e.target.id === 'appointmentModal') this.closeModal();
         });
       }
-      
+
+      async loadAppointments() {
+        try {
+          const snapshot = await this.db.collection("appointments").get();
+          this.appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch (error) {
+          console.error("Error loading appointments:", error);
+          this.appointments = [];
+        }
+      }
+
       previousMonth() {
         this.currentDate.setMonth(this.currentDate.getMonth() - 1);
         this.renderCalendar();
       }
-      
+
       nextMonth() {
         this.currentDate.setMonth(this.currentDate.getMonth() + 1);
         this.renderCalendar();
       }
-      
+
       renderCalendar() {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
-        
+
         document.getElementById('currentMonth').textContent = this.monthNames[month];
         document.getElementById('currentYear').textContent = year;
-        
+
         const firstDay = new Date(year, month, 1).getDay();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const today = new Date();
-        
+
         let calendarHTML = '';
-        
-        // Empty cells for days before month starts
+
         for (let i = 0; i < firstDay; i++) {
           calendarHTML += '<div class="calendar-day"></div>';
         }
-        
-        // Days of the month
+
         for (let day = 1; day <= daysInMonth; day++) {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const isToday = today.getFullYear() === year && 
-                         today.getMonth() === month && 
-                         today.getDate() === day;
-          
+          const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
           const dayAppointments = this.appointments.filter(apt => apt.date === dateStr);
-          
+
           calendarHTML += `
             <div class="calendar-day ${isToday ? 'today' : ''}" onclick="calendar.selectDay('${dateStr}')">
               <div class="day-number">${day}</div>
@@ -261,140 +267,185 @@
             </div>
           `;
         }
-        
+
         document.getElementById('calendarGrid').innerHTML = calendarHTML;
       }
-      
+
+      getServiceClass(serviceValue) {
+        const mapping = {
+          "fleek-eyelash": "service-eyelash",
+          "browmazing": "service-manicure",
+          "woke-up-like-this": "service-pedicure",
+          "express-offer": "service-shaving",
+          "happy-nails": "service-threading"
+        };
+        return mapping[serviceValue] || "service-other";
+      }
+
       renderAppointments(appointments) {
         return appointments.map(apt => {
-          const serviceClass = `service-${apt.service}`;
+          const serviceClass = this.getServiceClass(apt.service);
           return `
-            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment(${apt.id})">
-              ${apt.time} ${apt.customerName}
+            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment('${apt.id}')">
+              ${apt.time} ${apt.name || ""} (${apt.serviceLabel || apt.service})
             </div>
           `;
         }).join('');
       }
-      
+
       selectDay(dateStr) {
         this.selectedDate = dateStr;
-        this.openModal(dateStr);
+        this.openModal();
+        document.getElementById('appointmentDate').value = dateStr;
       }
-      
-      openModal(date = null) {
-        const modal = document.getElementById('appointmentModal');
-        const form = document.getElementById('appointmentForm');
-        
-        form.reset();
-        this.editingId = null;
-        
-        document.getElementById('modalTitle').textContent = 'Add Appointment';
-        document.getElementById('deleteAppointment').classList.add('hidden');
-        
-        if (date) {
-          document.getElementById('appointmentDate').value = date;
-        }
-        
-        modal.classList.remove('hidden');
-      }
-      
-      editAppointment(id) {
-        const appointment = this.appointments.find(apt => apt.id === id);
-        if (!appointment) return;
-        
-        this.editingId = id;
-        
-        document.getElementById('modalTitle').textContent = 'Edit Appointment';
-        document.getElementById('customerName').value = appointment.customerName;
-        document.getElementById('appointmentDate').value = appointment.date;
-        document.getElementById('appointmentTime').value = appointment.time;
-        document.getElementById('serviceType').value = appointment.service;
-        document.getElementById('phoneNumber').value = appointment.phone || '';
-        document.getElementById('appointmentNotes').value = appointment.notes || '';
-        
-        document.getElementById('deleteAppointment').classList.remove('hidden');
+
+      openModal(editing = false) {
         document.getElementById('appointmentModal').classList.remove('hidden');
+        document.getElementById('modalTitle').textContent = editing ? 'Edit Appointment' : 'Add Appointment';
+        document.getElementById('deleteAppointment').classList.toggle('hidden', !editing);
+        if (!editing) document.getElementById('appointmentForm').reset();
       }
-      
-      saveAppointment(e) {
-        e.preventDefault();
-        
-        const appointmentData = {
-          customerName: document.getElementById('customerName').value,
-          date: document.getElementById('appointmentDate').value,
-          time: document.getElementById('appointmentTime').value,
-          service: document.getElementById('serviceType').value,
-          phone: document.getElementById('phoneNumber').value,
-          notes: document.getElementById('appointmentNotes').value
-        };
-        
-        if (this.editingId) {
-          // Update existing appointment
-          const index = this.appointments.findIndex(apt => apt.id === this.editingId);
-          if (index !== -1) {
-            this.appointments[index] = { ...appointmentData, id: this.editingId };
-          }
-        } else {
-          // Create new appointment
-          const newId = Math.max(...this.appointments.map(apt => apt.id), 0) + 1;
-          this.appointments.push({ ...appointmentData, id: newId });
-        }
-        
-        this.closeModal();
-        this.renderCalendar();
-      }
-      
-      deleteAppointment() {
-        if (this.editingId && confirm('Are you sure you want to delete this appointment?')) {
-          this.appointments = this.appointments.filter(apt => apt.id !== this.editingId);
-          this.closeModal();
-          this.renderCalendar();
-        }
-      }
-      
+
       closeModal() {
         document.getElementById('appointmentModal').classList.add('hidden');
         this.editingId = null;
-        this.selectedDate = null;
+        document.getElementById('appointmentForm').reset();
+      }
+
+async saveAppointment(e) {
+  e.preventDefault();
+  const serviceSelect = document.getElementById('serviceType');
+  const serviceValue = serviceSelect.value;
+  const serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].text;
+
+  const appointmentData = {
+    name: document.getElementById('customerName').value,
+    date: document.getElementById('appointmentDate').value,
+    time: document.getElementById('appointmentTime').value,
+    service: serviceValue,
+    serviceLabel: serviceLabel,
+    phone: document.getElementById('phoneNumber').value,
+    notes: document.getElementById('appointmentNotes').value,
+    status: "Pending",
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+
+  try {
+    if (this.editingId) {
+      // Editing existing appointment
+      const apptRef = this.db.collection("appointments").doc(this.editingId);
+      await apptRef.set(appointmentData, { merge: true });
+
+      // Update linked customer if exists
+      const apptDoc = await apptRef.get();
+      const { customerRef } = apptDoc.data();
+      if (customerRef) {
+        await this.db.collection("customers").doc(customerRef).set(appointmentData, { merge: true });
+      }
+    } else {
+      // Create customer first
+      const custRef = this.db.collection("customers").doc();
+      await custRef.set(appointmentData);
+
+      // Create appointment and link to customer
+      const apptRef = await this.db.collection("appointments").add({
+        ...appointmentData,
+        customerRef: custRef.id
+      });
+      appointmentData.id = apptRef.id;
+    }
+
+    await this.loadAppointments();
+    this.closeModal();
+    this.renderCalendar();
+  } catch (error) {
+    console.error("Error saving appointment:", error);
+  }
+}
+
+async deleteAppointment() {
+  if (!this.editingId) return;
+  try {
+    const apptRef = this.db.collection("appointments").doc(this.editingId);
+    const apptDoc = await apptRef.get();
+    if (apptDoc.exists) {
+      const { customerRef } = apptDoc.data();
+      // delete appointment
+      await apptRef.delete();
+      // also delete linked customer
+      if (customerRef) {
+        await this.db.collection("customers").doc(customerRef).delete();
       }
     }
-    
-    // Initialize calendar when page loads
-    const calendar = new Calendar();
 
+    await this.loadAppointments();
+    this.closeModal();
+    this.renderCalendar();
+  } catch (error) {
+    console.error("Error deleting appointment:", error);
+  }
+}
+  
+async editAppointment(id) {
+  const appointment = this.appointments.find(apt => apt.id === id);
+  if (!appointment) return;
 
-    // firebase 
+  this.editingId = id;
+  this.openModal(true);
+
+  document.getElementById('customerName').value = appointment.name || "";
+  document.getElementById('appointmentDate').value = appointment.date || "";
+
+  // ✅ Fix time for <input type="time">
+  if (appointment.time) {
+    let time = appointment.time;
+    if (time.toLowerCase().includes("am") || time.toLowerCase().includes("pm")) {
+      const [raw, modifier] = time.split(" ");
+      let [hours, minutes] = raw.split(":").map(Number);
+      if (modifier.toLowerCase() === "pm" && hours < 12) hours += 12;
+      if (modifier.toLowerCase() === "am" && hours === 12) hours = 0;
+      time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+    }
+    document.getElementById('appointmentTime').value = time;
+  }
+
+  // ✅ Fix service dropdown
+  const serviceSelect = document.getElementById('serviceType');
+  if (appointment.service) {
+    // Try to match value (slug)
+    const match = [...serviceSelect.options].find(opt => opt.value === appointment.service);
+    if (match) serviceSelect.value = match.value;
+  }
+  if (!serviceSelect.value && appointment.serviceLabel) {
+    // Fallback: match by label text
+    const match = [...serviceSelect.options].find(
+      opt => opt.textContent.trim().toLowerCase() === appointment.serviceLabel.trim().toLowerCase()
+    );
+    if (match) serviceSelect.value = match.value;
+  }
+  if (!serviceSelect.value) {
+    serviceSelect.selectedIndex = 0; // default to "Select a service"
+  }
+
+  document.getElementById('phoneNumber').value = appointment.phone || "";
+  document.getElementById('appointmentNotes').value = appointment.notes || "";
+}
+    }
+
+    // Firebase Config
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID"
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
     };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = "Login.html";
-        return;
-      }
-      document.getElementById("usernameDisplay").textContent = user.email;
-
-      const doc = await db.collection("users").doc(user.uid).get();
-      if (doc.exists) {
-        const role = doc.data().role;
-        if (role !== "admin") {
-          document.getElementById("registrationBtn").style.display = "none";
-        }
-      }
-    });
-
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "Login.html";
-      });
-    }
-
+    // ✅ Create calendar instance
+    const calendar = new Calendar(db);
   </script>
 </body>
 </html>
