@@ -17,7 +17,10 @@
       color: #da5c73;
       font-size: 20px;
       cursor: pointer;
-      transition: all 0.2s ease-in-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: .3s;
     }
     .sidebar-btn:hover {
       background: #da5c73;
@@ -42,6 +45,7 @@
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
     <button class="sidebar-btn" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
@@ -145,10 +149,10 @@
           <p class="text-right font-bold text-rose-600 mt-2">Total of: ₱23,280.00</p>
         </div>
 
-        <!-- Today’s Agenda -->
+        <!-- Today's Agenda -->
         <div class="col-span-3 bg-white rounded-lg shadow p-4">
           <div class="flex justify-between items-center mb-2">
-            <h2 class="font-bold">Today’s Agenda</h2>
+            <h2 class="font-bold">Today's Agenda</h2>
             <a href="calendar.html" class="text-sm text-rose-500">View all</a>
           </div>
           <ul id="agendaList" class="list-disc list-inside text-sm">
@@ -242,51 +246,31 @@
 
     // Agenda: today only
     const agendaList = document.getElementById("agendaList");
-const today = new Date();
-const todayStr = today.toISOString().split("T")[0]; // yyyy-mm-dd
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
 
-const apptQuery = query(collection(db, "appointments"));
-onSnapshot(apptQuery, (snapshot) => {
-  agendaList.innerHTML = "";
-  const todaysAppointments = [];
+    const apptQuery = query(collection(db, "customers"));
+    onSnapshot(apptQuery, (snapshot) => {
+      agendaList.innerHTML = "";
+      const todaysAppointments = [];
 
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    // Only today's appointments
-    if (data.date === todayStr) {
-      todaysAppointments.push(data);
-    }
-  });
-
-  // Sort by time
-  todaysAppointments.sort((a, b) => {
-    return (a.time || "").localeCompare(b.time || "");
-  });
-
-  if (todaysAppointments.length === 0) {
-    agendaList.innerHTML = `<li class="text-gray-500 italic">No appointments today</li>`;
-  } else {
-    todaysAppointments.forEach(appt => {
-      const li = document.createElement("li");
-      li.textContent = `${appt.time} - ${appt.customerName} - ${appt.service}`;
-      agendaList.appendChild(li);
-    });
-  }
-
-
-      // Sort by date+time
-      upcomingAppointments.sort((a, b) => {
-        const dateTimeA = `${a.date}T${a.time}`;
-        const dateTimeB = `${b.date}T${b.time}`;
-        return dateTimeA.localeCompare(dateTimeB);
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.date === todayStr) {
+          todaysAppointments.push(data);
+        }
       });
 
-      if (upcomingAppointments.length === 0) {
-        agendaList.innerHTML = `<li class="text-gray-500 italic">No upcoming appointments</li>`;
+      todaysAppointments.sort((a, b) => {
+        return (a.time || "").localeCompare(b.time || "");
+      });
+
+      if (todaysAppointments.length === 0) {
+        agendaList.innerHTML = `<li class="text-gray-500 italic">No appointments today</li>`;
       } else {
-        upcomingAppointments.forEach(appt => {
+        todaysAppointments.forEach(appt => {
           const li = document.createElement("li");
-          li.textContent = `${appt.date} ${appt.time} - ${appt.customerName} - ${appt.service}`;
+          li.textContent = `${appt.time} - ${appt.name} - ${appt.service}`;
           agendaList.appendChild(li);
         });
       }
