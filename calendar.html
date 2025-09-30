@@ -13,22 +13,34 @@
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
     .sidebar-btn.active { background:#da5c73;color:white }
     .appointment-item { font-size:10px;padding:2px 4px;margin:1px 0;border-radius:4px;cursor:pointer }
-    .service-eyelash { background:#dcfce7;color:#166534 }
-    .service-manicure { background:#fef3c7;color:#92400e }
-    .service-pedicure { background:#fecaca;color:#991b1b }
-    .service-shaving { background:#fce7f3;color:#be185d }
-    .service-threading { background:#e9d5ff;color:#7c2d12 }
-    .service-other { background:#e0e7ff;color:#3730a3 }
+    .service-fleek-eyelash { background:#dcfce7;color:#166534 }
+    .service-browmazing { background:#fef3c7;color:#92400e }
+    .service-woke-up-like-this { background:#fecaca;color:#991b1b }
+    .service-express-offer { background:#fce7f3;color:#be185d }
+    .service-happy-nails { background:#e9d5ff;color:#7c2d12 }
+    .service-promo-packages { background:#e0e7ff;color:#3730a3 }
+    .service-therapeutic-heat { background:#ddd6fe;color:#5b21b6 }
+    .service-wax-out { background:#fed7aa;color:#9a3412 }
+    .service-es-facialy-for-you { background:#fecdd3;color:#9f1239 }
+    .service-face-body-contouring { background:#ccfbf1;color:#134e4a }
+    .service-laser-hair-removal { background:#d1fae5;color:#065f46 }
+    .service-picosure-laser { background:#fbcfe8;color:#831843 }
+    .service-warts-removal { background:#fef08a;color:#713f12 }
+    .service-co2-fractional { background:#bfdbfe;color:#1e3a8a }
+    .service-other { background:#e5e7eb;color:#374151 }
     .calendar-day { min-height:80px;border:1px solid #e5e7eb;background:white;position:relative;cursor:pointer;transition:.2s }
     .calendar-day:hover { background:#f9fafb }
     .calendar-day.today { background:#fef3c7 }
     .day-number { position:absolute;top:4px;left:6px;font-weight:bold;font-size:14px }
-    .appointments-container { margin-top:20px;padding:4px;overflow-y:auto;max-height:60px }
+    .appointments-container { margin-top:20px;padding:4px;display:flex;flex-direction:column;gap:1px }
+    .no-appointment-text { font-size:10px;color:#9ca3af;text-align:center;padding:4px;flex:1;display:flex;align-items:center;justify-content:center }
+    .form-input.error { border-color: #ef4444; }
+    .error-message { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
+    .error-message.show { display: block; }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
 
-  <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
@@ -40,21 +52,32 @@
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
-  <!-- Main Content -->
   <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
     <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
       <div class="flex justify-between items-center mb-6">
-        <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+        <input type="text" id="searchInput" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+          <div style="position: relative; display: inline-block;">
+            <button onclick="toggleNotifications()" style="background: none; border: none; cursor: pointer; position: relative;">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notificationBadge" style="display: none; position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; align-items: center; justify-content: center; font-weight: bold;"></span>
+            </button>
+            <div id="notificationPopup" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 10px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000;">
+              <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                <span>Notifications</span>
+                <button onclick="clearAllNotifications()" style="color: #da5c73; font-size: 13px; cursor: pointer; border: none; background: none; padding: 0;">Clear all</button>
+              </div>
+              <div id="notificationList"></div>
+            </div>
+          </div>
           <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
+            <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
             </div>
@@ -64,7 +87,6 @@
 
       <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-[#b97b8b]">CALENDAR</h1>
       
-      <!-- Calendar Navigation -->
       <div class="flex justify-between items-center mb-4">
         <button id="prevMonth" class="text-2xl text-[#da5c73] hover:text-[#b97b8b] cursor-pointer">
           <i class="fa-solid fa-chevron-left"></i>
@@ -78,14 +100,12 @@
         </button>
       </div>
 
-      <!-- Add Appointment Button -->
       <div class="flex justify-center mb-4">
         <button id="addAppointmentBtn" class="bg-[#da5c73] text-white px-6 py-2 rounded-full hover:bg-[#b97b8b] transition-colors">
           <i class="fa-solid fa-plus mr-2"></i>Add Appointment
         </button>
       </div>
 
-      <!-- Day Headers -->
       <div class="grid grid-cols-7 gap-2 text-center mb-2">
         <div class="font-bold bg-gray-200 rounded py-2">SUN</div>
         <div class="font-bold bg-gray-200 rounded py-2">MON</div>
@@ -96,78 +116,103 @@
         <div class="font-bold bg-gray-200 rounded py-2">SAT</div>
       </div>
 
-      <!-- Calendar Grid -->
       <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-16"></div>
 
-      <!-- Legend -->
-      <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-wrap justify-center gap-4">
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-green-300 rounded-full inline-block"></span><span class="text-xs">Eyelash</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-yellow-300 rounded-full inline-block"></span><span class="text-xs">Manicure</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-300 rounded-full inline-block"></span><span class="text-xs">Pedicure</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-pink-300 rounded-full inline-block"></span><span class="text-xs">Shaving</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-purple-300 rounded-full inline-block"></span><span class="text-xs">Threading</span></div>
+      <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-wrap justify-center gap-2 text-xs">
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#dcfce7] rounded inline-block"></span><span>Fleek Eyelash</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fef3c7] rounded inline-block"></span><span>Browmazing</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fecaca] rounded inline-block"></span><span>Woke Up</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fce7f3] rounded inline-block"></span><span>Express</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#e9d5ff] rounded inline-block"></span><span>Happy Nails</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#e0e7ff] rounded inline-block"></span><span>Promo</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#ddd6fe] rounded inline-block"></span><span>Therapeutic</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fed7aa] rounded inline-block"></span><span>Wax Out</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fecdd3] rounded inline-block"></span><span>ES-Facialy</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#ccfbf1] rounded inline-block"></span><span>Contouring</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#d1fae5] rounded inline-block"></span><span>Laser Hair</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fbcfe8] rounded inline-block"></span><span>Picosure</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fef08a] rounded inline-block"></span><span>Warts</span></div>
+        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#bfdbfe] rounded inline-block"></span><span>CO2</span></div>
       </div>
     </div>
   </main>
 
-  <!-- Appointment Modal -->
   <div id="appointmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-6 w-96 max-w-90vw">
-      <div class="flex justify-between items-center mb-4">
+    <div class="bg-white rounded-lg p-6 w-96 max-w-90vw max-h-[90vh] overflow-y-auto flex flex-col">
+      <div class="flex justify-between items-center mb-4 flex-shrink-0">
         <h2 id="modalTitle" class="text-xl font-bold text-[#da5c73]">Add Appointment</h2>
         <button id="closeModal" class="text-gray-500 hover:text-gray-700">
           <i class="fa-solid fa-times text-xl"></i>
         </button>
       </div>
       
-      <form id="appointmentForm">
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Customer Name *</label>
-          <input type="text" id="customerName" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Date *</label>
-          <input type="date" id="appointmentDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
-        </div>
-        
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Time *</label>
-          <input type="time" id="appointmentTime" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
-        </div>
+      <form id="appointmentForm" class="flex flex-col flex-1 min-h-0">
+        <div class="flex-1 overflow-y-auto pr-2">
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Customer Name *</label>
+            <input type="text" id="customerName" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+          </div>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Service *</label>
-          <select id="serviceType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
-            <option value="">Select a service</option>
-            <option value="fleek-eyelash">Fleek Eyelash</option>
-            <option value="browmazing">Browmazing</option>
-            <option value="woke-up-like-this">Woke Up Like This</option>
-            <option value="express-offer">Express Offer (30 mins.)</option>
-            <option value="happy-nails">Happy Nails – Classics</option>
-            <option value="promo-packages">Promo Packages</option>
-            <option value="therapeutic-heat">Therapeutic Heat</option>
-            <option value="wax-out">Wax – Out</option>
-            <option value="es-facialy-for-you">ES-Facialy For You</option>
-            <option value="face-body-contouring">Face and Body Contouring</option>
-            <option value="laser-hair-removal">Laser Hair Removal / Whitening</option>
-            <option value="picosure-laser">Picosure Laser Treatment</option>
-            <option value="warts-removal">Warts Removal Fractional Laser (Unlimited)</option>
-            <option value="co2-fractional">CO2 Fractional Laser Lay-Away</option>
-          </select>
-        </div>
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Email Address *</label>
+            <input type="email" id="customerEmail" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+          </div>
 
-        <div class="mb-4">
-          <label class="block text-sm font-medium mb-2">Phone Number</label>
-          <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]">
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Phone Number *</label>
+            <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" placeholder="09XXXXXXXXX" maxlength="11" required>
+            <span class="error-message" id="phoneError">Please enter a valid 11-digit Philippine number starting with 09</span>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Date *</label>
+            <input type="date" id="appointmentDate" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+            <span class="error-message" id="dateError">Please select a future date</span>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Time *</label>
+            <input type="time" id="appointmentTime" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+            <span class="error-message" id="timeError">Please select a future time</span>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Service *</label>
+            <select id="serviceType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+              <option value="">Select a service</option>
+              <option value="fleek-eyelash">FLEEK EYELASH</option>
+              <option value="browmazing">BROWMAZING</option>
+              <option value="woke-up-like-this">WOKE UP LIKE THIS</option>
+              <option value="express-offer">EXPRESS OFFER (30 MINS.)</option>
+              <option value="happy-nails">HAPPY NAILS – CLASSICS</option>
+              <option value="promo-packages">PROMO PACKAGES</option>
+              <option value="therapeutic-heat">THERAPEUTIC HEAT</option>
+              <option value="wax-out">WAX – OUT</option>
+              <option value="es-facialy-for-you">ES-FACIALY FOR YOU</option>
+              <option value="face-body-contouring">FACE AND BODY CONTOURING</option>
+              <option value="laser-hair-removal">LASER HAIR REMOVAL / WHITENING</option>
+              <option value="picosure-laser">PICOSURE LASER TREATMENT</option>
+              <option value="warts-removal">WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)</option>
+              <option value="co2-fractional">CO2 FRACTIONAL LASER LAY-AWAY</option>
+            </select>
+            <span class="error-message" id="serviceError">Please select a service</span>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Employee *</label>
+            <select id="employeeSelect" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+              <option value="">Select employee</option>
+            </select>
+            <span class="error-message" id="employeeError">Please select an employee</span>
+          </div>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Notes</label>
+            <textarea id="appointmentNotes" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" rows="3"></textarea>
+          </div>
         </div>
         
-        <div class="mb-6">
-          <label class="block text-sm font-medium mb-2">Notes</label>
-          <textarea id="appointmentNotes" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" rows="3"></textarea>
-        </div>
-        
-        <div class="flex gap-3">
+        <div class="flex gap-3 mt-4 flex-shrink-0 pt-4 border-t">
           <button type="submit" class="flex-1 bg-[#da5c73] text-white py-2 px-4 rounded hover:bg-[#b97b8b] transition-colors">
             Save Appointment
           </button>
@@ -183,12 +228,119 @@
   </div>
 
   <script>
+    let notifications = [];
+    let lastCustomerCheck = null;
+    let lastRegistrationCheck = null;
+
+    function toggleNotifications() {
+      const popup = document.getElementById('notificationPopup');
+      popup.style.display = popup.style.display === 'none' || popup.style.display === '' ? 'block' : 'none';
+    }
+
+    function toggleUserMenu() {
+      document.getElementById('userMenu').classList.toggle('hidden');
+    }
+
+    window.onclick = function(event) {
+      if (!event.target.closest('#notificationPopup') && !event.target.closest('button[onclick="toggleNotifications()"]')) {
+        document.getElementById('notificationPopup').style.display = 'none';
+      }
+      if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
+        document.getElementById('userMenu').classList.add('hidden');
+      }
+    }
+
+    function getTimeAgo(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      if (seconds < 60) return 'Just now';
+      if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+      if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+      return Math.floor(seconds / 86400) + ' days ago';
+    }
+
+    function updateNotificationUI() {
+      const badge = document.getElementById('notificationBadge');
+      const list = document.getElementById('notificationList');
+      
+      if (notifications.length > 0) {
+        badge.textContent = notifications.length;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (notifications.length === 0) {
+        list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #999; font-size: 14px;">No new notifications</div>';
+        return;
+      }
+      
+      list.innerHTML = notifications.map(notif => {
+        const timeAgo = getTimeAgo(notif.timestamp);
+        return `
+          <div onclick="handleNotificationClick('${notif.link}', '${notif.id}')" style="padding: 14px 16px; border-bottom: 1px solid #f9fafb; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; transition: background 0.2s ease;">
+            <div style="flex: 1;">
+              <div style="color: #333; font-size: 13px; line-height: 1.4; margin-bottom: 4px;">${notif.text}</div>
+              <div style="color: #999; font-size: 11px;">${timeAgo}</div>
+            </div>
+            <button onclick="event.stopPropagation(); removeNotification('${notif.id}')" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease;">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addNotification(notification) {
+      notifications.unshift({
+        ...notification,
+        id: Date.now() + Math.random()
+      });
+      
+      if (notifications.length > 20) {
+        notifications = notifications.slice(0, 20);
+      }
+      
+      updateNotificationUI();
+    }
+
+    function handleNotificationClick(link, notifId) {
+      removeNotification(notifId);
+      window.location.href = link;
+    }
+
+    function removeNotification(notifId) {
+      notifications = notifications.filter(n => n.id != notifId);
+      updateNotificationUI();
+    }
+
+    function clearAllNotifications() {
+      notifications = [];
+      updateNotificationUI();
+    }
+
+    document.getElementById('phoneNumber').addEventListener('input', function(e) {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      if (this.value && !/^09\d{0,9}$/.test(this.value)) {
+        this.classList.add('error');
+        document.getElementById('phoneError').classList.add('show');
+      } else {
+        this.classList.remove('error');
+        document.getElementById('phoneError').classList.remove('show');
+      }
+    });
+
+    function validatePhoneNumber(phone) {
+      return /^09\d{9}$/.test(phone);
+    }
+
     class Calendar {
       constructor(db) {
         this.currentDate = new Date();
-        this.appointments = [];
+        this.customers = [];
+        this.allStaff = [];
         this.editingId = null;
         this.selectedDate = null;
+        this.searchTerm = '';
         this.db = db;
         this.monthNames = [
           "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
@@ -199,8 +351,61 @@
 
       async init() {
         this.bindEvents();
-        await this.loadAppointments();
+        await this.loadUserInfo();
+        await this.loadStaff();
+        await this.initializeNotifications();
+        await this.loadCustomers();
         this.renderCalendar();
+        this.setMinDateTime();
+      }
+
+      async loadUserInfo() {
+        const currentUserEmail = localStorage.getItem('currentUserEmail');
+        if (currentUserEmail) {
+          try {
+            const userSnapshot = await this.db.collection("users")
+              .where("email", "==", currentUserEmail)
+              .limit(1)
+              .get();
+            
+            if (!userSnapshot.empty) {
+              const userData = userSnapshot.docs[0].data();
+              document.getElementById('usernameDisplay').textContent = userData.fullName || currentUserEmail;
+            }
+          } catch (error) {
+            console.error("Error loading user info:", error);
+          }
+        }
+      }
+
+      async loadStaff() {
+        try {
+          const snapshot = await this.db.collection("users").get();
+          this.allStaff = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          this.populateStaffDropdown();
+        } catch (error) {
+          console.error("Error fetching staff:", error);
+        }
+      }
+
+      populateStaffDropdown() {
+        const employeeSelect = document.getElementById('employeeSelect');
+        employeeSelect.innerHTML = '<option value="">Select employee</option>';
+        this.allStaff.forEach(staff => {
+          const option = document.createElement('option');
+          option.value = staff.fullName || staff.email;
+          option.textContent = staff.fullName || staff.email;
+          employeeSelect.appendChild(option);
+        });
+      }
+
+      setMinDateTime() {
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        document.getElementById('appointmentDate').min = dateStr;
       }
 
       bindEvents() {
@@ -214,15 +419,37 @@
         document.getElementById('appointmentModal').addEventListener('click', (e) => {
           if (e.target.id === 'appointmentModal') this.closeModal();
         });
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          this.searchTerm = e.target.value.toLowerCase();
+          this.renderCalendar();
+        });
       }
 
-      async loadAppointments() {
+      async loadCustomers() {
         try {
-          const snapshot = await this.db.collection("appointments").get();
-          this.appointments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const snapshot = await this.db.collection("customers").get();
+          this.customers = snapshot.docs
+            .map(doc => {
+              const data = doc.data();
+              
+              let normalizedDate = data.date;
+              if (data.date && !data.date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                const dateObj = new Date(data.date);
+                if (!isNaN(dateObj.getTime())) {
+                  normalizedDate = dateObj.toISOString().split('T')[0];
+                }
+              }
+              
+              return { 
+                id: doc.id, 
+                ...data,
+                date: normalizedDate
+              };
+            })
+            .filter(c => c.archived !== true);
         } catch (error) {
-          console.error("Error loading appointments:", error);
-          this.appointments = [];
+          console.error("Error loading customers:", error);
+          this.customers = [];
         }
       }
 
@@ -234,6 +461,19 @@
       nextMonth() {
         this.currentDate.setMonth(this.currentDate.getMonth() + 1);
         this.renderCalendar();
+      }
+
+      formatTime(timeStr) {
+        if (!timeStr) return '';
+        
+        if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
+          return timeStr;
+        }
+        
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
       }
 
       renderCalendar() {
@@ -256,13 +496,22 @@
         for (let day = 1; day <= daysInMonth; day++) {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
-          const dayAppointments = this.appointments.filter(apt => apt.date === dateStr);
+          let dayCustomers = this.customers.filter(cust => cust.date === dateStr);
+
+          if (this.searchTerm) {
+            dayCustomers = dayCustomers.filter(cust => 
+              (cust.name || '').toLowerCase().includes(this.searchTerm) ||
+              (cust.email || '').toLowerCase().includes(this.searchTerm) ||
+              (cust.phone || '').toLowerCase().includes(this.searchTerm) ||
+              (cust.service || '').toLowerCase().includes(this.searchTerm)
+            );
+          }
 
           calendarHTML += `
             <div class="calendar-day ${isToday ? 'today' : ''}" onclick="calendar.selectDay('${dateStr}')">
               <div class="day-number">${day}</div>
               <div class="appointments-container">
-                ${this.renderAppointments(dayAppointments)}
+                ${dayCustomers.length > 0 ? this.renderAppointments(dayCustomers) : '<div class="no-appointment-text">No appointment</div>'}
               </div>
             </div>
           `;
@@ -272,22 +521,16 @@
       }
 
       getServiceClass(serviceValue) {
-        const mapping = {
-          "fleek-eyelash": "service-eyelash",
-          "browmazing": "service-manicure",
-          "woke-up-like-this": "service-pedicure",
-          "express-offer": "service-shaving",
-          "happy-nails": "service-threading"
-        };
-        return mapping[serviceValue] || "service-other";
+        return `service-${serviceValue}`;
       }
 
-      renderAppointments(appointments) {
-        return appointments.map(apt => {
-          const serviceClass = this.getServiceClass(apt.service);
+      renderAppointments(customers) {
+        return customers.map(cust => {
+          const serviceClass = this.getServiceClass(cust.service);
+          const formattedTime = this.formatTime(cust.time);
           return `
-            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment('${apt.id}')">
-              ${apt.time} ${apt.name || ""} (${apt.serviceLabel || apt.service})
+            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment('${cust.id}')">
+              ${formattedTime} ${cust.name || ""} (${cust.service})
             </div>
           `;
         }).join('');
@@ -303,136 +546,299 @@
         document.getElementById('appointmentModal').classList.remove('hidden');
         document.getElementById('modalTitle').textContent = editing ? 'Edit Appointment' : 'Add Appointment';
         document.getElementById('deleteAppointment').classList.toggle('hidden', !editing);
-        if (!editing) document.getElementById('appointmentForm').reset();
+        
+        const isReadonly = editing;
+        document.getElementById('customerName').readOnly = isReadonly;
+        document.getElementById('customerEmail').readOnly = isReadonly;
+        document.getElementById('phoneNumber').readOnly = isReadonly;
+        
+        if (isReadonly) {
+          document.getElementById('customerName').classList.add('bg-gray-100', 'cursor-not-allowed');
+          document.getElementById('customerEmail').classList.add('bg-gray-100', 'cursor-not-allowed');
+          document.getElementById('phoneNumber').classList.add('bg-gray-100', 'cursor-not-allowed');
+        } else {
+          document.getElementById('customerName').classList.remove('bg-gray-100', 'cursor-not-allowed');
+          document.getElementById('customerEmail').classList.remove('bg-gray-100', 'cursor-not-allowed');
+          document.getElementById('phoneNumber').classList.remove('bg-gray-100', 'cursor-not-allowed');
+        }
+        
+        if (!editing) {
+          document.getElementById('appointmentForm').reset();
+          if (this.selectedDate) {
+            document.getElementById('appointmentDate').value = this.selectedDate;
+          }
+        }
       }
 
       closeModal() {
         document.getElementById('appointmentModal').classList.add('hidden');
         this.editingId = null;
+        this.selectedDate = null;
         document.getElementById('appointmentForm').reset();
+        
+        document.getElementById('customerName').readOnly = false;
+        document.getElementById('customerEmail').readOnly = false;
+        document.getElementById('phoneNumber').readOnly = false;
+        document.getElementById('customerName').classList.remove('bg-gray-100', 'cursor-not-allowed');
+        document.getElementById('customerEmail').classList.remove('bg-gray-100', 'cursor-not-allowed');
+        document.getElementById('phoneNumber').classList.remove('bg-gray-100', 'cursor-not-allowed');
+        
+        ['appointmentDate', 'appointmentTime', 'serviceType', 'employeeSelect', 'phoneNumber'].forEach(id => {
+          document.getElementById(id).classList.remove('error');
+        });
+        ['dateError', 'timeError', 'serviceError', 'employeeError', 'phoneError'].forEach(id => {
+          document.getElementById(id).classList.remove('show');
+        });
       }
 
-async saveAppointment(e) {
-  e.preventDefault();
-  const serviceSelect = document.getElementById('serviceType');
-  const serviceValue = serviceSelect.value;
-  const serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].text;
-
-  const appointmentData = {
-    name: document.getElementById('customerName').value,
-    date: document.getElementById('appointmentDate').value,
-    time: document.getElementById('appointmentTime').value,
-    service: serviceValue,
-    serviceLabel: serviceLabel,
-    phone: document.getElementById('phoneNumber').value,
-    notes: document.getElementById('appointmentNotes').value,
-    status: "Pending",
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  };
-
-  try {
-    if (this.editingId) {
-      // Editing existing appointment
-      const apptRef = this.db.collection("appointments").doc(this.editingId);
-      await apptRef.set(appointmentData, { merge: true });
-
-      // Update linked customer if exists
-      const apptDoc = await apptRef.get();
-      const { customerRef } = apptDoc.data();
-      if (customerRef) {
-        await this.db.collection("customers").doc(customerRef).set(appointmentData, { merge: true });
+      validateFutureDateTime(dateString, timeString) {
+        const selectedDateTime = new Date(dateString + ' ' + timeString);
+        const now = new Date();
+        return selectedDateTime > now;
       }
-    } else {
-      // Create customer first
-      const custRef = this.db.collection("customers").doc();
-      await custRef.set(appointmentData);
 
-      // Create appointment and link to customer
-      const apptRef = await this.db.collection("appointments").add({
-        ...appointmentData,
-        customerRef: custRef.id
-      });
-      appointmentData.id = apptRef.id;
-    }
+      async saveAppointment(e) {
+        e.preventDefault();
+        
+        const date = document.getElementById('appointmentDate').value;
+        const time = document.getElementById('appointmentTime').value;
+        const service = document.getElementById('serviceType').value;
+        const employee = document.getElementById('employeeSelect').value;
+        const phone = document.getElementById('phoneNumber').value;
+        
+        ['appointmentDate', 'appointmentTime', 'serviceType', 'employeeSelect', 'phoneNumber'].forEach(id => {
+          document.getElementById(id).classList.remove('error');
+        });
+        ['dateError', 'timeError', 'serviceError', 'employeeError', 'phoneError'].forEach(id => {
+          document.getElementById(id).classList.remove('show');
+        });
 
-    await this.loadAppointments();
-    this.closeModal();
-    this.renderCalendar();
-  } catch (error) {
-    console.error("Error saving appointment:", error);
-  }
-}
+        let hasError = false;
 
-async deleteAppointment() {
-  if (!this.editingId) return;
-  try {
-    const apptRef = this.db.collection("appointments").doc(this.editingId);
-    const apptDoc = await apptRef.get();
-    if (apptDoc.exists) {
-      const { customerRef } = apptDoc.data();
-      // delete appointment
-      await apptRef.delete();
-      // also delete linked customer
-      if (customerRef) {
-        await this.db.collection("customers").doc(customerRef).delete();
+        if (!validatePhoneNumber(phone)) {
+          document.getElementById('phoneNumber').classList.add('error');
+          document.getElementById('phoneError').classList.add('show');
+          hasError = true;
+        }
+
+        if (!this.validateFutureDateTime(date, time)) {
+          document.getElementById('appointmentDate').classList.add('error');
+          document.getElementById('appointmentTime').classList.add('error');
+          document.getElementById('dateError').classList.add('show');
+          document.getElementById('timeError').classList.add('show');
+          hasError = true;
+        }
+
+        if (!service) {
+          document.getElementById('serviceType').classList.add('error');
+          document.getElementById('serviceError').classList.add('show');
+          hasError = true;
+        }
+
+        if (!employee) {
+          document.getElementById('employeeSelect').classList.add('error');
+          document.getElementById('employeeError').classList.add('show');
+          hasError = true;
+        }
+
+        if (hasError) return;
+
+        const serviceSelect = document.getElementById('serviceType');
+        const serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].text;
+        const dateTime = new Date(date + ' ' + time);
+        
+        // Convert 24-hour time to 12-hour format
+        const [hours, minutes] = time.split(':').map(Number);
+        const period = hours >= 12 ? 'PM' : 'AM';
+        const displayHours = hours % 12 || 12;
+        const formattedTime = `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
+
+        const customerData = {
+          name: document.getElementById('customerName').value,
+          email: document.getElementById('customerEmail').value,
+          date: date,
+          time: formattedTime,
+          service: service,
+          phone: phone,
+          staff: employee,
+          notes: document.getElementById('appointmentNotes').value,
+          status: "Pending",
+          appointment: dateTime.toLocaleString(),
+          archived: false
+        };
+
+        if (!this.editingId) {
+          customerData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+        }
+
+        try {
+          if (this.editingId) {
+            await this.db.collection("customers").doc(this.editingId).update(customerData);
+            alert('Appointment updated successfully!');
+          } else {
+            await this.db.collection("customers").add(customerData);
+            alert('Appointment created successfully!');
+          }
+
+          await this.loadCustomers();
+          this.closeModal();
+          this.renderCalendar();
+        } catch (error) {
+          console.error("Error saving appointment:", error);
+          alert('Failed to save appointment. Please try again.');
+        }
+      }
+
+      async deleteAppointment() {
+        if (!this.editingId || !confirm('Are you sure you want to delete this appointment?')) return;
+        
+        try {
+          await this.db.collection("customers").doc(this.editingId).delete();
+          await this.loadCustomers();
+          this.closeModal();
+          this.renderCalendar();
+          alert('Appointment deleted successfully!');
+        } catch (error) {
+          console.error("Error deleting appointment:", error);
+          alert('Failed to delete appointment. Please try again.');
+        }
+      }
+
+      async editAppointment(id) {
+        const customer = this.customers.find(cust => cust.id === id);
+        if (!customer) return;
+
+        this.editingId = id;
+        this.openModal(true);
+
+        document.getElementById('customerName').value = customer.name || '';
+        document.getElementById('customerEmail').value = customer.email || '';
+        document.getElementById('phoneNumber').value = customer.phone || '';
+        document.getElementById('appointmentDate').value = customer.date || '';
+
+        if (customer.time) {
+          let time = customer.time;
+          if (time.toLowerCase().includes('am') || time.toLowerCase().includes('pm')) {
+            const [raw, modifier] = time.split(' ');
+            let [hours, minutes] = raw.split(':').map(Number);
+            if (modifier.toLowerCase() === 'pm' && hours < 12) hours += 12;
+            if (modifier.toLowerCase() === 'am' && hours === 12) hours = 0;
+            time = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+          }
+          document.getElementById('appointmentTime').value = time;
+        }
+
+        const serviceSelect = document.getElementById('serviceType');
+        if (customer.service) {
+          serviceSelect.value = customer.service;
+        } else {
+          serviceSelect.selectedIndex = 0;
+        }
+
+        const employeeSelect = document.getElementById('employeeSelect');
+        if (customer.staff) {
+          employeeSelect.value = customer.staff;
+        } else {
+          employeeSelect.selectedIndex = 0;
+        }
+
+        document.getElementById('appointmentNotes').value = customer.notes || '';
+      }
+
+      async checkForNewCustomers() {
+        try {
+          const snapshot = await this.db.collection("customers")
+            .orderBy("createdAt", "desc")
+            .limit(10)
+            .get();
+          
+          const latestCustomer = snapshot.docs[0];
+          if (latestCustomer && lastCustomerCheck) {
+            const customerTime = latestCustomer.data().createdAt?.toMillis();
+            if (customerTime && customerTime > lastCustomerCheck) {
+              const customerData = latestCustomer.data();
+              addNotification({
+                type: 'customer',
+                text: `New customer added: ${customerData.name}`,
+                link: 'customer.html',
+                timestamp: new Date()
+              });
+            }
+          }
+          
+          if (latestCustomer) {
+            lastCustomerCheck = latestCustomer.data().createdAt?.toMillis() || Date.now();
+          }
+        } catch (error) {
+          console.error("Error checking customers:", error);
+        }
+      }
+
+      async checkForNewRegistrations() {
+        try {
+          const snapshot = await this.db.collection("users")
+            .orderBy("createdAt", "desc")
+            .limit(10)
+            .get();
+          
+          const latestUser = snapshot.docs[0];
+          if (latestUser && lastRegistrationCheck) {
+            const userTime = latestUser.data().createdAt?.toMillis();
+            if (userTime && userTime > lastRegistrationCheck) {
+              const userData = latestUser.data();
+              addNotification({
+                type: 'registration',
+                text: `New user registered: ${userData.fullName || userData.email}`,
+                link: 'Registration.html',
+                timestamp: new Date()
+              });
+            }
+          }
+          
+          if (latestUser) {
+            lastRegistrationCheck = latestUser.data().createdAt?.toMillis() || Date.now();
+          }
+        } catch (error) {
+          console.error("Error checking registrations:", error);
+        }
+      }
+
+      async initializeNotifications() {
+        try {
+          const customerSnapshot = await this.db.collection("customers")
+            .orderBy("createdAt", "desc")
+            .limit(1)
+            .get();
+          
+          if (!customerSnapshot.empty) {
+            lastCustomerCheck = customerSnapshot.docs[0].data().createdAt?.toMillis() || Date.now();
+          } else {
+            lastCustomerCheck = Date.now();
+          }
+
+          const userSnapshot = await this.db.collection("users")
+            .orderBy("createdAt", "desc")
+            .limit(1)
+            .get();
+          
+          if (!userSnapshot.empty) {
+            lastRegistrationCheck = userSnapshot.docs[0].data().createdAt?.toMillis() || Date.now();
+          } else {
+            lastRegistrationCheck = Date.now();
+          }
+        } catch (error) {
+          console.error("Error initializing notifications:", error);
+          lastCustomerCheck = Date.now();
+          lastRegistrationCheck = Date.now();
+        }
+
+        setInterval(() => {
+          this.checkForNewCustomers();
+          this.checkForNewRegistrations();
+        }, 30000);
       }
     }
 
-    await this.loadAppointments();
-    this.closeModal();
-    this.renderCalendar();
-  } catch (error) {
-    console.error("Error deleting appointment:", error);
-  }
-}
-  
-async editAppointment(id) {
-  const appointment = this.appointments.find(apt => apt.id === id);
-  if (!appointment) return;
-
-  this.editingId = id;
-  this.openModal(true);
-
-  document.getElementById('customerName').value = appointment.name || "";
-  document.getElementById('appointmentDate').value = appointment.date || "";
-
-  // ✅ Fix time for <input type="time">
-  if (appointment.time) {
-    let time = appointment.time;
-    if (time.toLowerCase().includes("am") || time.toLowerCase().includes("pm")) {
-      const [raw, modifier] = time.split(" ");
-      let [hours, minutes] = raw.split(":").map(Number);
-      if (modifier.toLowerCase() === "pm" && hours < 12) hours += 12;
-      if (modifier.toLowerCase() === "am" && hours === 12) hours = 0;
-      time = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
-    }
-    document.getElementById('appointmentTime').value = time;
-  }
-
-  // ✅ Fix service dropdown
-  const serviceSelect = document.getElementById('serviceType');
-  if (appointment.service) {
-    // Try to match value (slug)
-    const match = [...serviceSelect.options].find(opt => opt.value === appointment.service);
-    if (match) serviceSelect.value = match.value;
-  }
-  if (!serviceSelect.value && appointment.serviceLabel) {
-    // Fallback: match by label text
-    const match = [...serviceSelect.options].find(
-      opt => opt.textContent.trim().toLowerCase() === appointment.serviceLabel.trim().toLowerCase()
-    );
-    if (match) serviceSelect.value = match.value;
-  }
-  if (!serviceSelect.value) {
-    serviceSelect.selectedIndex = 0; // default to "Select a service"
-  }
-
-  document.getElementById('phoneNumber').value = appointment.phone || "";
-  document.getElementById('appointmentNotes').value = appointment.notes || "";
-}
-    }
-
-    // Firebase Config
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
       authDomain: "skinship-1ff4b.firebaseapp.com",
@@ -444,8 +850,12 @@ async editAppointment(id) {
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ✅ Create calendar instance
     const calendar = new Calendar(db);
+
+    function logout() {
+      localStorage.removeItem('currentUserEmail');
+      window.location.href = 'Login.html';
+    }
   </script>
 </body>
 </html>

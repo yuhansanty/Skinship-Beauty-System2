@@ -5,8 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Staff List | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar-btn { 
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: .3s;
+    }
+    .sidebar-btn:hover { 
+      background: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+    .sidebar-btn.active { 
+      background: #da5c73;
+      color: white;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
@@ -44,7 +68,7 @@
         </div>
       </div>
 
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-[#b97b8b]">STAFF</h1>
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-[#b97b8b]">STAFF</h1>
 
       <!-- Staff Table -->
       <div class="overflow-x-auto rounded-lg mt-4 flex-1">
@@ -83,7 +107,7 @@
         </table>
       </div>
       <div class="mt-4 flex justify-start">
-        <button onclick="closeHistory()" class="bg-[#e6bfc7] text-black px-4 py-2 rounded-lg hover:bg-[#d39dab]">Close</button>
+        <button onclick="closeHistory()" class="bg-[#da5c73] text-white px-4 py-2 rounded-full hover:bg-[#b97b8b] transition-colors">Close</button>
       </div>
     </div>
   </div>
@@ -138,16 +162,6 @@
     window.openHistory = openHistory;
     window.closeHistory = closeHistory;
 
-    // TOGGLE AVAILABILITY (ensures fullname always stored)
-    async function toggleAvailability(staffId, current, fullName) {
-      const staffRef = doc(db, "users", staffId);
-      await updateDoc(staffRef, { 
-        availability: !current,
-        fullName: fullName || "Unnamed Staff"
-      });
-    }
-    window.toggleAvailability = toggleAvailability;
-
     // MAIN
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -156,13 +170,25 @@
       }
       usernameSpan.textContent = user.email;
 
-      // Ensure today's log exists
+      // Ensure today's log exists and set availability to true on login
       const today = new Date().toLocaleDateString();
       const logsRef = collection(db, "staffLogs", user.uid, "history");
+      
+      // Get all logs for today
       const todayQuery = query(logsRef, where("date", "==", today));
       const todaySnap = await getDocs(todayQuery);
-
-      if (todaySnap.empty) {
+      
+      // Check if we need a new log entry
+      let needsNewLog = true;
+      if (!todaySnap.empty) {
+        // Check if any log doesn't have a clockOut (still active session)
+        const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
+        if (activeSession) {
+          needsNewLog = false;
+        }
+      }
+      
+      if (needsNewLog) {
         await addDoc(logsRef, {
           date: today,
           clockIn: new Date().toLocaleString(),
@@ -170,6 +196,12 @@
           timestamp: serverTimestamp()
         });
       }
+
+      // Set availability to true when logging in (clocking in)
+      const staffRef = doc(db, "users", user.uid);
+      await updateDoc(staffRef, { 
+        availability: true
+      });
 
       // Realtime staff list
       onSnapshot(collection(db, "users"), async (snapshot) => {
@@ -183,7 +215,10 @@
           );
           const logsSnap = await getDocs(logsQuery);
           const latest = logsSnap.docs[0]?.data() || {};
-          const isAvailable = staff.availability === true;
+          
+          // Determine availability based on clock in/out status
+          const isClockedIn = latest.clockIn && !latest.clockOut;
+          const isAvailable = isClockedIn;
 
           rows.push(`
             <tr class="border-b">
@@ -191,11 +226,9 @@
               <td class="px-4 py-2">${staff.gender || "N/A"}</td>
               <td class="px-4 py-2">${staff.mobile || "N/A"}</td>
               <td class="px-4 py-2">
-                <button 
-                  class="px-3 py-1 rounded ${isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}" 
-                  onclick="toggleAvailability('${docSnap.id}', ${isAvailable}, '${staff.fullName || ""}')">
+                <span class="px-3 py-1 rounded ${isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
                   ${isAvailable ? "Available" : "Not Available"}
-                </button>
+                </span>
               </td>
               <td class="px-4 py-2">${latest.clockIn || "N/A"}</td>
               <td class="px-4 py-2">${latest.clockOut || "N/A"}</td>
@@ -211,22 +244,51 @@
       });
     });
 
-    // LOGOUT 
-    logoutBtn.addEventListener("click", async () => {
+    // Function to handle clock out
+    async function handleClockOut() {
       const user = auth.currentUser;
       if (user) {
         const today = new Date().toLocaleDateString();
         const logsRef = collection(db, "staffLogs", user.uid, "history");
+        
+        // Get all logs for today
         const todayQuery = query(logsRef, where("date", "==", today));
         const todaySnap = await getDocs(todayQuery);
+        
         if (!todaySnap.empty) {
-          const logId = todaySnap.docs[0].id;
-          await setDoc(doc(db, "staffLogs", user.uid, "history", logId), {
-            clockOut: new Date().toLocaleString()
-          }, { merge: true });
+          // Find the log without a clockOut (active session)
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
+          }
         }
+
+        // Set availability to false when logging out (clocking out)
+        const staffRef = doc(db, "users", user.uid);
+        await updateDoc(staffRef, { 
+          availability: false
+        });
       }
+    }
+
+    // LOGOUT BUTTON - Clock out and sign out
+    logoutBtn.addEventListener("click", async () => {
+      await handleClockOut();
       await signOut(auth);
+    });
+
+    // AUTO CLOCK OUT - When closing tab/window or navigating away
+    window.addEventListener("beforeunload", async (e) => {
+      await handleClockOut();
+    });
+
+    // AUTO CLOCK OUT - When page visibility changes (tab switching/minimizing)
+    document.addEventListener("visibilitychange", async () => {
+      if (document.visibilityState === "hidden") {
+        await handleClockOut();
+      }
     });
   </script>
 </body>
