@@ -21,10 +21,71 @@
     .section-title p { margin-bottom: 30px; }
     .contact-form .form-group { margin-bottom: 20px; }
     .form-group label { display: block; margin-bottom: 5px; font-weight: 500; }
-    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; font-family: inherit; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-family: inherit;
+    }
     .form-group textarea { min-height: 150px; }
     .btn { background: var(--primary-pink); color: #fff; border: none; padding: 14px 32px; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: var(--dark-pink); }
+    a[href="landingpage.html"] {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      background: var(--primary-pink);
+      color: #fff;
+      padding: 10px 22px;
+      border-radius: 5px;
+      text-decoration: none;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      z-index: 1000;
+      display: inline-block;
+      transition: background 0.2s, font-size 0.2s, padding 0.2s;
+    }
+    /* Ensure Back button never overlaps heading (override inline styles) */
+    a[href="landingpage.html"] {
+      position: static !important;
+      top: auto !important;
+      left: auto !important;
+      display: inline-block !important;
+      padding: 8px 16px !important;
+      margin: 12px 0 8px 0 !important;
+      z-index: auto !important;
+    }
+    @media (max-width: 600px) {
+      a[href="landingpage.html"] {
+        position: static;
+        display: block;
+        width: fit-content;
+        font-size: 1rem;
+        padding: 7px 16px;
+        margin: 0 auto 12px auto;
+        margin-top: 8px;
+      }
+      .section-title {
+        margin-top: 0;
+      }
+      .container {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        margin: 0 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+        padding: 18px 2vw !important;
+        box-sizing: border-box !important;
+      }
+      .form-group input, .form-group textarea, .form-group select {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+    }
   </style>
 </head>
 <body>

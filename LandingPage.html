@@ -13,6 +13,8 @@
             --dark-pink: #c2185b;
             --text-color: #4a2c3a;
             --white: #ffffff;
+            /* Approx header height across breakpoints */
+            --header-approx-h: clamp(80px, 16vw, 140px);
         }
         
         * {
@@ -31,7 +33,7 @@
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 clamp(12px, 3vw, 24px);
         }
         
         /* Header Styles */
@@ -47,14 +49,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 18px 0 8px 0;
+            padding: clamp(12px, 2.5vw, 18px) 0 clamp(6px, 1.5vw, 10px) 0;
         }
         .header-logo {
             display: flex;
             align-items: center;
         }
         .header-logo .logo {
-            font-size: 28px;
+            font-size: clamp(20px, 4vw, 28px);
             font-weight: 700;
             color: var(--primary-pink);
             letter-spacing: 1px;
@@ -64,7 +66,7 @@
         }
         .header-contact .contact-phone {
             font-weight: bold;
-            font-size: 18px;
+            font-size: clamp(14px, 2.2vw, 18px);
             color: var(--primary-pink);
         }
         .header-contact .contact-label {
@@ -73,8 +75,8 @@
         }
         .header-contact .contact-hours {
             font-weight: bold;
-            font-size: 18px;
-            margin-left: 30px;
+            font-size: clamp(14px, 2.2vw, 18px);
+            margin-left: clamp(12px, 4vw, 30px);
             color: var(--primary-pink);
         }
         .header-contact .contact-days {
@@ -89,6 +91,32 @@
             padding: 0 0 0 0;
             background: var(--light-pink);
         }
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.06);
+            background: #fff;
+            color: var(--primary-pink);
+            cursor: pointer;
+        }
+        .mobile-menu-panel {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: var(--header-approx-h);
+            background: var(--white);
+            border-bottom: 1px solid #f1c9d6;
+            box-shadow: 0 8px 18px rgba(232,62,140,0.08);
+            z-index: 200;
+        }
+        .mobile-menu-panel.open { display: block; }
+        .mobile-menu-list { list-style: none; margin: 0; padding: 12px 16px; display: grid; gap: 8px; }
+        .mobile-menu-list a { color: var(--dark-pink); text-decoration: none; font-weight: 600; padding: 10px 4px; display: block; }
         .header-nav ul {
             display: flex;
             list-style: none;
@@ -96,7 +124,7 @@
             margin: 0;
         }
         .header-nav ul li {
-            margin-right: 40px;
+            margin-right: clamp(14px, 4vw, 40px);
         }
         .header-nav ul li:last-child {
             margin-right: 0;
@@ -129,28 +157,32 @@
         /* Hero Section */
         .hero {
             background: linear-gradient(135deg, var(--light-pink) 0%, var(--white) 100%);
-            padding: 80px 0;
+            padding: clamp(32px, 6vw, 64px) 0;
             text-align: center;
+            min-height: calc(100vh - var(--header-approx-h));
+            display: flex;
+            align-items: center;
         }
         
         .hero h1 {
-            font-size: 48px;
-            margin-bottom: 20px;
+            font-size: clamp(28px, 6vw, 48px);
+            margin-bottom: clamp(12px, 2.5vw, 20px);
             color: var(--dark-pink);
         }
         
         .hero p {
-            font-size: 20px;
-            max-width: 700px;
-            margin: 0 auto 30px;
+            font-size: clamp(14px, 2.6vw, 20px);
+            max-width: 780px;
+            margin: 0 auto clamp(16px, 4vw, 30px);
             color: var(--text-color);
+            padding: 0 clamp(8px, 2vw, 0);
         }
         
         .btn {
             display: inline-block;
             background-color: var(--primary-pink);
             color: white;
-            padding: 12px 30px;
+            padding: clamp(10px, 2.5vw, 12px) clamp(20px, 5vw, 30px);
             border-radius: 30px;
             text-decoration: none;
             font-weight: 600;
@@ -163,7 +195,7 @@
         
         /* Services Section */
         .services {
-            padding: 80px 0;
+            padding: clamp(48px, 8vw, 80px) 0;
             background-color: var(--white);
         }
         
@@ -173,9 +205,9 @@
         }
         
         .section-title h2 {
-            font-size: 36px;
+            font-size: clamp(22px, 4.5vw, 36px);
             color: var(--dark-pink);
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 2vw, 15px);
         }
         
         .section-title p {
@@ -186,15 +218,14 @@
         
         .services-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(2, 1fr);
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(16px, 3vw, 30px);
         }
         
         .service-card {
             background-color: var(--light-pink);
             border-radius: 10px;
-            padding: 30px;
+            padding: clamp(16px, 3vw, 30px);
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
         }
@@ -205,9 +236,9 @@
         }
         
         .service-icon {
-            font-size: 40px;
+            font-size: clamp(28px, 5vw, 40px);
             color: var(--primary-pink);
-            margin-bottom: 20px;
+            margin-bottom: clamp(12px, 2.5vw, 20px);
         }
         
         .service-card h3 {
@@ -217,14 +248,21 @@
         
         /* Testimonials Section */
         .testimonials {
-            padding: 80px 0;
+            padding: clamp(48px, 8vw, 80px) 0;
             background-color: var(--light-pink);
         }
         
         .testimonial-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: clamp(16px, 3vw, 30px);
+        }
+        /* Scroll reveal animations */
+        .reveal { opacity: 0; transform: translateX(40px); transition: transform .6s ease, opacity .6s ease; transition-delay: var(--reveal-delay, 0ms); will-change: transform, opacity; }
+        .reveal.from-left { transform: translateX(-40px); }
+        .reveal.in-view { opacity: 1; transform: translateX(0); }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
         }
         
         .testimonial-card {
@@ -246,14 +284,14 @@
         
         /* About Section */
         .about {
-            padding: 80px 0;
+            padding: clamp(48px, 8vw, 80px) 0;
             background-color: var(--white);
         }
         
         .about-content {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: clamp(20px, 4vw, 50px);
             align-items: center;
         }
         
@@ -265,7 +303,7 @@
         
         /* Contact Section */
         .contact {
-            padding: 80px 0;
+            padding: clamp(48px, 8vw, 80px) 0;
             background-color: var(--light-pink);
         }
         
@@ -302,14 +340,14 @@
         footer {
             background-color: var(--dark-pink);
             color: white;
-            padding: 50px 0 20px;
+            padding: clamp(32px, 6vw, 50px) 0 20px;
         }
         
         .footer-content {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(16px, 3vw, 30px);
+            margin-bottom: clamp(24px, 4vw, 40px);
         }
         
         .footer-section h3 {
@@ -363,26 +401,71 @@
         }
         
         /* Responsive Styles */
+        @media (max-width: 1024px) {
+            .header-contact { text-align: left; }
+        }
         @media (max-width: 768px) {
-            .header-container {
-                flex-direction: column;
-            }
-            
-            nav ul {
-                margin-top: 20px;
-            }
-            
-            .hero h1 {
-                font-size: 36px;
-            }
-            
-            .about-content {
-                grid-template-columns: 1fr;
-            }
-            
+            .header-container { flex-direction: column; }
+            nav ul { margin-top: 16px; }
+            .header-top { align-items: flex-start; gap: 8px; }
+            .header-contact { display: none; }
+            .header-contact .contact-hours { margin-left: 0; }
+            .header-nav { padding: 8px 0; position: relative; }
+            .header-nav ul { display: none; }
+            .header-social { display: none; }
+            .mobile-menu-btn { display: inline-flex; }
+            .hero { min-height: calc(100svh - var(--header-approx-h)); }
+        }
+        @media (max-width: 480px) {
+            .container { padding: 0 8px; }
+            .header-nav ul li { margin-right: 8px; }
+            .btn { width: 100%; max-width: 320px; }
             .services-grid,
-            .testimonial-grid {
-                grid-template-columns: 1fr;
+            .testimonial-grid,
+            .about-content,
+            .footer-content {
+                grid-template-columns: 1fr !important;
+            }
+            .service-card,
+            .testimonial-card,
+            .about-text,
+            .about-image,
+            .footer-section {
+                margin-bottom: 18px;
+            }
+            .about-content {
+                gap: 12px !important;
+            }
+            .about-image img {
+                max-width: 100%;
+                height: auto;
+            }
+            .section-title h2 {
+                font-size: 1.3rem;
+            }
+            .section-title p {
+                font-size: 1rem;
+            }
+            .location > div[style*='position: relative'] > div[style*='position: absolute'] {
+                position: static !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 0 16px 0 !important;
+                border-radius: 12px !important;
+                box-shadow: none !important;
+                padding: 16px 8px !important;
+                left: 0 !important;
+                right: 0 !important;
+            }
+            .location iframe {
+                min-height: 200px !important;
+            }
+            footer {
+                padding: 24px 0 10px 0 !important;
+            }
+            .footer-content {
+                gap: 10px !important;
+                margin-bottom: 16px !important;
             }
         }
     </style>
@@ -413,6 +496,17 @@
                     <a href="https://www.facebook.com/theskinshipbeauty"><i class="fab fa-facebook-f"></i></a>
                     <a href="https://www.instagram.com/skinship_ph/"><i class="fab fa-instagram"></i></a>
                 </div>
+                <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open menu" aria-expanded="false">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+            <div id="mobileMenuPanel" class="mobile-menu-panel">
+                <ul class="mobile-menu-list">
+                    <li><a href="#services" onclick="toggleMenu(false)">SERVICES</a></li>
+                    <li><a href="#testimonials" onclick="toggleMenu(false)">REVIEWS</a></li>
+                    <li><a href="#about" onclick="toggleMenu(false)">ABOUT</a></li>
+                    <li><a href="#location" onclick="toggleMenu(false)">LOCATION</a></li>
+                </ul>
             </div>
         </div>
     </header>
@@ -427,7 +521,7 @@
     </section>
 
     <!-- Services Section -->
-    <section class="services" id="services">
+    <section class="services reveal from-left" id="services">
         <div class="container">
             <div class="section-title">
                 <h2>Our Services</h2>
@@ -501,7 +595,7 @@
                 <h2>Client Reviews</h2>
                 <p>See what our clients have to say about their experience at Skinship Beauty.</p>
             </div>
-            <div class="testimonial-grid">
+            <div class="testimonial-grid reveal" id="testimonialsGrid">
                 <div class="testimonial-card">
                     <p class="testimonial-text">"Love the services from nails, to carbon laser black doll, hair removal , hifu, cryolysis one stop aesthetic clinic . Staffs are all friendly"</p>
                     <p class="testimonial-author">-Teresa Artemovabu</p>
@@ -547,7 +641,7 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
                 <h2>About Skinship Beauty</h2>
                 <p>Learn more about our story and what makes us different.</p>
             </div>
-            <div class="about-content">
+            <div class="about-content reveal from-left">
                 <div class="about-text">
                     <h2>Our Story</h2>
                     <p>Skinship Beauty was founded with a simple mission: to provide exceptional grooming services in a relaxing and welcoming environment. Our team of skilled professionals is dedicated to helping you look and feel your best.</p>
@@ -555,7 +649,7 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
 
                 </div>
                 <div class="about-image">
-                    <img src="store.jpg" alt="Skinship Beauty Store" style="width:100%; border-radius:10px; background-color: #ffe6f0; padding: 0; display: block;" />
+                    <img src="store.jpg" alt="Skinship Beauty Store" class="reveal" style="width:100%; border-radius:10px; background-color: #ffe6f0; padding: 0; display: block;" />
                 </div>
             </div>
         </div>
@@ -563,12 +657,12 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
 
     <!-- Location Section -->
     <section class="location" id="location" style="background: var(--light-pink); padding: 0;">
-        <div style="width: 100vw;">
-            <h2 style="text-align:center; color:var(--primary-pink); font-size:2.5rem; font-family:inherit; font-weight:700; margin: 0; padding: 40px 0 10px 0; letter-spacing: 1px;">Visit Skinship Beauty</h2>
+        <div style="width: 100%;">
+            <h2 style="text-align:center; color:var(--primary-pink); font-size: clamp(1.5rem, 6vw, 2.5rem); font-family:inherit; font-weight:700; margin: 0; padding: clamp(24px, 6vw, 40px) 0 clamp(8px, 3vw, 10px) 0; letter-spacing: 1px;">Visit Skinship Beauty</h2>
         </div>
-        <div style="width: 100vw; height: 60vh; position: relative;">
-            <iframe src="https://www.google.com/maps?q=2nd+Floor,+Primark,+Cainta,+1900+Rizal&output=embed" width="100%" height="100%" style="border:0; border-radius:0; min-height:400px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            <div style="position: absolute; top: 40px; right: 60px; background: var(--primary-pink); color: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(232,62,140,0.15); padding: 36px 40px 32px 40px; max-width: 400px; min-width: 320px; z-index: 10;">
+        <div style="width: 100%; height: min(70vh, 720px); position: relative;">
+            <iframe src="https://www.google.com/maps?q=2nd+Floor,+Primark,+Cainta,+1900+Rizal&output=embed" width="100%" height="100%" style="border:0; border-radius:0; min-height: 320px;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div style="position: absolute; top: clamp(16px, 5vw, 40px); right: clamp(16px, 6vw, 60px); background: var(--primary-pink); color: #fff; border-radius: 20px; box-shadow: 0 8px 32px rgba(232,62,140,0.15); padding: clamp(16px, 4vw, 36px) clamp(16px, 4.5vw, 40px) clamp(14px, 3.5vw, 32px) clamp(16px, 4.5vw, 40px); max-width: 90vw; width: clamp(280px, 50vw, 400px); z-index: 10;">
                 <h2 style="margin: 0 0 18px 0; font-size: 2rem; font-family: inherit; font-weight: 700; letter-spacing: 1px;">DROP BY!</h2>
                 <p style="margin: 0 0 12px 0; font-size: 1.1rem; line-height: 1.5;">
                     <a href="https://maps.google.com/?q=2nd+Floor,+Primark,+Cainta,+1900+Rizal" target="_blank" style="color: #fff; text-decoration: underline; font-weight: 500;">
@@ -620,5 +714,53 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
             </div>
         </div>
     </footer>
+<script>
+  const menuBtn = document.getElementById('mobileMenuBtn');
+  const panel = document.getElementById('mobileMenuPanel');
+  function toggleMenu(force) {
+    const willOpen = typeof force === 'boolean' ? force : !panel.classList.contains('open');
+    panel.classList.toggle('open', willOpen);
+    if (menuBtn) menuBtn.setAttribute('aria-expanded', String(willOpen));
+  }
+  menuBtn?.addEventListener('click', () => toggleMenu());
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && panel.classList.contains('open')) toggleMenu(false);
+  });
+
+  // Prime staggered reveals for service and review items
+  function prepareStaggeredReveals() {
+    const serviceCards = document.querySelectorAll('.service-card');
+    serviceCards.forEach((el, idx) => {
+      el.classList.add('reveal');
+      if (idx % 2 === 0) el.classList.add('from-left');
+      el.style.setProperty('--reveal-delay', `${100 + idx * 120}ms`);
+    });
+
+    const reviewCards = document.querySelectorAll('.testimonial-card');
+    reviewCards.forEach((el, idx) => {
+      el.classList.add('reveal');
+      if (idx % 2 === 1) el.classList.add('from-left');
+      el.style.setProperty('--reveal-delay', `${100 + idx * 120}ms`);
+    });
+  }
+
+  prepareStaggeredReveals();
+
+  // IntersectionObserver for reveal animations
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15 });
+
+  revealEls.forEach((el, idx) => {
+    el.style.setProperty('--reveal-delay', `${Math.min(idx * 80, 300)}ms`);
+    io.observe(el);
+  });
+</script>
 </body>
 </html>
