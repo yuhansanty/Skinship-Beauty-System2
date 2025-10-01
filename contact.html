@@ -36,12 +36,12 @@
         <p>Reach out to book an appointment or ask any questions.</p>
       </div>
       <form class="contact-form">
-        <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" placeholder="Enter your full name"></div>
-        <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter your email address"></div>
-        <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="Enter your phone number"></div>
+        <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" placeholder="Enter your full name" required></div>
+        <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter your email address" required pattern="^[A-Za-z0-9._%+-]+@(gmail\.com|yahoo\.com(?:\.ph)?|hotmail\.com|outlook\.com(?:\.ph)?|live\.com|msn\.com|microsoft\.com)$" title="Use gmail.com, yahoo.com(.ph), hotmail.com, outlook.com(.ph), live.com, msn.com, or microsoft.com only"></div>
+        <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="e.g. 09XXXXXXXXX or +639XXXXXXXXX" required pattern="^(?:\+639|09)\d{9}$" title="Philippine mobile only: 09XXXXXXXXX or +639XXXXXXXXX"></div>
         <div class="form-group">
           <label for="service">Service Interested In</label>
-          <select id="service" name="service">
+          <select id="service" name="service" required>
             <option value="">Select a service</option>
             <option value="FLEEK EYELASH">FLEEK EYELASH</option>
             <option value="BROWMAZING">BROWMAZING</option>
@@ -61,11 +61,11 @@
         </div>
         <div class="form-group">
           <label for="staff">Chosen Staff</label>
-          <select id="staff" name="staff">
+          <select id="staff" name="staff" required>
             <option value="">Loading staff...</option>
           </select>
         </div>
-        <div class="form-group"><label for="appointment">Preferred Date & Time</label><input type="text" id="appointment" placeholder="Select date & time"></div>
+        <div class="form-group"><label for="appointment">Preferred Date & Time</label><input type="text" id="appointment" placeholder="Select date & time" required></div>
         <div class="form-group"><label for="message">Message</label><textarea id="message" placeholder="Tell us about your needs or any questions you have"></textarea></div>
         <button type="submit" class="btn">Send Message</button>
       </form>
@@ -135,6 +135,20 @@
 
       if (!name || !email || !phone || !service || !staff || !appointment) {
         alert("Please fill in all required fields.");
+        return;
+      }
+
+      // Validate Philippine mobile number: 09XXXXXXXXX or +639XXXXXXXXX
+      const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
+      if (!phPhoneRegex.test(phone)) {
+        alert("Please enter a valid Philippine mobile number (09XXXXXXXXX or +639XXXXXXXXX).");
+        return;
+      }
+
+      // Restrict email to specific providers
+      const allowedEmailRegex = /^[A-Za-z0-9._%+-]+@(gmail\.com|yahoo\.com(?:\.ph)?|hotmail\.com|outlook\.com(?:\.ph)?|live\.com|msn\.com|microsoft\.com)$/i;
+      if (!allowedEmailRegex.test(email)) {
+        alert("Please use a valid email from: gmail.com, yahoo.com(.ph), hotmail.com, outlook.com(.ph), live.com, msn.com, or microsoft.com.");
         return;
       }
 
