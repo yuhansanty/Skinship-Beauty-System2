@@ -5,8 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Purchase Order | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="dashboard.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar-btn { 
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: .3s;
+    }
+    .sidebar-btn:hover { 
+      background: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+    .sidebar-btn.active { 
+      background: #da5c73;
+      color: white;
+    }
+  </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
