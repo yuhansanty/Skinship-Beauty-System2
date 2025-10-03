@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sales Report | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -30,6 +30,34 @@
       background: #da5c73;
       color: white;
     }
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .filter-btn:hover {
+      background: #da5c73;
+      color: white;
+    }
+    .filter-btn.active {
+      background: #da5c73;
+      color: white;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -50,103 +78,238 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-4 shadow-lg w-full h-full flex flex-col min-h-screen">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Top bar -->
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+          <input type="text" id="searchInput" placeholder="Search transactions..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
         </div>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg">Username</span>
+          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+          <span class="font-semibold text-lg text-white">Username</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
             </div>
           </div>
         </div>
       </div>
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-2 text-white drop-shadow">SALES</h1>
-      <!-- Sales Table -->
-      <div class="flex-1 flex justify-center items-stretch min-h-0">
-        <div class="w-full h-full bg-white rounded-2xl shadow p-2 overflow-auto flex flex-col">
-          <div class="flex-1 overflow-auto">
-            <table class="w-full text-center min-w-max h-full">
-              <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
-                <tr>
-                  <th class="py-3 px-2 text-sm font-bold">TRANSACTION ID</th>
-                  <th class="py-3 px-2 text-sm font-bold">Invoice Number</th>
-                  <th class="py-3 px-2 text-sm font-bold">item #</th>
-                  <th class="py-3 px-2 text-sm font-bold">Service/Item sold</th>
-                  <th class="py-3 px-2 text-sm font-bold">Quantity</th>
-                  <th class="py-3 px-2 text-sm font-bold">Price</th>
-                  <th class="py-3 px-2 text-sm font-bold">Date of Purchase</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border-b">
-                  <td class="py-4 px-2">31293-93221</td>
-                  <td class="py-4 px-2">21M&KFFKNXBS6PT6N</td>
-                  <td class="py-4 px-2">123-456</td>
-                  <td class="py-4 px-2">Hair-Color</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 499</td>
-                  <td class="py-4 px-2">THURSDAY , MAY 8 ,2025</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">71233-32164</td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2">Haircut</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 499</td>
-                  <td class="py-4 px-2">TUESDAY, MAY 13 ,2025</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">92125-61268</td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2">Foot Massage</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 499</td>
-                  <td class="py-4 px-2">FRIDAY , MAY 9 ,2025</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">71204-51152</td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2">Manicure</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 499</td>
-                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">91230-05235</td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2">EYELASH NATURAL (1 SIZE)</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 499</td>
-                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
-                </tr>
-                <tr>
-                  <td class="py-4 px-2">91230-05235</td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2"></td>
-                  <td class="py-4 px-2">EYELASH DOLLEYE (2 SIZE)</td>
-                  <td class="py-4 px-2">1</td>
-                  <td class="py-4 px-2">₱ 599</td>
-                  <td class="py-4 px-2">MONDAY , MAY 5 ,2025</td>
-                </tr>
-              </tbody>
-            </table>
+
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">SALES REPORT</h1>
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Total Sales</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalSales">₱ 3,094</p>
+            </div>
+            <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
           </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Transactions</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalTransactions">6</p>
+            </div>
+            <i class="fa-solid fa-receipt text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Top Service</p>
+              <p class="text-lg font-bold text-[#da5c73]" id="topService">Hair Color</p>
+            </div>
+            <i class="fa-solid fa-crown text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Avg. Sale</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="avgSale">₱ 516</p>
+            </div>
+            <i class="fa-solid fa-chart-simple text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button class="filter-btn active" onclick="filterByPeriod('all')">All Time</button>
+        <button class="filter-btn" onclick="filterByPeriod('today')">Today</button>
+        <button class="filter-btn" onclick="filterByPeriod('week')">This Week</button>
+        <button class="filter-btn" onclick="filterByPeriod('month')">This Month</button>
+        <input type="date" id="startDate" class="filter-btn">
+        <input type="date" id="endDate" class="filter-btn">
+        <button class="filter-btn" onclick="filterByDateRange()">
+          <i class="fa-solid fa-filter mr-2"></i>Apply Date Range
+        </button>
+        <button class="filter-btn" onclick="exportToCSV()">
+          <i class="fa-solid fa-download mr-2"></i>Export
+        </button>
+      </div>
+
+      <!-- Sales Table -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm" id="salesTable">
+            <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
+              <tr>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Transaction ID</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Invoice Number</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item #</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Service/Item</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Qty</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Price</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Date</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody">
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">31293-93221</td>
+                <td class="py-4 px-4">21M&KFFKNXBS6PT6N</td>
+                <td class="py-4 px-4">123-456</td>
+                <td class="py-4 px-4">Hair-Color</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 8, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">71233-32164</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Haircut</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">92125-61268</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Foot Massage</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 9, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">71204-51152</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Manicure</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">91230-05235</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">EYELASH NATURAL (1 SIZE)</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              </tr>
+              <tr class="hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">91230-05235</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">EYELASH DOLLEYE (2 SIZE)</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 599</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
+
+  <script>
+    // Sample data for functionality
+    const salesData = [
+      {id: '31293-93221', invoice: '21M&KFFKNXBS6PT6N', item: '123-456', service: 'Hair-Color', qty: 1, price: 499, date: '2025-05-08'},
+      {id: '71233-32164', invoice: '', item: '', service: 'Haircut', qty: 1, price: 499, date: '2025-05-13'},
+      {id: '92125-61268', invoice: '', item: '', service: 'Foot Massage', qty: 1, price: 499, date: '2025-05-09'},
+      {id: '71204-51152', invoice: '', item: '', service: 'Manicure', qty: 1, price: 499, date: '2025-05-05'},
+      {id: '91230-05235', invoice: '', item: '', service: 'EYELASH NATURAL (1 SIZE)', qty: 1, price: 499, date: '2025-05-05'},
+      {id: '91230-05235', invoice: '', item: '', service: 'EYELASH DOLLEYE (2 SIZE)', qty: 1, price: 599, date: '2025-05-05'}
+    ];
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#salesTableBody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // Filter button styling
+    function filterByPeriod(period) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
+           btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
+          btn.classList.remove('active');
+        }
+      });
+      event.target.classList.add('active');
+      
+      // Add your filter logic here
+      console.log('Filtering by:', period);
+    }
+
+    function filterByDateRange() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if(startDate && endDate) {
+        console.log('Filtering from', startDate, 'to', endDate);
+        // Add your date range filter logic here
+      } else {
+        alert('Please select both start and end dates');
+      }
+    }
+
+    function exportToCSV() {
+      // Basic CSV export
+      let csv = 'Transaction ID,Invoice Number,Item #,Service/Item,Quantity,Price,Date\n';
+      
+      salesData.forEach(row => {
+        csv += `${row.id},${row.invoice},${row.item},${row.service},${row.qty},${row.price},${row.date}\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sales_report.csv';
+      a.click();
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const userMenu = document.getElementById('userMenu');
+      const userMenuButton = document.getElementById('userMenuButton');
+      
+      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+        userMenu.classList.add('hidden');
+      }
+    });
+  </script>
 </body>
 </html>

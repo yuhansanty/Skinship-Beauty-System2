@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventory | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -30,11 +30,39 @@
       background: #da5c73;
       color: white;
     }
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .filter-btn:hover {
+      background: #da5c73;
+      color: white;
+    }
+    .filter-btn.active {
+      background: #da5c73;
+      color: white;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -50,111 +78,278 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
-  <main class="flex-1 p-0 w-full flex flex-col items-stretch justify-stretch ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-4 shadow-lg w-full h-full flex flex-col min-h-screen">
+  <main class="flex-1 p-6 w-full ml-20">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Top bar -->
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
-          <button class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">Add Item</button>
+          <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          <button class="filter-btn" onclick="addNewItem()">
+            <i class="fa-solid fa-plus mr-2"></i>Add Item
+          </button>
         </div>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg">Username</span>
+          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+          <span class="font-semibold text-lg text-white">Username</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
             </div>
           </div>
         </div>
       </div>
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-4 text-white drop-shadow">INVENTORY</h1>
-      <!-- Inventory Table -->
-      <div class="flex-1 flex justify-center items-stretch min-h-0">
-        <div class="w-full h-full bg-white rounded-2xl shadow p-2 overflow-auto flex flex-col">
-          <div class="flex-1 overflow-auto">
-            <table class="w-full text-center min-w-max h-full">
-              <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
-                <tr>
-                  <th class="py-3 px-2 text-sm font-bold">Item ID</th>
-                  <th class="py-3 px-2 text-sm font-bold">Item Name</th>
-                  <th class="py-3 px-2 text-sm font-bold">Category</th>
-                  <th class="py-3 px-2 text-sm font-bold">Quantity</th>
-                  <th class="py-3 px-2 text-sm font-bold">Unit Price</th>
-                  <th class="py-3 px-2 text-sm font-bold">Total Value</th>
-                  <th class="py-3 px-2 text-sm font-bold">Last Updated</th>
-                  <th class="py-3 px-2 text-sm font-bold">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="border-b">
-                  <td class="py-4 px-2">INV-001</td>
-                  <td class="py-4 px-2">Hair Dye - Blonde</td>
-                  <td class="py-4 px-2">Hair Products</td>
-                  <td class="py-4 px-2">25</td>
-                  <td class="py-4 px-2">₱ 299</td>
-                  <td class="py-4 px-2">₱ 7,475</td>
-                  <td class="py-4 px-2">May 15, 2025</td>
-                  <td class="py-4 px-2 text-green-600">In Stock</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">INV-002</td>
-                  <td class="py-4 px-2">Nail Polish - Red</td>
-                  <td class="py-4 px-2">Nail Products</td>
-                  <td class="py-4 px-2">15</td>
-                  <td class="py-4 px-2">₱ 150</td>
-                  <td class="py-4 px-2">₱ 2,250</td>
-                  <td class="py-4 px-2">May 14, 2025</td>
-                  <td class="py-4 px-2 text-green-600">In Stock</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">INV-003</td>
-                  <td class="py-4 px-2">Facial Cleanser</td>
-                  <td class="py-4 px-2">Skincare</td>
-                  <td class="py-4 px-2">8</td>
-                  <td class="py-4 px-2">₱ 450</td>
-                  <td class="py-4 px-2">₱ 3,600</td>
-                  <td class="py-4 px-2">May 13, 2025</td>
-                  <td class="py-4 px-2 text-yellow-600">Low Stock</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">INV-004</td>
-                  <td class="py-4 px-2">Eyelash Glue</td>
-                  <td class="py-4 px-2">Lash Products</td>
-                  <td class="py-4 px-2">30</td>
-                  <td class="py-4 px-2">₱ 180</td>
-                  <td class="py-4 px-2">₱ 5,400</td>
-                  <td class="py-4 px-2">May 12, 2025</td>
-                  <td class="py-4 px-2 text-green-600">In Stock</td>
-                </tr>
-                <tr class="border-b">
-                  <td class="py-4 px-2">INV-005</td>
-                  <td class="py-4 px-2">Hair Brush</td>
-                  <td class="py-4 px-2">Tools</td>
-                  <td class="py-4 px-2">12</td>
-                  <td class="py-4 px-2">₱ 350</td>
-                  <td class="py-4 px-2">₱ 4,200</td>
-                  <td class="py-4 px-2">May 11, 2025</td>
-                  <td class="py-4 px-2 text-green-600">In Stock</td>
-                </tr>
-                <tr>
-                  <td class="py-4 px-2">INV-006</td>
-                  <td class="py-4 px-2">Shampoo</td>
-                  <td class="py-4 px-2">Hair Products</td>
-                  <td class="py-4 px-2">0</td>
-                  <td class="py-4 px-2">₱ 280</td>
-                  <td class="py-4 px-2">₱ 0</td>
-                  <td class="py-4 px-2">May 10, 2025</td>
-                  <td class="py-4 px-2 text-red-600">Out of Stock</td>
-                </tr>
-              </tbody>
-            </table>
+
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">INVENTORY</h1>
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Total Items</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">6</p>
+            </div>
+            <i class="fa-solid fa-boxes-stacked text-3xl text-[#da5c73] opacity-50"></i>
           </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Total Value</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 22,925</p>
+            </div>
+            <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Low Stock</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">1</p>
+            </div>
+            <i class="fa-solid fa-triangle-exclamation text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Out of Stock</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">1</p>
+            </div>
+            <i class="fa-solid fa-circle-xmark text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button class="filter-btn active" onclick="filterByStatus('all')">All Items</button>
+        <button class="filter-btn" onclick="filterByStatus('in-stock')">In Stock</button>
+        <button class="filter-btn" onclick="filterByStatus('low-stock')">Low Stock</button>
+        <button class="filter-btn" onclick="filterByStatus('out-of-stock')">Out of Stock</button>
+        <select id="categoryFilter" class="filter-btn" onchange="filterByCategory()">
+          <option value="all">All Categories</option>
+          <option value="Hair Products">Hair Products</option>
+          <option value="Nail Products">Nail Products</option>
+          <option value="Skincare">Skincare</option>
+          <option value="Lash Products">Lash Products</option>
+          <option value="Tools">Tools</option>
+        </select>
+        <button class="filter-btn" onclick="exportToCSV()">
+          <i class="fa-solid fa-download mr-2"></i>Export
+        </button>
+      </div>
+
+      <!-- Inventory Table -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm" id="inventoryTable">
+            <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
+              <tr>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item ID</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item Name</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Category</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Quantity(per-piece)</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Unit Price</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Total Value</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Last Updated</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Hair Products">
+                <td class="py-4 px-4 font-semibold">INV-001</td>
+                <td class="py-4 px-4">Hair Dye - Blonde</td>
+                <td class="py-4 px-4">Hair Products</td>
+                <td class="py-4 px-4 text-center">25</td>
+                <td class="py-4 px-4 text-right">₱ 299</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 7,475</td>
+                <td class="py-4 px-4 text-center text-sm">May 15, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
+                </td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Nail Products">
+                <td class="py-4 px-4 font-semibold">INV-002</td>
+                <td class="py-4 px-4">Nail Polish - Red</td>
+                <td class="py-4 px-4">Nail Products</td>
+                <td class="py-4 px-4 text-center">15</td>
+                <td class="py-4 px-4 text-right">₱ 150</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 2,250</td>
+                <td class="py-4 px-4 text-center text-sm">May 14, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
+                </td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition" data-status="low-stock" data-category="Skincare">
+                <td class="py-4 px-4 font-semibold">INV-003</td>
+                <td class="py-4 px-4">Facial Cleanser</td>
+                <td class="py-4 px-4">Skincare</td>
+                <td class="py-4 px-4 text-center">8</td>
+                <td class="py-4 px-4 text-right">₱ 450</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 3,600</td>
+                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>
+                </td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Lash Products">
+                <td class="py-4 px-4 font-semibold">INV-004</td>
+                <td class="py-4 px-4">Eyelash Glue</td>
+                <td class="py-4 px-4">Lash Products</td>
+                <td class="py-4 px-4 text-center">30</td>
+                <td class="py-4 px-4 text-right">₱ 180</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 5,400</td>
+                <td class="py-4 px-4 text-center text-sm">May 12, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
+                </td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Tools">
+                <td class="py-4 px-4 font-semibold">INV-005</td>
+                <td class="py-4 px-4">Hair Brush</td>
+                <td class="py-4 px-4">Tools</td>
+                <td class="py-4 px-4 text-center">12</td>
+                <td class="py-4 px-4 text-right">₱ 350</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 4,200</td>
+                <td class="py-4 px-4 text-center text-sm">May 11, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
+                </td>
+              </tr>
+              <tr class="hover:bg-gray-50 transition" data-status="out-of-stock" data-category="Hair Products">
+                <td class="py-4 px-4 font-semibold">INV-006</td>
+                <td class="py-4 px-4">Shampoo</td>
+                <td class="py-4 px-4">Hair Products</td>
+                <td class="py-4 px-4 text-center">0</td>
+                <td class="py-4 px-4 text-right">₱ 280</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 0</td>
+                <td class="py-4 px-4 text-center text-sm">May 10, 2025</td>
+                <td class="py-4 px-4 text-center">
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Out of Stock</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
+
+  <script>
+    // Sample data for functionality
+    const inventoryData = [
+      {id: 'INV-001', name: 'Hair Dye - Blonde', category: 'Hair Products', qty: 25, price: 299, total: 7475, date: '2025-05-15', status: 'in-stock'},
+      {id: 'INV-002', name: 'Nail Polish - Red', category: 'Nail Products', qty: 15, price: 150, total: 2250, date: '2025-05-14', status: 'in-stock'},
+      {id: 'INV-003', name: 'Facial Cleanser', category: 'Skincare', qty: 8, price: 450, total: 3600, date: '2025-05-13', status: 'low-stock'},
+      {id: 'INV-004', name: 'Eyelash Glue', category: 'Lash Products', qty: 30, price: 180, total: 5400, date: '2025-05-12', status: 'in-stock'},
+      {id: 'INV-005', name: 'Hair Brush', category: 'Tools', qty: 12, price: 350, total: 4200, date: '2025-05-11', status: 'in-stock'},
+      {id: 'INV-006', name: 'Shampoo', category: 'Hair Products', qty: 0, price: 280, total: 0, date: '2025-05-10', status: 'out-of-stock'}
+    ];
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#inventoryTableBody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // Filter by status
+    function filterByStatus(status) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        if(btn.textContent.includes('All Items') || btn.textContent.includes('In Stock') || 
+           btn.textContent.includes('Low Stock') || btn.textContent.includes('Out of Stock')) {
+          btn.classList.remove('active');
+        }
+      });
+      event.target.classList.add('active');
+      
+      const rows = document.querySelectorAll('#inventoryTableBody tr');
+      rows.forEach(row => {
+        if(status === 'all') {
+          row.style.display = '';
+        } else {
+          const rowStatus = row.getAttribute('data-status');
+          row.style.display = rowStatus === status ? '' : 'none';
+        }
+      });
+    }
+
+    // Filter by category
+    function filterByCategory() {
+      const category = document.getElementById('categoryFilter').value;
+      const rows = document.querySelectorAll('#inventoryTableBody tr');
+      
+      rows.forEach(row => {
+        if(category === 'all') {
+          row.style.display = '';
+        } else {
+          const rowCategory = row.getAttribute('data-category');
+          row.style.display = rowCategory === category ? '' : 'none';
+        }
+      });
+    }
+
+    // Add new item
+    function addNewItem() {
+      alert('Add Item functionality - Connect to your form/modal');
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+      let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status\n';
+      
+      inventoryData.forEach(row => {
+        csv += `${row.id},${row.name},${row.category},${row.qty},${row.price},${row.total},${row.date},${row.status}\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'inventory_report.csv';
+      a.click();
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const userMenu = document.getElementById('userMenu');
+      const userMenuButton = document.getElementById('userMenuButton');
+      
+      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+        userMenu.classList.add('hidden');
+      }
+    });
+  </script>
 </body>
 </html>
