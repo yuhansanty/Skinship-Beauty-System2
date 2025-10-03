@@ -58,7 +58,7 @@
         .header-logo .logo {
             font-size: clamp(20px, 4vw, 28px);
             font-weight: 700;
-            color: var(--primary-pink);
+            color: var(--dark-pink);
             letter-spacing: 1px;
         }
         .header-contact {
@@ -486,7 +486,7 @@
         <div class="container">
             <div class="header-top">
                 <div class="header-logo">
-                    <div class="logo">Skinship <span style="color:var(--primary-pink)">Beauty</span></div>
+                    <div class="logo">Skinship <span style="color:var(--dark-pink)">Beauty</span></div>
                 </div>
                 <div class="header-contact">
                     <span class="contact-phone">0992 595 0241</span>
@@ -523,10 +523,19 @@
 
     <!-- Hero Section -->
     <section class="hero" id="home">
-        <div class="container">
-            <h1>Welcome to Skinship Beauty</h1>
-            <p>Aesthetics Clinic- non invasive procedures, Face and Body Contouring, SPA, 6D microblading, IPL, Eyelashes, Nails services, Pico & Diode laser, Hair removal, Melasma treatment</p>
-            <a href="contact.html" class="btn">Book an Appointment</a>
+        <div class="container" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 32px; min-height: 480px;">
+            <div style="flex: 1 1 340px; min-width: 280px; max-width: 540px; text-align: left;">
+                <h1 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: clamp(2.2rem, 5vw, 3.5rem); color: var(--dark-pink); margin-bottom: 0.2em;">Welcome to Skinship Beauty</h1>
+                <p style="font-size: 1.15rem; color: var(--text-color); margin-bottom: 2em;">Aesthetics Clinic Non-Invasive Procedures, Face and Body Contouring, SPA, 6D Microblading, IPL, Eyelashes, Nails Services, Pico & Diode Laser, Hair Removal, Melasma Treatment</p>
+                <div style="display: flex; gap: 18px; flex-wrap: wrap;">
+                    <a href="contact.html" class="btn" style="background: var(--primary-pink); color: #fff; border: none;"><i class="fa fa-calendar-check" style="margin-right: 8px;"></i>Book Now</a>
+                    <a href="#shop" class="btn" style="background: var(--primary-pink); color: #fff; border: none;"><i class="fa fa-shopping-bag" style="margin-right: 8px;"></i>Shop Now</a>
+                </div>
+            </div>
+            <div style="flex: 1 1 0; min-width: 500px; display: flex; justify-content: flex-end; align-items: center; position: relative; min-height: 500px; max-width: 56vw;">
+                <div style="position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, #fff0f6 60%, rgba(255,255,255,0.0) 100%);"></div>
+                <img src="LandingPageImage.jpg" alt="Skinship Beauty Service" style="height: 100%; width: 100%; max-width: 600px; max-height: 520px; border-radius: 18px; box-shadow: 0 4px 24px rgba(232,62,140,0.10); background: #fff0f6; object-fit: cover; position: relative; z-index: 2;" />
+            </div>
         </div>
     </section>
 
@@ -654,7 +663,7 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
             <div class="about-content reveal from-left">
                 <div class="about-text">
                     <h2>Our Story</h2>
-                    <p>Skinship Beauty was founded with a simple mission: to provide exceptional grooming services in a relaxing and welcoming environment. Our team of skilled professionals is dedicated to helping you look and feel your best.</p>
+                    <p>Skinship Beauty is your go-to aesthetics clinic in Cainta, Rizal, offering relaxing and professional care. Since opening in 2022, we’ve grown from body contouring to a full range of services—facials, HydraFacial, Black Doll treatments, nail care, massages, and hair removal—helping you look and feel your best.</p>
                     <p class="placeholder-text">Skinship Beauty is an aesthetics clinic that offers non-invasive procedures, skin care services, and spa and massage treatments. Inspired by passion and a desire to help others improve their self-esteem, Kim Tanhueco opened Skinship Beauty. It first opened on February 26, 2022, in Primark Town Center Mall, Cainta, Rizal, as a start-up skin care clinic. Starting with body contouring using Exilis machines, Skinship Beauty quickly expanded to include nail care, massages, and advanced facial treatments. Currently, they also offer HydraFacial and Black Doll treatments as well as hair removal services.</p>
 
                 </div>
@@ -713,7 +722,7 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
-                    <p class="placeholder-text">primark towncenter cainta, Cainta, Philippines, 1900</p>
+                    <p class="placeholder-text">Primark Towncenter Cainta, Rizal, Philippines, 1900</p>
                     <p class="placeholder-text">0992 595 0241</p>
                     <p class="placeholder-text">skinshipbyk@gmail.com</p>
                     <p class="placeholder-text">10:00 AM - 9:00 PM</p>
