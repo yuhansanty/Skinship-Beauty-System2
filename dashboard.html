@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Skinship Beauty Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
     .sidebar-btn {
       width: 50px;
@@ -31,11 +31,13 @@
       background: #da5c73;
       color: white;
     }
+    .inventory-critical { background: #ffe6e6; border: 1px solid #ffb3b3; }
+    .inventory-low { background: #fff4e6; border: 1px solid #ffd1a8; }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto z-50">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -57,7 +59,7 @@
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg relative h-full">
       <!-- Topbar -->
       <div class="flex justify-end items-center gap-4 mb-6">
-        <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+        <i id="notificationBtn" class="fa-regular fa-bell text-xl cursor-pointer"></i>
         <span class="font-semibold text-lg" id="usernameDisplay">admin</span>
         <div class="relative">
           <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
@@ -71,27 +73,26 @@
       <div class="grid grid-cols-12 gap-6">
         <!-- Completed -->
         <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
-          <p class="text-green-600 font-bold text-lg">01</p>
+          <p id="completedCount" class="text-green-600 font-bold text-lg">0</p>
           <div class="font-bold">Completed</div>
         </div>
 
         <!-- Pending -->
         <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
-          <p class="text-yellow-600 font-bold text-lg">01</p>
+          <p id="pendingCount" class="text-yellow-600 font-bold text-lg">00</p>
           <div class="font-bold">Pending</div>
         </div>
 
         <!-- Cancelled -->
         <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
-          <p class="text-red-600 font-bold text-lg">01</p>
+          <p id="cancelledCount" class="text-red-600 font-bold text-lg">00</p>
           <div class="font-bold">Cancelled</div>
         </div>
         
-        <!-- Recent Deals -->
+        <!-- Inventory Alerts -->
         <div class="col-span-3 bg-white rounded-lg shadow p-4">
-          <h2 class="font-bold mb-2">Recent Deals</h2>
-          <div class="bg-rose-100 p-2 rounded mb-2">Customer's Name</div>
-          <div class="bg-rose-100 p-2 rounded">Service:</div>
+          <h2 class="font-bold mb-2">Inventory Alerts</h2>
+          <div id="inventoryList" class="space-y-2 text-sm"></div>
         </div>
 
         <!-- Reservation -->
@@ -126,28 +127,19 @@
           </div>
         </div>
 
-        <!-- Last week Top Day Visitor -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-4 text-center">
-          <h2 class="font-bold mb-2">Last week Top Day Visitor</h2>
-          <div class="bg-rose-200 rounded-lg p-4">
-            <p class="font-bold text-lg">Sunday</p>
-            <p class="text-2xl font-bold">53</p>
+        <!-- Top 3 Services Sold (Last 7 Days) -->
+        <div class="col-span-3 bg-white rounded-lg shadow p-4">
+          <h2 class="font-bold mb-3">Top 3 Services Sold (Last 7 Days)</h2>
+          <div style="height: 180px; position: relative;">
+            <canvas id="topServicesChart"></canvas>
           </div>
         </div>
 
-        <!-- Revenue -->
+        <!-- Revenue (by Weekday) Chart -->
         <div class="col-span-6 bg-white rounded-lg shadow p-4">
-          <h2 class="font-bold mb-2">Revenue</h2>
-          <table class="w-full text-sm">
-            <tbody>
-              <tr><td>Monday:</td><td class="text-right">₱5,200.00</td></tr>
-              <tr><td>Tuesday:</td><td class="text-right">₱7,340.00</td></tr>
-              <tr><td>Wednesday:</td><td class="text-right">₱9,990.00</td></tr>
-              <tr><td>Thursday:</td><td class="text-right">₱750.00</td></tr>
-              <tr><td>Friday:</td><td class="text-right">₱0.00</td></tr>
-            </tbody>
-          </table>
-          <p class="text-right font-bold text-rose-600 mt-2">Total of: ₱23,280.00</p>
+          <h2 class="font-bold mb-3">Revenue (by Weekday)</h2>
+          <canvas id="revenueChart" style="max-height: 200px;"></canvas>
+          <p id="revenueTotal" class="text-right font-bold text-rose-600">Total of: ₱0.00</p>
         </div>
 
         <!-- Today's Agenda -->
@@ -168,8 +160,15 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { 
-      getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy 
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      onSnapshot,
+      orderBy
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -185,17 +184,22 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Hide registration button if not admin
+    // Role-based
     onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          document.getElementById("usernameDisplay").textContent = data.username;
-          if (data.role !== "admin") {
-            document.getElementById("registrationBtn").style.display = "none";
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            document.getElementById("usernameDisplay").textContent = data.username || data.fullName || user.email || "User";
+            if (data.role !== "admin") {
+              const regBtn = document.getElementById("registrationBtn");
+              if (regBtn) regBtn.style.display = "none";
+            }
           }
+        } catch (err) {
+          console.error("Error fetching user document:", err);
         }
       }
     });
@@ -203,7 +207,6 @@
     // Staff availability
     const staffAvailabilityList = document.getElementById("staffAvailabilityList");
     const staffQuery = query(collection(db, "users"), where("availability", "==", true));
-
     onSnapshot(staffQuery, (snapshot) => {
       staffAvailabilityList.innerHTML = "";
       if (snapshot.empty) {
@@ -220,24 +223,23 @@
       });
     });
 
-    // Reservations list from Firestore (customers collection)
+    // Reservations list
     const reservationTable = document.getElementById("reservationTable");
     const reservationQuery = query(collection(db, "customers"), orderBy("createdAt", "desc"));
-
     onSnapshot(reservationQuery, (snapshot) => {
       reservationTable.innerHTML = "";
       if (snapshot.empty) {
         reservationTable.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>`;
         return;
       }
-
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const tr = document.createElement("tr");
+        tr.className = "border-b";
         tr.innerHTML = `
-          <td>${data.name || "N/A"}</td>
-          <td>${data.appointment || "N/A"}</td>
-          <td>${data.status || "Pending"}</td>
+          <td>${data.name || data.customer || "N/A"}</td>
+          <td>${data.appointment || data.time || "N/A"}</td>
+          <td>${(data.status || "Pending").charAt(0).toUpperCase() + (data.status || "Pending").slice(1)}</td>
           <td>${data.service || "N/A"}</td>
           <td>${data.staff || "N/A"}</td>
         `;
@@ -245,35 +247,257 @@
       });
     });
 
-    // Agenda: today only
+    // Today's agenda
     const agendaList = document.getElementById("agendaList");
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
-
+    const todayISO = new Date().toISOString().split("T")[0];
     const apptQuery = query(collection(db, "customers"));
     onSnapshot(apptQuery, (snapshot) => {
       agendaList.innerHTML = "";
-      const todaysAppointments = [];
-
+      const todays = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
-        if (data.date === todayStr) {
-          todaysAppointments.push(data);
+        if (data.date === todayISO && (data.status || '').toLowerCase() === 'pending') {
+          todays.push(data);
+        }
+      });
+      if (todays.length === 0) {
+        agendaList.innerHTML = `<li class="text-gray-500 italic">No appointments today</li>`;
+      } else {
+        todays.sort((a,b) => (a.time||'').localeCompare(b.time||''));
+        todays.forEach(a => {
+          const li = document.createElement('li');
+          li.textContent = `${a.time || '-'} - ${a.name || a.customer || 'Customer'} - ${a.service || '-'}`;
+          agendaList.appendChild(li);
+        });
+      }
+    });
+
+    // Inventory Alerts
+    const inventoryList = document.getElementById("inventoryList");
+    onSnapshot(collection(db, "products"), (snapshot) => {
+      inventoryList.innerHTML = "";
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const productName = data.name || "Unnamed Product";
+        const quantity = (typeof data.quantity !== "undefined") ? Number(data.quantity) : 0;
+
+        if (quantity < 10) {
+          const cls = quantity < 5 ? "inventory-critical" : "inventory-low";
+          inventoryList.innerHTML += `
+            <div class="${cls} p-2 rounded">
+              <div class="font-semibold">${productName}</div>
+              <div class="text-gray-600">Qty: ${quantity}</div>
+            </div>
+          `;
         }
       });
 
-      todaysAppointments.sort((a, b) => {
-        return (a.time || "").localeCompare(b.time || "");
+      if (!inventoryList.innerHTML) {
+        inventoryList.innerHTML = `<p class="text-gray-500">All stocks are sufficient</p>`;
+      }
+    });
+
+    // Revenue Chart + Completed Count
+    const revenueTotal = document.getElementById("revenueTotal");
+    const completedCountEl = document.getElementById("completedCount");
+    
+    let revenueChart = null;
+
+    onSnapshot(collection(db, "cashier_receipt"), (snapshot) => {
+      const totalsByDay = {
+        "Monday": 0, "Tuesday": 0, "Wednesday": 0,
+        "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0
+      };
+      let grandTotal = 0;
+      let completed = 0;
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const cost = Number(data.subtotal || data.amount || data.price || data.total_cost || 0);
+
+        if (data.subtotal || data.receiptNumber || data.payment) {
+          completed++;
+        }
+
+        let day = null;
+        if (data.day) {
+          day = data.day;
+        } else if (data.timestamp && typeof data.timestamp.toDate === "function") {
+          const d = data.timestamp.toDate();
+          day = d.toLocaleDateString("en-US", { weekday: "long" });
+        } else if (data.createdAt) {
+          try {
+            if (typeof data.createdAt === "string") {
+              const d = new Date(data.createdAt);
+              if (!isNaN(d)) day = d.toLocaleDateString("en-US", { weekday: "long" });
+            } else if (typeof data.createdAt.toDate === "function") {
+              const d = data.createdAt.toDate();
+              day = d.toLocaleDateString("en-US", { weekday: "long" });
+            }
+          } catch (e) {}
+        }
+
+        if (day && totalsByDay[day] !== undefined) {
+          totalsByDay[day] += cost;
+        }
+
+        grandTotal += cost;
       });
 
-      if (todaysAppointments.length === 0) {
-        agendaList.innerHTML = `<li class="text-gray-500 italic">No appointments today</li>`;
+      completedCountEl.textContent = completed.toString().padStart(2, "0");
+      revenueTotal.textContent = `Total of: ₱${grandTotal.toLocaleString("en-PH", {minimumFractionDigits: 2})}`;
+
+      // Update Revenue Chart
+      const daysOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const revenueData = daysOrder.map(d => totalsByDay[d] || 0);
+
+      if (revenueChart) {
+        revenueChart.data.datasets[0].data = revenueData;
+        revenueChart.update();
       } else {
-        todaysAppointments.forEach(appt => {
-          const li = document.createElement("li");
-          li.textContent = `${appt.time} - ${appt.name} - ${appt.service}`;
-          agendaList.appendChild(li);
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        revenueChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: daysOrder,
+            datasets: [{
+              label: 'Revenue',
+              data: revenueData,
+              backgroundColor: '#f5a3b5',
+              borderColor: '#da5c73',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return '₱' + value.toLocaleString();
+                  }
+                }
+              }
+            }
+          }
         });
+      }
+    });
+
+    // Top 3 Services Sold (Last 7 Days)
+    let topServicesChart = null;
+    
+    onSnapshot(collection(db, "cashier_receipt"), (snapshot) => {
+      const serviceCounts = {};
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        let docDate = null;
+
+        // Get date from timestamp or createdAt
+        if (data.timestamp && typeof data.timestamp.toDate === "function") {
+          docDate = data.timestamp.toDate();
+        } else if (data.createdAt) {
+          try {
+            if (typeof data.createdAt === "string") {
+              docDate = new Date(data.createdAt);
+            } else if (typeof data.createdAt.toDate === "function") {
+              docDate = data.createdAt.toDate();
+            }
+          } catch (e) {}
+        } else if (data.date) {
+          // Try to parse date field like "10/2/2025"
+          try {
+            docDate = new Date(data.date);
+          } catch (e) {}
+        }
+
+        // Check if within last 7 days (or include all if no date found)
+        if (!docDate || docDate >= sevenDaysAgo) {
+          // Get items array from the receipt
+          const items = data.items || [];
+          items.forEach(item => {
+            const name = item.name || "Unknown Service";
+            serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+          });
+        }
+      });
+
+      const sorted = Object.entries(serviceCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      const labels = sorted.map(s => s[0]);
+      const counts = sorted.map(s => s[1]);
+      const colors = ['#5b9bd5', '#70ad47', '#ffc000'];
+
+      if (topServicesChart) {
+        topServicesChart.data.labels = labels;
+        topServicesChart.data.datasets[0].data = counts;
+        topServicesChart.data.datasets[0].backgroundColor = colors.slice(0, counts.length);
+        topServicesChart.update();
+      } else {
+        const ctx = document.getElementById('topServicesChart').getContext('2d');
+        topServicesChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Services Sold',
+              data: counts,
+              backgroundColor: colors,
+              borderWidth: 0
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 1,
+                  precision: 0
+                }
+              }
+            }
+          }
+        });
+      }
+    });
+
+    // Pending / Cancelled counts
+    onSnapshot(collection(db, "customers"), (snapshot) => {
+      let pendingCount = 0;
+      let cancelledCount = 0;
+      snapshot.forEach(docSnap => {
+        const s = (docSnap.data().status || '').toString().toLowerCase();
+        if (s === 'pending') pendingCount++;
+        if (s === 'cancelled' || s === 'canceled') cancelledCount++;
+      });
+      const pEl = document.getElementById("pendingCount");
+      const cEl = document.getElementById("cancelledCount");
+      if (pEl) pEl.textContent = pendingCount.toString().padStart(2, "0");
+      if (cEl) cEl.textContent = cancelledCount.toString().padStart(2, "0");
+    });
+
+    // Close user menu
+    window.addEventListener('click', (e) => {
+      const userMenu = document.getElementById('userMenu');
+      const btn = document.getElementById('userMenuButton');
+      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.add('hidden');
       }
     });
   </script>

@@ -3,264 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cashier | Skinship Beauty</title>
+  <title>Skinship Beauty - POS System</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #f7d4d0 0%, #e6bfc7 100%);
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    .sidebar {
-      width: 80px;
-      background-color: #f7d4d0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1rem 0;
-      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-      border-radius: 0 20px 20px 0;
-      height: 100%;
-      position: fixed;
-      left: 0;
-      top: 0;
-      z-index: 100;
-    }
-
-    .sidebar-btn {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: none;
-      background-color: transparent;
-      color: #da5c73;
-      font-size: 20px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 5px 0;
-    }
-
-    .sidebar-btn:hover {
-      background-color: #da5c73;
-      color: white;
-      transform: scale(1.1);
-    }
-
-    .sidebar-btn.active {
-      background-color: #da5c73;
-      color: white;
-    }
-
-    .main-content {
-      margin-left: 80px;
-      flex: 1;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      height: 100%;
-      overflow-y: auto;
-    }
-
-    .pos-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      background-color: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      height: 100%;
-      max-height: 90vh;
-      flex: 1;
-    }
-
-    .pos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
-      flex: 1;
-      overflow-y: hidden;
-    }
-
-    .service-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      overflow-y: auto;
-      max-height: 100%;
-    }
-
-    .service-categories {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .service-category {
-      background-color: #fce4ec;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      color: #d81b60;
-    }
-
-    .service-category.active {
-      background-color: #da5c73;
-      color: white;
-    }
-
-    .service-items {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-      max-height: 60vh;
-    }
-
-    .service-item {
-      background-color: white;
-      border: 1px solid #f8bbd9;
-      border-radius: 8px;
-      padding: 10px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      transition: background-color 0.2s;
-    }
-
-    .service-item:hover {
-      background-color: #f8bbd9;
-    }
-
-    .cart-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      overflow-y: auto;
-      max-height: 100%;
-    }
-
-    .cart-items {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      overflow-y: auto;
-      max-height: 50vh;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 10px;
-      background-color: #fff;
-    }
-
-    .cart-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .cart-item button {
-      color: #da5c73;
-      background: none;
-      border: none;
-      cursor: pointer;
-    }
-
-    .calculator-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-      overflow-y: auto;
-      max-height: 100%;
-    }
-
-    .calculator {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      background-color: #fce4ec;
-      padding: 12px;
-      border-radius: 8px;
-    }
-
-    .calculator button {
-      background-color: white;
-      border: 1px solid #f8bbd9;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-
-    .calculator button:hover {
-      background-color: #f8bbd9;
-    }
-
-    .calculator-display {
-      background-color: white;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: right;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .total-display {
-      background-color: white;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: right;
-      font-size: 24px;
-      font-weight: bold;
-    }
-
-    .pay-button {
-      background-color: #da5c73;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      padding: 12px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-
-    .pay-button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-
-    @media (max-width: 768px) {
-      .pos-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        width: 60px;
-      }
-
-      .main-content {
-        margin-left: 60px;
-      }
-    }
-
-  </style>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="cashier.css" />
 </head>
-<body>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
   <!-- Sidebar -->
-  <aside class="sidebar">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto z-50">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -277,261 +31,235 @@
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
-  <!-- Main Content -->
-  <main class="main-content">
-    <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-[#b97b8b]">CASHIER</h1>
-    <div class="pos-container">
-      <div class="pos-grid">
-        <!-- Service Selection Panel -->
-        <div class="service-panel">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Search Services..."
-            class="w-full p-2 border rounded"
-            onkeyup="filterServices()"
-          />
-          <div class="service-categories">
-            <button class="service-category active" onclick="renderServices(services)">All Services</button>
-            <button class="service-category" onclick="filterByCategory('FLEEK EYELASH')">FLEEK EYELASH</button>
-            <button class="service-category" onclick="filterByCategory('WOKE UP LIKE THIS')">WOKE UP LIKE THIS</button>
-            <button class="service-category" onclick="filterByCategory('BROWMAZING')">BROWMAZING</button>
-          </div>
-          <div id="serviceItems" class="service-items">
-            <!-- Services will be inserted here by JavaScript -->
+  <main class="flex-1 ml-20">
+    <div class="min-h-screen p-4 md:p-8">
+      <!-- Header with Notifications and User Menu -->
+      <div class="max-w-7xl mx-auto mb-6">
+        <div class="glass-card rounded-2xl p-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+              <div>
+                <h1 class="text-2xl font-bold text-[#b97b8b]">SKINSHIP BEAUTY</h1>
+                <p class="text-sm text-gray-600">Point of Sale System</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+               <div style="position: relative; display: inline-block;">
+                <button onclick="toggleNotifications()" style="background: none; border: none; cursor: pointer; position: relative;">
+                  <i class="fa-regular fa-bell text-xl"></i>
+                  <span id="notificationBadge" style="display: none; position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; align-items: center; justify-content: center; font-weight: bold;"></span>
+                </button>
+<div id="notificationPopup">
+  <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center;">
+    <span>Notifications</span>
+    <button onclick="clearAllNotifications()" style="color: #da5c73; font-size: 13px; cursor: pointer; border: none; background: none; padding: 0;">Clear all</button>
+  </div>
+  <div id="notificationList"></div>
+</div>
+              </div>
+              <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
+              <div class="relative">
+                <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
+                <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
+                  <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        <!-- Cart/Receipt Area -->
-        <div class="cart-panel">
-          <h2 class="text-xl font-bold mb-4 text-center">CART</h2>
-          <div id="cartItems" class="cart-items"></div>
-          <div class="total-display">
-            TOTAL: ₱<span id="cartTotal">0.00</span>
+      <!-- Main POS Container -->
+      <div class="max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Left Panel - Services -->
+          <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+            <div class="mb-4">
+              <div class="relative">
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Search services..."
+                  class="w-full p-3 pl-12 rounded-xl border-2 border-pink-100 focus:border-pink-300 focus:outline-none"
+                  onkeyup="filterServices()"
+                />
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+
+<!-- Category Menu -->
+<div class="category-menu">
+  <!-- Menu Buttons Container -->
+  <div class="menu-buttons-container">
+    <!-- Services Button -->
+    <button class="all-services-btn" onclick="toggleCategoryMenu()">
+      <span>All Services</span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+    
+    <!-- Products Button -->
+    <button class="all-products-btn" onclick="toggleProductsMenu()">
+      <span>All Products</span>
+      <i class="fa-solid fa-chevron-down"></i>
+    </button>
+  </div>
+  
+  <!-- Services Dropdown -->
+  <div class="category-dropdown" id="categoryDropdown">
+    <div class="category-grid" id="categoryGrid">
+      <!-- Categories will be rendered here -->
+    </div>
+  </div>
+
+  <!-- Products Dropdown -->
+  <div class="category-dropdown" id="productsDropdown">
+    <div class="category-grid" id="productsGrid">
+      <!-- Product categories will be rendered here -->
+    </div>
+  </div>
+</div>
+
+            <!-- Services Grid -->
+            <div id="servicesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[550px] overflow-y-auto pr-2 pt-1">
+              <!-- Services will be rendered here -->
+            </div>
           </div>
-          <input
-            type="number"
-            id="paymentAmount"
-            placeholder="Enter payment amount"
-            class="w-full p-2 border rounded"
-            min="0"
-            oninput="validatePayment(this)"
-          />
-          <button id="payButton" class="pay-button" onclick="checkout()" disabled>
-            PAY ₱<span id="payAmount">0.00</span>
-          </button>
-        </div>
 
-        <!-- Calculator Keypad -->
-        <div class="calculator-panel">
-          <div class="calculator-display" id="calculatorDisplay">0</div>
-          <div class="calculator">
-            <button onclick="clearCalculator()" class="bg-white p-2 rounded-lg">C</button>
-            <button class="bg-white p-2 rounded-lg">(</button>
-            <button class="bg-white p-2 rounded-lg">)</button>
-            <button class="bg-white p-2 rounded-lg">/</button>
-            <button onclick="appendToDisplay('7')" class="bg-white p-2 rounded-lg">7</button>
-            <button onclick="appendToDisplay('8')" class="bg-white p-2 rounded-lg">8</button>
-            <button onclick="appendToDisplay('9')" class="bg-white p-2 rounded-lg">9</button>
-            <button class="bg-white p-2 rounded-lg">*</button>
-            <button onclick="appendToDisplay('4')" class="bg-white p-2 rounded-lg">4</button>
-            <button onclick="appendToDisplay('5')" class="bg-white p-2 rounded-lg">5</button>
-            <button onclick="appendToDisplay('6')" class="bg-white p-2 rounded-lg">6</button>
-            <button class="bg-white p-2 rounded-lg">-</button>
-            <button onclick="appendToDisplay('1')" class="bg-white p-2 rounded-lg">1</button>
-            <button onclick="appendToDisplay('2')" class="bg-white p-2 rounded-lg">2</button>
-            <button onclick="appendToDisplay('3')" class="bg-white p-2 rounded-lg">3</button>
-            <button class="bg-white p-2 rounded-lg">+</button>
-            <button onclick="appendToDisplay('0')" class="bg-white p-2 rounded-lg">0</button>
-            <button class="bg-white p-2 rounded-lg">.</button>
-            <button class="bg-white p-2 rounded-lg">=</button>
+          <!-- Right Panel - Cart & Checkout -->
+          <div class="glass-card rounded-2xl p-6 flex flex-col h-fit sticky top-4">
+            <h2 class="text-2xl font-bold text-center mb-4 text-[#b97b8b]">
+              <i class="fa-solid fa-shopping-cart mr-2"></i>Cart
+            </h2>
+
+<!-- Customer Info -->
+<div class="mb-4 space-y-2">
+  <input
+    type="text"
+    id="customerName"
+    placeholder="Customer Name *"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+  <input
+    type="email"
+    id="customerEmail"
+    placeholder="Email Address"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+  <input
+    type="text"
+    id="customerAddress"
+    placeholder="Address (Optional)"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+  <div>
+    <input
+      type="tel"
+      id="customerPhone"
+      placeholder="Mobile No. (09XXXXXXXXX)"
+      maxlength="11"
+      class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+      oninput="validatePhoneNumber(this)"
+    />
+    <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Mobile number must start with 09 and be 11 digits</p>
+  </div>
+</div>
+
+<!-- Cart Items -->
+<div id="cartItems" class="flex-1 mb-4 space-y-2 max-h-[280px] overflow-y-auto">
+  <div class="text-center text-gray-400 py-8">
+    <i class="fa-solid fa-cart-shopping text-4xl mb-2"></i>
+    <p class="text-sm">No items in cart</p>
+  </div>
+</div>
+
+<!-- Total -->
+<div class="border-t-2 border-pink-200 pt-3 mb-3">
+  <div class="flex justify-between items-center text-xl font-bold text-[#da5c73]">
+    <span>TOTAL:</span>
+    <span>₱<span id="totalAmount">0.00</span></span>
+  </div>
+</div>
+
+<!-- Payment Method -->
+<div class="mb-3">
+  <label class="block text-xs font-medium text-gray-700 mb-2">Payment Method</label>
+  <div class="grid grid-cols-2 gap-2">
+    <button type="button" class="payment-method-btn active" data-method="cash" onclick="selectPaymentMethod('cash')">
+      <i class="fa-solid fa-money-bill-wave mr-1"></i>Cash
+    </button>
+    <button type="button" class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check')">
+      <i class="fa-solid fa-building-columns mr-1"></i>Check/Bank
+    </button>
+  </div>
+</div>
+
+<!-- Payment Input -->
+<div class="mb-3">
+  <label class="block text-xs font-medium text-gray-700 mb-1">Payment Amount</label>
+  <div class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₱</span>
+    <input
+      type="number"
+      id="paymentInput"
+      placeholder="0.00"
+      class="w-full p-3 pl-7 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-lg font-bold"
+      min="0"
+      step="0.01"
+    />
+  </div>
+</div>
+
+<!-- Reference Number (for Check/Bank) -->
+<div class="mb-3 hidden" id="referenceNumberContainer">
+  <label class="block text-xs font-medium text-gray-700 mb-1">Reference/Check Number</label>
+  <input
+    type="text"
+    id="referenceNumber"
+    placeholder="Enter reference or check number"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+</div>
+            <!-- Change Display -->
+            <div class="mb-3 p-3 bg-green-50 rounded-lg hidden" id="changeDisplay">
+              <div class="flex justify-between items-center">
+                <span class="text-green-700 font-medium text-sm">Change:</span>
+                <span class="text-xl font-bold text-green-600">₱<span id="changeAmount">0.00</span></span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                onclick="clearCart()"
+                class="p-3 rounded-lg border-2 border-red-300 text-red-600 font-medium hover:bg-red-50 transition text-sm"
+              >
+                <i class="fa-solid fa-trash mr-1"></i>Clear
+              </button>
+              <button
+                id="checkoutBtn"
+                onclick="checkout()"
+                class="btn-primary p-3 rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled
+              >
+                <i class="fa-solid fa-print mr-1"></i>Print Receipt
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
   </main>
 
-  <script>
-    // Sample services data
-    const services = [
-      { name: "Microblading", price: 120, category: "FLEEK EYELASH" },
-      { name: "Combiombre/Combibrows", price: 150, category: "FLEEK EYELASH" },
-      { name: "Top/Lower Eyeliner", price: 80, category: "FLEEK EYELASH" },
-      { name: "Korean BBGlow", price: 200, category: "WOKE UP LIKE THIS" },
-      { name: "Lip Tattoo/Lip Pigmentation", price: 180, category: "WOKE UP LIKE THIS" },
-      { name: "Eyebrow Tattoo", price: 100, category: "BROWMAZING" },
-      { name: "Eyebrow Shaping", price: 50, category: "BROWMAZING" },
-    ];
+  <!-- Loading Modal -->
+  <div id="loadingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 text-center">
+      <div class="loading-spinner mx-auto mb-4"></div>
+      <p class="text-gray-700 font-medium">Processing receipt...</p>
+    </div>
+  </div>
 
-    let cart = [];
-
-    // Render all services
-    function renderServices(serviceList) {
-      const serviceItems = document.getElementById('serviceItems');
-      serviceItems.innerHTML = '';
-      serviceList.forEach((service, index) => {
-        const div = document.createElement('div');
-        div.className = 'service-item';
-        div.innerHTML = `
-          <span>${service.name}</span>
-          <span>₱${service.price}</span>
-        `;
-        div.onclick = () => addToCart(service.name, service.price);
-        serviceItems.appendChild(div);
-      });
-
-      // Update active category button
-      const categoryButtons = document.querySelectorAll('.service-category');
-      categoryButtons.forEach(button => {
-        button.classList.remove('active');
-      });
-      document.querySelector('.service-category').classList.add('active');
-    }
-
-    // Filter services by search input
-    function filterServices() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const filteredServices = services.filter(service =>
-        service.name.toLowerCase().includes(searchTerm)
-      );
-      renderServices(filteredServices);
-    }
-
-    // Filter services by category
-    function filterByCategory(category) {
-      const filteredServices = services.filter(service =>
-        service.category === category
-      );
-      renderServices(filteredServices);
-
-      // Update active category button
-      const categoryButtons = document.querySelectorAll('.service-category');
-      categoryButtons.forEach(button => {
-        button.classList.remove('active');
-        if (button.textContent === category) {
-          button.classList.add('active');
-        }
-      });
-    }
-
-    // Add service to cart
-    function addToCart(name, price) {
-      cart.push({ name, price });
-      updateCart();
-    }
-
-    // Remove service from cart
-    function removeFromCart(index) {
-      cart.splice(index, 1);
-      updateCart();
-    }
-
-    // Update cart display
-    function updateCart() {
-      const cartItems = document.getElementById('cartItems');
-      cartItems.innerHTML = '';
-      let total = 0;
-
-      cart.forEach((item, index) => {
-        const div = document.createElement('div');
-        div.className = 'cart-item';
-        div.innerHTML = `
-          <span>${item.name}</span>
-          <div>
-            <span>₱${item.price.toFixed(2)}</span>
-            <button onclick="removeFromCart(${index})"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        `;
-        cartItems.appendChild(div);
-        total += item.price;
-      });
-
-      document.getElementById('cartTotal').textContent = total.toFixed(2);
-      document.getElementById('payAmount').textContent = total.toFixed(2);
-
-      // Enable or disable the pay button
-      const payButton = document.getElementById('payButton');
-      payButton.disabled = cart.length === 0;
-    }
-
-    // Validate payment input to prevent negative numbers
-    function validatePayment(input) {
-      if (input.value < 0) {
-        input.value = '';
-        document.getElementById('calculatorDisplay').textContent = '0';
-      }
-    }
-
-    // Calculator functions
-    function appendToDisplay(value) {
-      const display = document.getElementById('calculatorDisplay');
-      if (display.textContent === '0' && value !== '.') {
-        display.textContent = value;
-      } else {
-        display.textContent += value;
-      }
-      document.getElementById('paymentAmount').value = display.textContent;
-    }
-
-    function clearCalculator() {
-      document.getElementById('calculatorDisplay').textContent = '0';
-      document.getElementById('paymentAmount').value = '';
-    }
-
-    // Generate PDF receipt
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      let y = 20;
-
-      doc.setFontSize(16);
-      doc.text("RECEIPT", 105, y, { align: 'center' });
-      y += 10;
-      doc.text("Skinship Beauty", 105, y, { align: 'center' });
-      y += 10;
-
-      doc.text("Items:", 10, y);
-      y += 10;
-
-      let total = 0;
-      cart.forEach(item => {
-        doc.text(`${item.name} - ₱${item.price.toFixed(2)}`, 10, y);
-        y += 10;
-        total += item.price;
-      });
-
-      const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-      doc.text(`Total: ₱${total.toFixed(2)}`, 10, y);
-      y += 10;
-      doc.text(`Payment: ₱${paymentAmount.toFixed(2)}`, 10, y);
-      y += 10;
-      doc.text(`Change: ₱${(paymentAmount - total).toFixed(2)}`, 10, y);
-
-      doc.save('receipt.pdf');
-    }
-
-    // Checkout and validate payment
-    function checkout() {
-      const paymentAmount = parseFloat(document.getElementById('paymentAmount').value) || 0;
-      const total = cart.reduce((sum, item) => sum + item.price, 0);
-
-      if (paymentAmount < total) {
-        alert('Insufficient payment!');
-        return;
-      }
-
-      generatePDF();
-      alert('Payment successful! Receipt generated.');
-      cart = [];
-      updateCart();
-      clearCalculator();
-    }
-
-    // Initial render
-    renderServices(services);
-    // Gusto ko na magmahal my pookie bear
-  </script>
+  <script src="cashier.js"></script>
 </body>
 </html>
-
-
