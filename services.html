@@ -6,14 +6,30 @@
   <title>Services | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
   <style>
-    .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s }
-    .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
-    .sidebar-btn.active { background:#da5c73;color:white }
+    .sidebar-btn { 
+      width:50px;
+      height:50px;
+      border-radius:50%;
+      border:none;
+      background:transparent;
+      color:#da5c73;
+      font-size:20px;
+      cursor:pointer;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:.3s;
+    }
+    .sidebar-btn:hover { 
+      background:#da5c73;
+      color:white;
+      transform:scale(1.1);
+    }
+    .sidebar-btn.active { 
+      background:#da5c73;
+      color:white;
+    }
     
     .service-dropdown {
       position: relative;
@@ -78,6 +94,120 @@
       background-color: #c44c66;
       color: white;
     }
+
+    /* Notification Styles */
+    .notification-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .notification-dropdown {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .notification-dropdown.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .notification-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .notification-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .notification-item:hover {
+      background: #fef2f2;
+    }
+    
+    .notification-item.unread {
+      background: #fff7ed;
+    }
+    
+    .notification-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    
+    .notification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notification-modal.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    
+    .modal-close:hover {
+      color: #da5c73;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -93,7 +223,6 @@
     <button class="sidebar-btn active" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <!-- Registration button (only admin can see) -->
     <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
@@ -111,16 +240,35 @@
         </div>
         <h1 class="text-center text-2xl font-bold text-white drop-shadow">Services</h1>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+          <!-- Notification Bell -->
+          <div class="relative">
+            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
+              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            
+            <!-- Notification Dropdown -->
+            <div id="notificationDropdown" class="notification-dropdown">
+              <div class="notification-header">
+                <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+              </div>
+              <div id="notificationList"></div>
+            </div>
+          </div>
+          
           <span class="font-semibold text-lg text-white" id="usernameDisplay">Username</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
             </div>
           </div>
         </div>
       </div>
+      
       <!-- Category Dropdown -->
       <div class="px-4 py-2">
         <div class="service-dropdown">
@@ -132,6 +280,7 @@
           </div>
         </div>
       </div>
+      
       <!-- Services Table -->
       <div class="flex-1 overflow-auto">
         <table id="servicesTable" class="w-full bg-white rounded-xl shadow text-center">
@@ -172,12 +321,19 @@
     </div>
   </main>
 
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
   <script>
     const services = [
       "FLEEK EYELASH", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES"
     ];
 
-    // Service data for each category
     const serviceData = {
       'FLEEK EYELASH': [
         { service: 'EYELASH NATURAL (1 SIZE)', price: '₱ 499' },
@@ -234,7 +390,8 @@
         { service: 'NATURAL EYELASH OR LASH LFT (ADD 1OO FOR TINT) + UV GEL MANICURE', price: '₱ 950'},
         { service: 'FOOTSPA + UV GELPEDICURE', price: '₱ 850'},
         { service: 'FOOTSPA + BASI PEDICURE + FOOT REFELEX', price: '₱ 850'},
-        { service: 'FOOTSPA + UV GEL PEDICURE +FOOT MASSAGE', price: '₱ 1150'},]
+        { service: 'FOOTSPA + UV GEL PEDICURE +FOOT MASSAGE', price: '₱ 1150'}
+      ]
     };
 
     let activeService = "FLEEK EYELASH";
@@ -275,7 +432,6 @@
       document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
       document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
       
-      // Update the services table with the selected category
       updateServicesTable(service);
     }
 
@@ -308,43 +464,152 @@
           }
         }
       }
+
+      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
+      }
+
+      if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
+        document.getElementById('userMenu').classList.add('hidden');
+      }
+    }
+
+    // Notification System
+    function loadNotifications() {
+      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notificationList = document.getElementById('notificationList');
+      const badge = document.getElementById('notificationBadge');
+      
+      const unreadCount = notifications.filter(n => !n.read).length;
+      
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+        return;
+      }
+      
+      notificationList.innerHTML = '';
+      
+      notifications.forEach(notification => {
+        const item = document.createElement('div');
+        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+        item.onclick = () => viewNotification(notification.id);
+        
+        const time = new Date(notification.timestamp);
+        const timeStr = time.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        
+        item.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <strong class="text-[#da5c73]">${notification.message}</strong>
+            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+          </div>
+          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
+          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        `;
+        
+        notificationList.appendChild(item);
+      });
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notificationDropdown');
+      dropdown.classList.toggle('show');
+      loadNotifications();
+    }
+
+    function viewNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notification = notifications.find(n => n.id === id);
+      
+      if (!notification) return;
+      
+      notification.read = true;
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      
+      const modal = document.getElementById('notificationModal');
+      const modalBody = document.getElementById('modalBody');
+      
+      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
+        dateStyle: 'full', 
+        timeStyle: 'short' 
+      });
+      
+      modalBody.innerHTML = `
+        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
+        <div class="space-y-3">
+          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
+          <div><strong>Email:</strong> ${notification.details.email}</div>
+          <div><strong>Phone:</strong> ${notification.details.phone}</div>
+          <div><strong>Service:</strong> ${notification.details.service}</div>
+          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
+          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
+          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
+          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+        </div>
+        <div class="mt-6 flex gap-3">
+          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            <i class="fa-solid fa-check mr-2"></i>Approve
+          </button>
+          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            <i class="fa-solid fa-times mr-2"></i>Decline
+          </button>
+        </div>
+      `;
+      
+      modal.classList.add('show');
+      loadNotifications();
+    }
+
+    function closeNotificationModal() {
+      document.getElementById('notificationModal').classList.remove('show');
+    }
+
+    function markAllRead() {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications.forEach(n => n.read = true);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    function approveAppointment(id) {
+      alert('Appointment approved! (In a real system, this would send a confirmation email)');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function rejectAppointment(id) {
+      alert('Appointment declined! (In a real system, this would send a rejection email)');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function deleteNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications = notifications.filter(n => n.id !== id);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    function logout() {
+      window.location.href = "Login.html";
     }
 
     initializeDropdown();
-    // Initialize with default service
     updateServicesTable(activeService);
-
-    // Firebase configuration and auth
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID"
-    };
-    const app = firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = "Login.html";
-        return;
-      }
-      document.getElementById("usernameDisplay").textContent = user.email;
-
-      const doc = await db.collection("users").doc(user.uid).get();
-      if (doc.exists) {
-        const role = doc.data().role;
-        if (role !== "admin") {
-          document.getElementById("registrationBtn").style.display = "none";
-        }
-      }
-    });
-
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "Login.html";
-      });
-    }
+    loadNotifications();
+    
+    setInterval(loadNotifications, 30000);
   </script>
 </body>
 </html>
