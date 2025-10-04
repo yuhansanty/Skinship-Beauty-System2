@@ -36,6 +36,10 @@
             padding: 0 clamp(12px, 3vw, 24px);
         }
         
+        .hero .container {
+            padding: 0 clamp(12px, 3vw, 24px);
+        }
+        
         /* Header Styles */
         header {
             background-color: var(--light-pink);
@@ -157,25 +161,70 @@
         /* Hero Section */
         .hero {
             background: linear-gradient(135deg, var(--light-pink) 0%, var(--white) 100%);
-            padding: clamp(32px, 6vw, 64px) 0;
-            text-align: center;
-            min-height: calc(100vh - var(--header-approx-h));
+            padding: 0 0 40px 0;
             display: flex;
-            align-items: center;
+            align-items: flex-start;
+            position: relative;
+        }
+        
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            align-items: stretch;
+            height: 380px;
+        }
+        
+        .hero-text {
+            text-align: left;
+            padding: 20px clamp(20px, 4vw, 50px) 20px clamp(20px, 4vw, 50px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 100%;
+            background-image: url('LP-image.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 1;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-image {
+            display: none;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
         }
         
         .hero h1 {
-            font-size: clamp(28px, 6vw, 48px);
-            margin-bottom: clamp(12px, 2.5vw, 20px);
+            font-size: clamp(24px, 5vw, 42px);
+            margin-bottom: clamp(8px, 2vw, 15px);
             color: var(--dark-pink);
         }
         
         .hero p {
-            font-size: clamp(14px, 2.6vw, 20px);
+            font-size: clamp(13px, 2.4vw, 18px);
             max-width: 780px;
-            margin: 0 auto clamp(16px, 4vw, 30px);
+            margin: 0 0 clamp(12px, 3vw, 20px) 0;
             color: var(--text-color);
-            padding: 0 clamp(8px, 2vw, 0);
+            padding: 0;
         }
         
         .btn {
@@ -400,11 +449,70 @@
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
+        /* Sticky CTA Bar */
+        .sticky-cta {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--light-pink);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 25px;
+            z-index: 1000;
+            max-width: 400px;
+            width: auto;
+        }
+        
+        .sticky-cta-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .sticky-cta-icon {
+            width: 35px;
+            height: 35px;
+            background: var(--primary-pink);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .sticky-cta-text {
+            color: var(--text-color);
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .sticky-cta-btn {
+            background: var(--primary-pink);
+            color: white;
+            padding: 8px 28px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            white-space: nowrap;
+            min-width: 110px;
+        }
+        
+        .sticky-cta-btn:hover {
+            background: var(--dark-pink);
+        }
+        
         /* Responsive Styles */
         @media (max-width: 1024px) {
             .header-contact { text-align: left; }
         }
-        @media (max-width: 768px) {
+        @media (max-width: 800px) {
             .header-container { flex-direction: column; }
             nav ul { margin-top: 16px; }
             .header-top { align-items: flex-start; gap: 8px; }
@@ -414,7 +522,34 @@
             .header-nav ul { display: none; }
             .header-social { display: none; }
             .mobile-menu-btn { display: inline-flex; }
-            .hero { min-height: calc(100svh - var(--header-approx-h)); }
+            .hero { 
+                min-height: calc(100svh - var(--header-approx-h)); 
+                padding-top: 10px;
+            }
+            .hero-content { 
+                grid-template-columns: 1fr; 
+                text-align: center; 
+                gap: 20px;
+            }
+            .hero-text { 
+                text-align: center; 
+                padding-right: 0;
+            }
+            .hero::before {
+                width: 100%;
+                height: 60%;
+                top: auto;
+                bottom: 0;
+            }
+            .hero-buttons { 
+                justify-content: center; 
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .hero-buttons .btn { 
+                width: 100%; 
+                max-width: 280px; 
+            }
         }
         @media (max-width: 480px) {
             .container { padding: 0 8px; }
@@ -466,6 +601,25 @@
             .footer-content {
                 gap: 10px !important;
                 margin-bottom: 16px !important;
+            }
+            .sticky-cta {
+                padding: 8px 12px;
+                flex-direction: column;
+                gap: 8px;
+                text-align: center;
+                max-width: 300px;
+                bottom: 15px;
+            }
+            .sticky-cta-content {
+                flex-direction: column;
+                gap: 6px;
+            }
+            .sticky-cta-text {
+                font-size: 12px;
+            }
+            .sticky-cta-btn {
+                padding: 6px 12px;
+                font-size: 12px;
             }
         }
     </style>
@@ -524,9 +678,16 @@
     <!-- Hero Section -->
     <section class="hero" id="home">
         <div class="container">
-            <h1>Welcome to Skinship Beauty</h1>
-            <p>Aesthetics Clinic- non invasive procedures, Face and Body Contouring, SPA, 6D microblading, IPL, Eyelashes, Nails services, Pico & Diode laser, Hair removal, Melasma treatment</p>
-            <a href="contact.html" class="btn">Book an Appointment</a>
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Welcome to Skinship Beauty</h1>
+                    <p>Aesthetics Clinic Non-Invasive Procedures, Face and Body Contouring, SPA, 6D Microblading, IPL, Eyelashes, Nails Services, Pico & Diode Laser, Hair Removal, Melasma Treatment</p>
+                    <div class="hero-buttons">
+                        <a href="contact.html" class="btn">Book Now</a>
+                        <a href="#services" class="btn" style="background-color: var(--primary-pink);">Shop Now</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -595,6 +756,9 @@
                     <p>Luxurious gel pedicure for smooth, pampered feet and vibrant, durable color.</p>
                 </div>
             </div>
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="#services" class="btn" style="background-color: var(--secondary-pink);">View More Services</a>
+            </div>
         </div>
     </section>
 
@@ -654,9 +818,9 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
             <div class="about-content reveal from-left">
                 <div class="about-text">
                     <h2>Our Story</h2>
-                    <p>Skinship Beauty was founded with a simple mission: to provide exceptional grooming services in a relaxing and welcoming environment. Our team of skilled professionals is dedicated to helping you look and feel your best.</p>
-                    <p class="placeholder-text">Skinship Beauty is an aesthetics clinic that offers non-invasive procedures, skin care services, and spa and massage treatments. Inspired by passion and a desire to help others improve their self-esteem, Kim Tanhueco opened Skinship Beauty. It first opened on February 26, 2022, in Primark Town Center Mall, Cainta, Rizal, as a start-up skin care clinic. Starting with body contouring using Exilis machines, Skinship Beauty quickly expanded to include nail care, massages, and advanced facial treatments. Currently, they also offer HydraFacial and Black Doll treatments as well as hair removal services.</p>
-
+                    <p>Skinship Beauty is your go-to aesthetics clinic in Cainta, Rizal, offering relaxing and professional care. Since opening in 2022, we've grown from body contouring to a full range of services—facials, HydraFacial, Black Doll treatments, nail care, massages, and hair removal—helping you look and feel your best.</p>
+                    <p class="placeholder-text" id="expandedText" style="display: none;">Skinship Beauty is an aesthetics clinic that offers non-invasive procedures, skin care services, and spa and massage treatments. Inspired by passion and a desire to help others improve their self-esteem, Kim Tanhueco opened Skinship Beauty. It first opened on February 26, 2022, in Primark Town Center Mall, Cainta, Rizal, as a start-up skin care clinic. Starting with body contouring using Exilis machines, Skinship Beauty quickly expanded to include nail care, massages, and advanced facial treatments. Currently, they also offer HydraFacial and Black Doll treatments as well as hair removal services.</p>
+                    <button id="readMoreBtn" class="btn" style="margin-top: 15px; background-color: var(--primary-pink);">Read More</button>
                 </div>
                 <div class="about-image">
                     <img src="store.jpg" alt="Skinship Beauty Store" class="reveal" style="width:100%; border-radius:10px; background-color: #ffe6f0; padding: 0; display: block;" />
@@ -713,17 +877,29 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
                 </div>
                 <div class="footer-section">
                     <h3>Contact Info</h3>
-                    <p class="placeholder-text">primark towncenter cainta, Cainta, Philippines, 1900</p>
+                    <p class="placeholder-text">Primark Towncenter Cainta, Rizal</p>
                     <p class="placeholder-text">0992 595 0241</p>
                     <p class="placeholder-text">skinshipbyk@gmail.com</p>
                     <p class="placeholder-text">10:00 AM - 9:00 PM</p>
                 </div>
             </div>
             <div class="copyright">
-                <p>© 2023 Skinship Beauty. All rights reserved.</p>
+                <p>© 2025 Skinship Beauty. All rights reserved.</p>
             </div>
         </div>
     </footer>
+
+    <!-- Sticky CTA Bar -->
+    <div class="sticky-cta" id="stickyCta">
+        <div class="sticky-cta-content">
+            <div class="sticky-cta-icon">
+                <i class="fas fa-phone"></i>
+            </div>
+            <div class="sticky-cta-text">Schedule your appointment Today!</div>
+        </div>
+        <a href="contact.html" class="sticky-cta-btn">Book Now!</a>
+    </div>
+
 <script>
   const menuBtn = document.getElementById('mobileMenuBtn');
   const panel = document.getElementById('mobileMenuPanel');
@@ -771,6 +947,22 @@ friends, dami din silang ibang procedures i can't wait to try! Thank you."</p>
     el.style.setProperty('--reveal-delay', `${Math.min(idx * 80, 300)}ms`);
     io.observe(el);
   });
+
+  // Read More functionality
+  const readMoreBtn = document.getElementById('readMoreBtn');
+  const expandedText = document.getElementById('expandedText');
+  
+  readMoreBtn?.addEventListener('click', () => {
+    if (expandedText.style.display === 'none') {
+      expandedText.style.display = 'block';
+      readMoreBtn.textContent = 'Read Less';
+    } else {
+      expandedText.style.display = 'none';
+      readMoreBtn.textContent = 'Read More';
+    }
+  });
+
+  // Sticky CTA is now always visible via CSS - no JavaScript needed
 </script>
 </body>
 </html>
