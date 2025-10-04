@@ -250,6 +250,7 @@
             <div id="notificationDropdown" class="notification-dropdown">
               <div class="notification-header">
                 <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="clearAllNotifications()"class="text-sm text-[#da5c73] hover:underline">Clear all</button>
                 <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
               </div>
               <div id="notificationList"></div>
@@ -579,6 +580,11 @@
       notifications.forEach(n => n.read = true);
       localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
       loadNotifications();
+    }
+
+   function clearAllNotifications() {
+      notifications = [];
+      updateNotificationUI();
     }
 
     function approveAppointment(id) {
