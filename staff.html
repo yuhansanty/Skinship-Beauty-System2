@@ -30,6 +30,118 @@
       background: #da5c73;
       color: white;
     }
+    .notification-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .notification-dropdown {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .notification-dropdown.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .notification-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .notification-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .notification-item:hover {
+      background: #fef2f2;
+    }
+    
+    .notification-item.unread {
+      background: #fff7ed;
+    }
+    
+    .notification-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    
+    .notification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notification-modal.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    
+    .modal-close:hover {
+      color: #da5c73;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -58,7 +170,22 @@
       <div class="flex justify-between items-center mb-6">
         <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+
+          <div class="relative">
+            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
+              <i class="fa-regular fa-bell text-xl cursor-pointer text-black"></i>
+              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            
+            <div id="notificationDropdown" class="notification-dropdown">
+              <div class="notification-header">
+                <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+              </div>
+              <div id="notificationList"></div>
+            </div>
+          </div>
+
           <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
@@ -113,6 +240,158 @@
     </div>
   </div>
 
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Notification System - Global functions
+    function loadNotifications() {
+      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notificationList = document.getElementById('notificationList');
+      const badge = document.getElementById('notificationBadge');
+      
+      const unreadCount = notifications.filter(n => !n.read).length;
+      
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+        return;
+      }
+      
+      notificationList.innerHTML = '';
+      
+      notifications.forEach(notification => {
+        const item = document.createElement('div');
+        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+        item.onclick = () => viewNotification(notification.id);
+        
+        const time = new Date(notification.timestamp);
+        const timeStr = time.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        
+        item.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <strong class="text-[#da5c73]">${notification.message}</strong>
+            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+          </div>
+          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
+          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        `;
+        
+        notificationList.appendChild(item);
+      });
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notificationDropdown');
+      dropdown.classList.toggle('show');
+      loadNotifications();
+    }
+
+    function viewNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notification = notifications.find(n => n.id === id);
+      
+      if (!notification) return;
+      
+      notification.read = true;
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      
+      const modal = document.getElementById('notificationModal');
+      const modalBody = document.getElementById('modalBody');
+      
+      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
+        dateStyle: 'full', 
+        timeStyle: 'short' 
+      });
+      
+      modalBody.innerHTML = `
+        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
+        <div class="space-y-3">
+          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
+          <div><strong>Email:</strong> ${notification.details.email}</div>
+          <div><strong>Phone:</strong> ${notification.details.phone}</div>
+          <div><strong>Service:</strong> ${notification.details.service}</div>
+          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
+          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
+          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
+          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+        </div>
+        <div class="mt-6 flex gap-3">
+          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            <i class="fa-solid fa-check mr-2"></i>Approve
+          </button>
+          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            <i class="fa-solid fa-times mr-2"></i>Decline
+          </button>
+        </div>
+      `;
+      
+      modal.classList.add('show');
+      loadNotifications();
+    }
+
+    function closeNotificationModal() {
+      document.getElementById('notificationModal').classList.remove('show');
+    }
+
+    function markAllRead() {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications.forEach(n => n.read = true);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    function approveAppointment(id) {
+      alert('Appointment approved!');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function rejectAppointment(id) {
+      alert('Appointment declined!');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function deleteNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications = notifications.filter(n => n.id !== id);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    // Close dropdowns when clicking outside
+    window.onclick = function(event) {
+      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
+      }
+
+      if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
+        document.getElementById('userMenu').classList.add('hidden');
+      }
+    }
+
+    // Initialize notifications and auto-refresh
+    loadNotifications();
+    setInterval(loadNotifications, 30000);
+  </script>
+
   <!-- Firebase Script -->
   <script type="module" defer>
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
@@ -157,9 +436,11 @@
           }).join("")
         : `<tr><td colspan="2" class="px-4 py-2">No history available.</td></tr>`;
     }
+    
     function closeHistory() {
       document.getElementById("historyModal").classList.add("hidden");
     }
+    
     window.openHistory = openHistory;
     window.closeHistory = closeHistory;
 
@@ -171,18 +452,14 @@
       }
       usernameSpan.textContent = user.email;
 
-      // Ensure today's log exists and set availability to true on login
       const today = new Date().toLocaleDateString();
       const logsRef = collection(db, "staffLogs", user.uid, "history");
       
-      // Get all logs for today
       const todayQuery = query(logsRef, where("date", "==", today));
       const todaySnap = await getDocs(todayQuery);
       
-      // Check if we need a new log entry
       let needsNewLog = true;
       if (!todaySnap.empty) {
-        // Check if any log doesn't have a clockOut (still active session)
         const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
         if (activeSession) {
           needsNewLog = false;
@@ -198,13 +475,11 @@
         });
       }
 
-      // Set availability to true when logging in (clocking in)
       const staffRef = doc(db, "users", user.uid);
       await updateDoc(staffRef, { 
         availability: true
       });
 
-      // Realtime staff list
       onSnapshot(collection(db, "users"), async (snapshot) => {
         let rows = [];
         const promises = snapshot.docs.map(async (docSnap) => {
@@ -217,7 +492,6 @@
           const logsSnap = await getDocs(logsQuery);
           const latest = logsSnap.docs[0]?.data() || {};
           
-          // Determine availability based on clock in/out status
           const isClockedIn = latest.clockIn && !latest.clockOut;
           const isAvailable = isClockedIn;
 
@@ -245,19 +519,16 @@
       });
     });
 
-    // Function to handle clock out
     async function handleClockOut() {
       const user = auth.currentUser;
       if (user) {
         const today = new Date().toLocaleDateString();
         const logsRef = collection(db, "staffLogs", user.uid, "history");
         
-        // Get all logs for today
         const todayQuery = query(logsRef, where("date", "==", today));
         const todaySnap = await getDocs(todayQuery);
         
         if (!todaySnap.empty) {
-          // Find the log without a clockOut (active session)
           const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
           if (activeLog) {
             await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
@@ -266,7 +537,6 @@
           }
         }
 
-        // Set availability to false when logging out (clocking out)
         const staffRef = doc(db, "users", user.uid);
         await updateDoc(staffRef, { 
           availability: false
@@ -274,18 +544,15 @@
       }
     }
 
-    // LOGOUT BUTTON - Clock out and sign out
     logoutBtn.addEventListener("click", async () => {
       await handleClockOut();
       await signOut(auth);
     });
 
-    // AUTO CLOCK OUT - When closing tab/window or navigating away
     window.addEventListener("beforeunload", async (e) => {
       await handleClockOut();
     });
 
-    // AUTO CLOCK OUT - When page visibility changes (tab switching/minimizing)
     document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "hidden") {
         await handleClockOut();

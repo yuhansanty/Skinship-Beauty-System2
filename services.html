@@ -94,8 +94,7 @@
       background-color: #c44c66;
       color: white;
     }
-
-    /* Notification Styles */
+    
     .notification-badge {
       position: absolute;
       top: -8px;
@@ -583,13 +582,13 @@
     }
 
     function approveAppointment(id) {
-      alert('Appointment approved! (In a real system, this would send a confirmation email)');
+      alert('Appointment approved!');
       closeNotificationModal();
       deleteNotification(id);
     }
 
     function rejectAppointment(id) {
-      alert('Appointment declined! (In a real system, this would send a rejection email)');
+      alert('Appointment declined!');
       closeNotificationModal();
       deleteNotification(id);
     }
