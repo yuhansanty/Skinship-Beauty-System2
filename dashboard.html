@@ -369,7 +369,9 @@
         reservationTable.innerHTML = `<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>`;
         return;
       }
+      let count = 0;
       snapshot.forEach((docSnap) => {
+        if (count >= 10) return; // Limit to 10 records
         const data = docSnap.data();
         const tr = document.createElement("tr");
         tr.className = "border-b";
@@ -381,8 +383,10 @@
           <td>${data.staff || "N/A"}</td>
         `;
         reservationTable.appendChild(tr);
+        count++;
       });
     });
+
 
     // Today's agenda
     const agendaList = document.getElementById("agendaList");
