@@ -6,6 +6,9 @@
   <title>Sales Report | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -57,6 +60,25 @@
     }
     .stat-card:hover {
       transform: translateY(-4px);
+    }
+    
+    .download-btn {
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(218, 92, 115, 0.3);
     }
     
     .notification-badge {
@@ -239,7 +261,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Sales</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalSales">₱ 3,094</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalSales">₱ 0</p>
             </div>
             <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -248,7 +270,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Transactions</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalTransactions">6</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalTransactions">0</p>
             </div>
             <i class="fa-solid fa-receipt text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -257,7 +279,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Top Service</p>
-              <p class="text-lg font-bold text-[#da5c73]" id="topService">Hair Color</p>
+              <p class="text-lg font-bold text-[#da5c73]" id="topService">-</p>
             </div>
             <i class="fa-solid fa-crown text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -266,7 +288,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Avg. Sale</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="avgSale">₱ 516</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="avgSale">₱ 0</p>
             </div>
             <i class="fa-solid fa-chart-simple text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -275,17 +297,17 @@
 
       <!-- Filters -->
       <div class="flex gap-3 mb-6 flex-wrap">
-        <button class="filter-btn active" onclick="filterByPeriod('all')">All Time</button>
-        <button class="filter-btn" onclick="filterByPeriod('today')">Today</button>
-        <button class="filter-btn" onclick="filterByPeriod('week')">This Week</button>
-        <button class="filter-btn" onclick="filterByPeriod('month')">This Month</button>
+        <button class="filter-btn active" onclick="filterByPeriod('all', this)">All Time</button>
+        <button class="filter-btn" onclick="filterByPeriod('today', this)">Today</button>
+        <button class="filter-btn" onclick="filterByPeriod('week', this)">This Week</button>
+        <button class="filter-btn" onclick="filterByPeriod('month', this)">This Month</button>
         <input type="date" id="startDate" class="filter-btn">
         <input type="date" id="endDate" class="filter-btn">
         <button class="filter-btn" onclick="filterByDateRange()">
           <i class="fa-solid fa-filter mr-2"></i>Apply Date Range
         </button>
         <button class="filter-btn" onclick="exportToCSV()">
-          <i class="fa-solid fa-download mr-2"></i>Export
+          <i class="fa-solid fa-download mr-2"></i>Export CSV
         </button>
       </div>
 
@@ -295,9 +317,8 @@
           <table class="w-full text-sm" id="salesTable">
             <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
               <tr>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Transaction ID</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Invoice Number</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item #</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Receipt No.</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Customer Name</th>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Service/Item</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Qty</th>
                 <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Price</th>
@@ -305,59 +326,11 @@
               </tr>
             </thead>
             <tbody id="salesTableBody">
-              <tr class="border-b hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">31293-93221</td>
-                <td class="py-4 px-4">21M&KFFKNXBS6PT6N</td>
-                <td class="py-4 px-4">123-456</td>
-                <td class="py-4 px-4">Hair-Color</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
-                <td class="py-4 px-4 text-center text-sm">May 8, 2025</td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">71233-32164</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">Haircut</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
-                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">92125-61268</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">Foot Massage</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
-                <td class="py-4 px-4 text-center text-sm">May 9, 2025</td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">71204-51152</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">Manicure</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
-                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">91230-05235</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">EYELASH NATURAL (1 SIZE)</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
-                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition">
-                <td class="py-4 px-4 font-semibold">91230-05235</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">—</td>
-                <td class="py-4 px-4">EYELASH DOLLEYE (2 SIZE)</td>
-                <td class="py-4 px-4 text-center">1</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 599</td>
-                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              <tr>
+                <td colspan="6" class="py-8 text-center text-gray-400">
+                  <i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i>
+                  <p>Loading sales data...</p>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -375,68 +348,403 @@
   </div>
 
   <script>
-    // Sample data for functionality
-    const salesData = [
-      {id: '31293-93221', invoice: '21M&KFFKNXBS6PT6N', item: '123-456', service: 'Hair-Color', qty: 1, price: 499, date: '2025-05-08'},
-      {id: '71233-32164', invoice: '', item: '', service: 'Haircut', qty: 1, price: 499, date: '2025-05-13'},
-      {id: '92125-61268', invoice: '', item: '', service: 'Foot Massage', qty: 1, price: 499, date: '2025-05-09'},
-      {id: '71204-51152', invoice: '', item: '', service: 'Manicure', qty: 1, price: 499, date: '2025-05-05'},
-      {id: '91230-05235', invoice: '', item: '', service: 'EYELASH NATURAL (1 SIZE)', qty: 1, price: 499, date: '2025-05-05'},
-      {id: '91230-05235', invoice: '', item: '', service: 'EYELASH DOLLEYE (2 SIZE)', qty: 1, price: 599, date: '2025-05-05'}
-    ];
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let allSalesData = [];
+    let filteredSalesData = [];
+
+    // Load sales data from Firebase
+    async function loadSalesData() {
+      try {
+        const snapshot = await db.collection("cashier_receipt").orderBy("timestamp", "desc").get();
+        allSalesData = [];
+        
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          allSalesData.push({
+            id: doc.id,
+            receiptNumber: data.receiptNumber,
+            customerName: data.customerName,
+            customerEmail: data.customerEmail || '',
+            customerAddress: data.customerAddress || '',
+            customerPhone: data.customerPhone || '',
+            cashierName: data.cashierName || 'Unknown',
+            items: data.items,
+            subtotal: data.subtotal,
+            payment: data.payment || data.subtotal,
+            change: data.change || 0,
+            paymentMethod: data.paymentMethod || 'Cash',
+            referenceNumber: data.referenceNumber || '',
+            date: data.date,
+            time: data.time || '',
+            timestamp: data.timestamp ? data.timestamp.toDate() : new Date(data.createdAt)
+          });
+        });
+        
+        filteredSalesData = [...allSalesData];
+        renderTable();
+        updateStats();
+      } catch (error) {
+        console.error("Error loading sales data:", error);
+        document.getElementById('salesTableBody').innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-red-500">
+              <i class="fa-solid fa-exclamation-triangle text-3xl mb-2"></i>
+              <p>Error loading sales data. Please refresh the page.</p>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // Generate PDF for specific receipt
+    async function downloadReceiptPDF(receiptData) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      let y = 20;
+      
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('Skinship Beauty', 105, y, { align: 'center' });
+      y += 7;
+      
+      doc.setFontSize(9);
+      doc.setFont(undefined, 'normal');
+      doc.text('2nd floor, Primark Town Center Cainta', 105, y, { align: 'center' });
+      y += 4;
+      doc.text('Ortigas Extension, Cainta, Rizal', 105, y, { align: 'center' });
+      y += 4;
+      doc.text('0917-5880889 / 0915-9123020', 105, y, { align: 'center' });
+      y += 10;
+      
+      doc.setFontSize(14);
+      doc.setFont(undefined, 'bold');
+      doc.text('ACKNOWLEDGEMENT RECEIPT', 105, y, { align: 'center' });
+      y += 6;
+      doc.setFontSize(9);
+      doc.text(`Receipt No: ${receiptData.receiptNumber}`, 105, y, { align: 'center' });
+      y += 10;
+      
+      doc.setFontSize(10);
+      doc.setFont(undefined, 'normal');
+      doc.text(`SOLD TO: ${receiptData.customerName}`, 20, y);
+      doc.text(`DATE: ${receiptData.date}`, 150, y);
+      y += 6;
+      if (receiptData.customerEmail) {
+        doc.text(`EMAIL: ${receiptData.customerEmail}`, 20, y);
+        y += 6;
+      }
+      if (receiptData.customerAddress) {
+        doc.text(`ADDRESS: ${receiptData.customerAddress}`, 20, y);
+        y += 6;
+      }
+      if (receiptData.customerPhone) {
+        doc.text(`MOBILE NO: ${receiptData.customerPhone}`, 20, y);
+        y += 6;
+      }
+      if (receiptData.time) {
+        doc.text(`TIME: ${receiptData.time}`, 20, y);
+      }
+      doc.text(`CASHIER: ${receiptData.cashierName}`, 150, y);
+      y += 8;
+      
+      doc.setFont(undefined, 'bold');
+      doc.line(20, y, 190, y);
+      y += 6;
+      doc.text('QTY', 25, y);
+      doc.text('DESCRIPTION', 50, y);
+      doc.text('PRICE', 150, y);
+      doc.text('AMOUNT', 175, y);
+      y += 2;
+      doc.line(20, y, 190, y);
+      y += 6;
+      
+      doc.setFont(undefined, 'normal');
+      receiptData.items.forEach(item => {
+        if (y > 250) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text('1', 25, y);
+        const lines = doc.splitTextToSize(item.name, 90);
+        doc.text(lines, 50, y);
+        doc.text(`PHP ${item.price.toFixed(2)}`, 150, y);
+        doc.text(`PHP ${item.price.toFixed(2)}`, 175, y);
+        y += Math.max(6, lines.length * 5);
+      });
+      
+      y += 4;
+      doc.line(20, y, 190, y);
+      y += 6;
+      doc.setFont(undefined, 'bold');
+      doc.text('TOTAL:', 150, y);
+      doc.text(`PHP ${receiptData.subtotal.toFixed(2)}`, 175, y);
+      y += 6;
+      doc.setFont(undefined, 'normal');
+      doc.text('PAYMENT:', 150, y);
+      doc.text(`PHP ${receiptData.payment.toFixed(2)}`, 175, y);
+      y += 6;
+      
+      if (receiptData.paymentMethod === 'Cash') {
+        doc.setFont(undefined, 'bold');
+        doc.text('CHANGE:', 150, y);
+        doc.text(`PHP ${receiptData.change.toFixed(2)}`, 175, y);
+        y += 10;
+      } else {
+        y += 4;
+      }
+      
+      doc.setFont(undefined, 'normal');
+      doc.text(`Mode of Payment: ${receiptData.paymentMethod}`, 20, y);
+      y += 6;
+      
+      if (receiptData.paymentMethod !== 'Cash' && receiptData.referenceNumber) {
+        doc.text(`Reference/Check No: ${receiptData.referenceNumber}`, 20, y);
+        y += 10;
+      } else {
+        y += 4;
+      }
+      
+      doc.line(140, y, 190, y);
+      y += 5;
+      doc.setFontSize(9);
+      doc.text('AUTHORIZED SIGNATURE', 165, y, { align: 'center' });
+      
+      const fileName = `Receipt_${receiptData.customerName.replace(/\s+/g, '_')}_${receiptData.date.replace(/\//g, '-')}.pdf`;
+      doc.save(fileName);
+    }
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById('salesTableBody');
+      
+      if (filteredSalesData.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-8 text-center text-gray-400">
+              <i class="fa-solid fa-inbox text-3xl mb-2"></i>
+              <p>No transactions found</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = filteredSalesData.map(row => {
+        const totalQty = row.items.length;
+        
+        let itemsList;
+        if (row.items.length === 1) {
+          itemsList = `
+            <div class="flex items-center gap-2">
+              <span class="font-medium">${row.items[0].name}</span>
+              <span class="text-xs text-gray-500">(₱${row.items[0].price})</span>
+            </div>
+          `;
+        } else {
+          const firstItem = row.items[0].name;
+          const remaining = row.items.length - 1;
+          itemsList = `
+            <div class="space-y-2">
+              <div class="flex items-center gap-2">
+                <span class="font-medium">${firstItem}</span>
+                <span class="px-2 py-0.5 bg-[#da5c73] text-white text-xs rounded-full font-semibold">+${remaining} more</span>
+              </div>
+              <details class="text-sm">
+                <summary class="cursor-pointer text-[#da5c73] hover:underline">View all items</summary>
+                <div class="mt-2 pl-4 space-y-1 border-l-2 border-pink-200">
+                  ${row.items.map(item => `
+                    <div class="flex justify-between items-center text-xs">
+                      <span class="text-gray-700">• ${item.name}</span>
+                      <span class="text-gray-500 font-medium">₱${item.price}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </details>
+            </div>
+          `;
+        }
+        
+        return `
+          <tr class="border-b hover:bg-gray-50 transition">
+            <td class="py-4 px-4">
+              <div class="flex flex-col gap-2">
+                <span class="font-semibold">${row.receiptNumber}</span>
+                <button onclick='downloadReceiptPDF(${JSON.stringify(row).replace(/'/g, "&apos;")})' class="download-btn">
+                  <i class="fa-solid fa-download"></i>
+                  <span>Download PDF</span>
+                </button>
+              </div>
+            </td>
+            <td class="py-4 px-4">${row.customerName}</td>
+            <td class="py-4 px-4">${itemsList}</td>
+            <td class="py-4 px-4 text-center">
+              <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-pink-100 text-[#da5c73] font-bold text-sm">
+                ${totalQty}
+              </span>
+            </td>
+            <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${row.subtotal.toFixed(2)}</td>
+            <td class="py-4 px-4 text-center text-sm">${row.date}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Update statistics
+    function updateStats() {
+      const total = filteredSalesData.reduce((sum, receipt) => sum + receipt.subtotal, 0);
+      const uniqueReceipts = filteredSalesData.length;
+      const avgSale = uniqueReceipts > 0 ? total / uniqueReceipts : 0;
+      
+      const serviceCounts = {};
+      filteredSalesData.forEach(receipt => {
+        receipt.items.forEach(item => {
+          serviceCounts[item.name] = (serviceCounts[item.name] || 0) + 1;
+        });
+      });
+      const topService = Object.keys(serviceCounts).length > 0 
+        ? Object.keys(serviceCounts).reduce((a, b) => serviceCounts[a] > serviceCounts[b] ? a : b)
+        : '-';
+      
+      document.getElementById('totalSales').textContent = `₱ ${total.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('totalTransactions').textContent = uniqueReceipts;
+      document.getElementById('topService').textContent = topService.length > 20 ? topService.substring(0, 20) + '...' : topService;
+      document.getElementById('avgSale').textContent = `₱ ${avgSale.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    }
 
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', function(e) {
       const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('#salesTableBody tr');
       
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
+      if (searchTerm === '') {
+        filteredSalesData = [...allSalesData];
+      } else {
+        filteredSalesData = allSalesData.filter(row => {
+          const itemsText = row.items.map(item => item.name).join(' ').toLowerCase();
+          return row.receiptNumber.toLowerCase().includes(searchTerm) ||
+                 row.customerName.toLowerCase().includes(searchTerm) ||
+                 itemsText.includes(searchTerm) ||
+                 row.date.toLowerCase().includes(searchTerm);
+        });
+      }
+      
+      renderTable();
+      updateStats();
     });
 
-    // Filter button styling
-    function filterByPeriod(period) {
-      const buttons = document.querySelectorAll('.filter-btn');
-      buttons.forEach(btn => {
+    // Filter by period
+    function filterByPeriod(period, button) {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
         if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
            btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
           btn.classList.remove('active');
         }
       });
-      event.target.classList.add('active');
+      button.classList.add('active');
       
-      // Add your filter logic here
-      console.log('Filtering by:', period);
-    }
-
-    function filterByDateRange() {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
+      const now = new Date();
+      now.setHours(23, 59, 59, 999);
       
-      if(startDate && endDate) {
-        console.log('Filtering from', startDate, 'to', endDate);
-        // Add your date range filter logic here
-      } else {
-        alert('Please select both start and end dates');
+      let startDate;
+      
+      switch(period) {
+        case 'today':
+          startDate = new Date(now);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          startDate = new Date(now);
+          startDate.setDate(now.getDate() - 7);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case 'month':
+          startDate = new Date(now);
+          startDate.setMonth(now.getMonth() - 1);
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        default:
+          filteredSalesData = [...allSalesData];
+          renderTable();
+          updateStats();
+          return;
       }
+      
+      filteredSalesData = allSalesData.filter(row => {
+        return row.timestamp >= startDate && row.timestamp <= now;
+      });
+      
+      renderTable();
+      updateStats();
     }
 
-    function exportToCSV() {
-      // Basic CSV export
-      let csv = 'Transaction ID,Invoice Number,Item #,Service/Item,Quantity,Price,Date\n';
+    // Filter by date range
+    function filterByDateRange() {
+      const startDateInput = document.getElementById('startDate').value;
+      const endDateInput = document.getElementById('endDate').value;
       
-      salesData.forEach(row => {
-        csv += `${row.id},${row.invoice},${row.item},${row.service},${row.qty},${row.price},${row.date}\n`;
+      if(!startDateInput || !endDateInput) {
+        alert('Please select both start and end dates');
+        return;
+      }
+      
+      const startDate = new Date(startDateInput);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(endDateInput);
+      endDate.setHours(23, 59, 59, 999);
+      
+      if(startDate > endDate) {
+        alert('Start date must be before end date');
+        return;
+      }
+      
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
+           btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
+          btn.classList.remove('active');
+        }
+      });
+      
+      filteredSalesData = allSalesData.filter(row => {
+        return row.timestamp >= startDate && row.timestamp <= endDate;
+      });
+      
+      renderTable();
+      updateStats();
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+      if (filteredSalesData.length === 0) {
+        alert('No data to export');
+        return;
+      }
+      
+      let csv = 'Receipt No.,Customer Name,Service/Item,Quantity,Price,Date\n';
+      
+      filteredSalesData.forEach(row => {
+        const itemsText = row.items.map(item => item.name).join('; ');
+        csv += `${row.receiptNumber},"${row.customerName}","${itemsText}",${row.items.length},${row.subtotal},"${row.date}"\n`;
       });
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'sales_report.csv';
+      a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
+      window.URL.revokeObjectURL(url);
     }
 
     // Close dropdown when clicking outside
@@ -588,6 +896,12 @@
     // Load notifications on page load and refresh every 5 seconds
     loadNotifications();
     setInterval(loadNotifications, 5000);
+
+    // Initialize: Load sales data
+    loadSalesData();
+
+    // Reload data every 30 seconds to catch new transactions
+    setInterval(loadSalesData, 30000);
     
     // Close user menu and notifications on outside click
     window.addEventListener('click', (e) => {
