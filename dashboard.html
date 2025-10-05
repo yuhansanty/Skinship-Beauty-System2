@@ -183,6 +183,7 @@
           <div id="notificationDropdown" class="notification-dropdown">
             <div class="notification-header">
               <h3 class="font-bold text-gray-800">Notifications</h3>
+              <button onclick="clearAllNotifications()"class="text-sm text-[#da5c73] hover:underline">Clear all</button>
               <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
             </div>
             <div id="notificationList"></div>
@@ -752,6 +753,11 @@
       loadNotifications();
     }
 
+    function clearAllNotifications() {
+      localStorage.setItem('skinshipNotifications', '[]');
+      loadNotifications();
+    }
+
     function approveAppointment(id) {
       alert('Appointment approved!');
       closeNotificationModal();
@@ -770,7 +776,6 @@
       localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
       loadNotifications();
     }
-
 
     loadNotifications();
     setInterval(loadNotifications, 5000);
