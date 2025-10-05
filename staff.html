@@ -170,16 +170,18 @@
       <div class="flex justify-between items-center mb-6">
         <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
-
+          <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
               <i class="fa-regular fa-bell text-xl cursor-pointer text-black"></i>
               <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
             </button>
             
+            <!-- Notification Dropdown -->
             <div id="notificationDropdown" class="notification-dropdown">
               <div class="notification-header">
                 <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
                 <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
               </div>
               <div id="notificationList"></div>
@@ -248,8 +250,8 @@
     </div>
   </div>
 
+  <!-- Notification System Script -->
   <script>
-    // Notification System - Global functions
     function loadNotifications() {
       const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
       const notificationList = document.getElementById('notificationList');
@@ -357,6 +359,11 @@
       loadNotifications();
     }
 
+    function clearAllNotifications() {
+      localStorage.setItem('skinshipNotifications', '[]');
+      loadNotifications();
+    }
+
     function approveAppointment(id) {
       alert('Appointment approved!');
       closeNotificationModal();
@@ -375,18 +382,6 @@
       localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
       loadNotifications();
     }
-
-    // Close dropdowns when clicking outside
-    window.onclick = function(event) {
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-
-      if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
-        document.getElementById('userMenu').classList.add('hidden');
-      }
-    }
-
 
     loadNotifications();
     setInterval(loadNotifications, 5000);
@@ -556,6 +551,19 @@
     document.addEventListener("visibilitychange", async () => {
       if (document.visibilityState === "hidden") {
         await handleClockOut();
+      }
+    });
+
+    // Close user menu and notifications on outside click
+    window.addEventListener('click', (e) => {
+      const userMenu = document.getElementById('userMenu');
+      const btn = document.getElementById('userMenuButton');
+      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.add('hidden');
+      }
+
+      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
       }
     });
   </script>
