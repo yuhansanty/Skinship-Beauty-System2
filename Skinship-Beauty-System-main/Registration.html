@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Registration | Skinship Beauty</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s }
+    .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
+    .sidebar-btn.active { background:#da5c73;color:white }
+    
+    .tab-btn {
+      padding: 1rem 2rem;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      color: #9ca3af;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .tab-btn.active {
+      color: #da5c73;
+      border-bottom-color: #da5c73;
+    }
+    .tab-btn:hover {
+      color: #b97b8b;
+    }
+    
+    .form-card {
+      background: white;
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      max-width: 900px;
+      width: 100%;
+    }
+    
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .input-group label {
+      display: block;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+    
+    .input-field {
+      width: 100%;
+      padding: 0.875rem 1rem;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      background: #f9fafb;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: #da5c73;
+      background: white;
+      box-shadow: 0 0 0 3px rgba(218, 92, 115, 0.1);
+    }
+    
+    .btn-primary {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(218, 92, 115, 0.3);
+    }
+    
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(218, 92, 115, 0.4);
+    }
+    
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+    
+    .btn-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    /* Complete Update Button with Red Cancel Sliding Effect */
+    #completeUpdateBtn {
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    #completeUpdateBtn::before {
+      content: '✕';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 12.5%; /* 1/8 of the button */
+      height: 100%;
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      z-index: 1;
+      transition: width 0.4s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    #completeUpdateBtn.hovering-red::before {
+      width: 100%;
+      color: transparent;
+    }
+
+    #completeUpdateBtn .btn-content {
+      position: relative;
+      z-index: 3;
+      transition: opacity 0.4s ease;
+    }
+
+    #completeUpdateBtn.hovering-red .btn-content {
+      opacity: 0;
+    }
+
+    #completeUpdateBtn .cancel-text {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 3;
+      color: white;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    #completeUpdateBtn.hovering-red .cancel-text {
+      opacity: 1;
+    }
+    
+    .alert {
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      font-weight: 500;
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+    
+    .alert.show {
+      display: block;
+    }
+    
+    .alert-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+    }
+    
+    .alert-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+    
+    .alert-warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+    }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
+  <!-- Sidebar -->
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
+    <button class="sidebar-btn active" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
+    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
+    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="flex-1 flex flex-col items-center justify-center p-8 w-full ml-20">
+    <div class="w-full max-w-6xl">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <h1 class="text-5xl font-bold text-white mb-2">REGISTRATION</h1>
+        <p class="text-white/80">Manage user accounts and access</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex justify-center mb-8 bg-white/20 backdrop-blur-sm rounded-2xl p-2 max-w-2xl mx-auto">
+        <button class="tab-btn active" onclick="showTab(0)">
+          <i class="fa-solid fa-user-plus mr-2"></i>Create Account
+        </button>
+        <button class="tab-btn" onclick="showTab(1)">
+          <i class="fa-solid fa-key mr-2"></i>Change Password
+        </button>
+        <button class="tab-btn" onclick="showTab(2)">
+          <i class="fa-solid fa-envelope mr-2"></i>Update Email
+        </button>
+      </div>
+
+      <!-- Tab Contents -->
+      <div class="flex justify-center">
+        <!-- Create Account Tab -->
+        <div class="tab-content">
+          <div class="form-card">
+            <div class="alert alert-success" id="registerSuccess"></div>
+            <div class="alert alert-error" id="registerError"></div>
+            
+            <form id="registerForm">
+              <div class="grid-2">
+                <div class="input-group">
+                  <label><i class="fa-solid fa-user mr-2"></i>Full Name *</label>
+                  <input type="text" id="fullName" class="input-field" placeholder="Enter full name" required>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-at mr-2"></i>Username *</label>
+                  <input type="text" id="username" class="input-field" placeholder="Enter username" required>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-phone mr-2"></i>Mobile Number *</label>
+                  <input type="text" id="mobile" class="input-field" placeholder="09XXXXXXXXX" maxlength="11" required>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-venus-mars mr-2"></i>Gender *</label>
+                  <select id="gender" class="input-field" required>
+                    <option value="" disabled selected>Select Gender</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-envelope mr-2"></i>Email *</label>
+                  <input type="email" id="email" class="input-field" placeholder="email@example.com" required>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-user-tie mr-2"></i>Role *</label>
+                  <select id="role" class="input-field" required>
+                    <option value="" disabled selected>Select Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="staff">Staff</option>
+                  </select>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-lock mr-2"></i>Password *</label>
+                  <input type="password" id="password" class="input-field" placeholder="Enter password" required>
+                </div>
+
+                <div class="input-group">
+                  <label><i class="fa-solid fa-lock mr-2"></i>Confirm Password *</label>
+                  <input type="password" id="confirmPassword" class="input-field" placeholder="Confirm password" required>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary mt-4">
+                <i class="fa-solid fa-user-plus mr-2"></i>Create Account
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Change Password Tab -->
+        <div class="tab-content hidden">
+          <div class="form-card" style="max-width: 600px;">
+            <div class="alert alert-success" id="resetSuccess"></div>
+            <div class="alert alert-error" id="resetError"></div>
+            <div class="alert alert-warning" id="resetCooldown" style="display: none;"></div>
+            
+            <form id="changePassForm">
+              <div class="input-group">
+                <label><i class="fa-solid fa-envelope mr-2"></i>Email Address *</label>
+                <input type="email" id="resetEmail" class="input-field" placeholder="Enter your email" required>
+              </div>
+
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800">
+                  <i class="fa-solid fa-info-circle mr-2"></i>
+                  A password reset link will be sent to your email address. Click the link to set a new password.
+                </p>
+              </div>
+
+              <button type="submit" class="btn-primary" id="resetBtn">
+                <i class="fa-solid fa-paper-plane mr-2"></i>Send Reset Link
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Update Email Tab -->
+        <div class="tab-content hidden">
+          <div class="form-card" style="max-width: 600px;">
+            <div class="alert alert-success" id="retrieveSuccess"></div>
+            <div class="alert alert-error" id="retrieveError"></div>
+            
+            <form id="retrieveForm">
+              <div class="input-group">
+                <label><i class="fa-solid fa-user mr-2"></i>Username *</label>
+                <input type="text" id="retrieveUsername" class="input-field" placeholder="Enter username" required>
+              </div>
+
+              <div class="input-group">
+                <label><i class="fa-solid fa-lock mr-2"></i>Password *</label>
+                <input type="password" id="retrievePassword" class="input-field" placeholder="Enter password" required>
+              </div>
+
+              <div class="input-group">
+                <label><i class="fa-solid fa-envelope mr-2"></i>New Email Address *</label>
+                <input type="email" id="newEmail" class="input-field" placeholder="Enter new email" required>
+              </div>
+
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-amber-800">
+                  <i class="fa-solid fa-exclamation-triangle mr-2"></i>
+                  A verification email will be sent to your new address. You must verify it to complete the change.
+                </p>
+              </div>
+
+              <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);">
+                <i class="fa-solid fa-envelope-circle-check mr-2"></i>Update Email
+              </button>
+
+              <button type="button" id="completeUpdateBtn" onclick="handleCompleteButtonClick(event)" class="btn-primary mt-3" style="display: none; background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">
+                <span class="btn-content">
+                  <i class="fa-solid fa-check-circle mr-2"></i>Complete Update (Click X to Cancel)
+                </span>
+                <span class="cancel-text">Cancel Update?</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    function showTab(idx) {
+      tabBtns.forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+      tabContents.forEach((content, i) => {
+        content.classList.toggle('hidden', i !== idx);
+      });
+    }
+    
+    // Alert messages
+    function showMessage(elementId, text, type) {
+      const el = document.getElementById(elementId);
+      el.textContent = text;
+      el.classList.add('show');
+      setTimeout(() => {
+        el.classList.remove('show');
+      }, 5000);
+    }
+
+    // Handle complete button click based on click position
+    function handleCompleteButtonClick(event) {
+      const button = event.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const buttonWidth = rect.width;
+      const redZoneWidth = buttonWidth * 0.125; // 12.5% / 1/8 of button
+      
+      // If clicked in the red zone (left 1/8)
+      if (clickX <= redZoneWidth) {
+        cancelEmailUpdate();
+      } else {
+        // Clicked in green zone - complete the update
+        completeEmailUpdate();
+      }
+    }
+
+    // Add mousemove listener to detect hover position
+    document.addEventListener('DOMContentLoaded', () => {
+      const completeBtn = document.getElementById('completeUpdateBtn');
+      if (completeBtn) {
+        completeBtn.addEventListener('mousemove', (event) => {
+          const rect = completeBtn.getBoundingClientRect();
+          const mouseX = event.clientX - rect.left;
+          const buttonWidth = rect.width;
+          const redZoneWidth = buttonWidth * 0.125; // 12.5% / 1/8 of button
+          
+          // Only add hovering-red class if mouse is in the red zone
+          if (mouseX <= redZoneWidth) {
+            completeBtn.classList.add('hovering-red');
+          } else {
+            completeBtn.classList.remove('hovering-red');
+          }
+        });
+        
+        completeBtn.addEventListener('mouseleave', () => {
+          completeBtn.classList.remove('hovering-red');
+        });
+      }
+    });
+
+    // Cancel email update function
+    function cancelEmailUpdate() {
+      // Create a custom confirmation dialog
+      const dialogDiv = document.createElement('div');
+      dialogDiv.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      `;
+
+      const dialogBox = document.createElement('div');
+      dialogBox.style.cssText = `
+        background: white;
+        padding: 2rem;
+        border-radius: 16px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        max-width: 400px;
+        width: 90%;
+      `;
+
+      const title = document.createElement('h3');
+      title.innerHTML = '<i class="fa-solid fa-exclamation-triangle" style="color: #f59e0b; margin-right: 0.5rem;"></i>Cancel Email Update';
+      title.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600; color: #374151;';
+
+      const message = document.createElement('p');
+      message.textContent = 'Are you sure you want to cancel the email update? This action cannot be undone.';
+      message.style.cssText = 'margin: 0 0 1.5rem 0; color: #6b7280; line-height: 1.5;';
+
+      const buttonContainer = document.createElement('div');
+      buttonContainer.style.cssText = 'display: flex; gap: 0.5rem;';
+
+      const cancelDialogBtn = document.createElement('button');
+      cancelDialogBtn.innerHTML = '<i class="fa-solid fa-times mr-2"></i>No, Keep It';
+      cancelDialogBtn.style.cssText = `
+        flex: 1;
+        padding: 0.75rem;
+        background: #e5e7eb;
+        color: #374151;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+      `;
+      cancelDialogBtn.onmouseover = () => cancelDialogBtn.style.background = '#d1d5db';
+      cancelDialogBtn.onmouseout = () => cancelDialogBtn.style.background = '#e5e7eb';
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Yes, Cancel It';
+      confirmBtn.style.cssText = `
+        flex: 1;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      `;
+      confirmBtn.onmouseover = () => confirmBtn.style.transform = 'translateY(-2px)';
+      confirmBtn.onmouseout = () => confirmBtn.style.transform = 'translateY(0)';
+
+      cancelDialogBtn.onclick = () => {
+        document.body.removeChild(dialogDiv);
+      };
+
+      confirmBtn.onclick = () => {
+        sessionStorage.removeItem('pendingEmailUpdate');
+        document.getElementById('completeUpdateBtn').style.display = 'none';
+        showMessage('retrieveSuccess', 'Email update cancelled', 'success');
+        document.body.removeChild(dialogDiv);
+      };
+
+      dialogBox.appendChild(title);
+      dialogBox.appendChild(message);
+      buttonContainer.appendChild(cancelDialogBtn);
+      buttonContainer.appendChild(confirmBtn);
+      dialogBox.appendChild(buttonContainer);
+      dialogDiv.appendChild(dialogBox);
+      document.body.appendChild(dialogDiv);
+    }
+  </script>
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, verifyBeforeUpdateEmail, onAuthStateChanged, reload } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const COOLDOWN_TIME = 160;
+    let resetCooldownTimer = null;
+
+    onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          window.location.href = "login.html";
+          return;
+        }
+        const currentRole = userSnap.data().role;
+        if (currentRole !== "admin") {
+          alert("Access denied: Staff cannot access Registration page.");
+          window.location.href = "dashboard.html";
+          return;
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err.message);
+      }
+    });
+
+    function checkResetCooldown() {
+      const cooldownEnd = parseInt(localStorage.getItem('passwordResetCooldown') || '0');
+      const now = Date.now();
+      
+      if (cooldownEnd > now) {
+        const remainingSeconds = Math.ceil((cooldownEnd - now) / 1000);
+        startResetCooldown(remainingSeconds);
+      }
+    }
+
+    function startResetCooldown(seconds) {
+      const resetBtn = document.getElementById('resetBtn');
+      const cooldownDiv = document.getElementById('resetCooldown');
+      
+      resetBtn.disabled = true;
+      let remaining = seconds;
+      
+      function updateDisplay() {
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        cooldownDiv.textContent = `⏱️ Please wait ${minutes}:${secs.toString().padStart(2, '0')} before sending another reset link`;
+        cooldownDiv.style.display = 'block';
+        resetBtn.innerHTML = `<i class="fa-solid fa-clock mr-2"></i>Wait ${minutes}:${secs.toString().padStart(2, '0')}`;
+      }
+      
+      updateDisplay();
+      
+      resetCooldownTimer = setInterval(() => {
+        remaining--;
+        
+        if (remaining <= 0) {
+          clearInterval(resetCooldownTimer);
+          resetBtn.disabled = false;
+          resetBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Send Reset Link';
+          cooldownDiv.style.display = 'none';
+          localStorage.removeItem('passwordResetCooldown');
+        } else {
+          updateDisplay();
+        }
+      }, 1000);
+    }
+
+    checkResetCooldown();
+
+    document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fullName = document.getElementById("fullName").value.trim();
+      const username = document.getElementById("username").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const gender = document.getElementById("gender").value;
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const confirmPassword = document.getElementById("confirmPassword").value.trim();
+      const role = document.getElementById("role").value;
+
+      if (!/^09\d{9}$/.test(mobile)) {
+        showMessage("registerError", "⚠ Mobile number must start with 09 and be exactly 11 digits", "error");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showMessage("registerError", "⚠ Passwords do not match", "error");
+        return;
+      }
+
+      try {
+        const usernameQuery = query(collection(db, "users"), where("username", "==", username));
+        const usernameSnapshot = await getDocs(usernameQuery);
+        if (!usernameSnapshot.empty) {
+          showMessage("registerError", "⚠ Username already taken", "error");
+          return;
+        }
+
+        const fullNameQuery = query(collection(db, "users"), where("fullName", "==", fullName));
+        const fullNameSnapshot = await getDocs(fullNameQuery);
+        if (!fullNameSnapshot.empty) {
+          showMessage("registerError", "⚠ Full name already exists in the system", "error");
+          return;
+        }
+
+        const mobileQuery = query(collection(db, "users"), where("mobile", "==", mobile));
+        const mobileSnapshot = await getDocs(mobileQuery);
+        if (!mobileSnapshot.empty) {
+          showMessage("registerError", "⚠ Mobile number already registered", "error");
+          return;
+        }
+
+        const emailQuery = query(collection(db, "users"), where("email", "==", email));
+        const emailSnapshot = await getDocs(emailQuery);
+        if (!emailSnapshot.empty) {
+          showMessage("registerError", "⚠ Email already registered", "error");
+          return;
+        }
+
+        const adminUser = auth.currentUser;
+        if (!adminUser) {
+          showMessage("registerError", "⚠ Admin session expired. Please log in again.", "error");
+          return;
+        }
+
+        const tempApp = initializeApp(firebaseConfig, "TempApp");
+        const tempAuth = getAuth(tempApp);
+
+        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+        const newUser = userCredential.user;
+
+        await sendEmailVerification(newUser);
+
+        await setDoc(doc(db, "users", newUser.uid), {
+          fullName,
+          username,
+          mobile,
+          gender,
+          email,
+          role,
+          availability: false,
+          emailVerified: false,
+          createdAt: new Date().toISOString()
+        });
+
+        await tempAuth.signOut();
+
+        showMessage("registerSuccess", "✅ Account created successfully! Verification email sent.", "success");
+        document.getElementById("registerForm").reset();
+
+      } catch (err) {
+        showMessage("registerError", "⚠ " + err.message, "error");
+      }
+    });
+
+    document.getElementById("changePassForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.getElementById("resetEmail").value.trim();
+      
+      if (!email) {
+        showMessage("resetError", "⚠ Please enter your email.", "error");
+        return;
+      }
+      
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showMessage("resetSuccess", "✅ Password reset email sent! Check your inbox.", "success");
+        document.getElementById("changePassForm").reset();
+        
+        const cooldownEnd = Date.now() + (COOLDOWN_TIME * 1000);
+        localStorage.setItem('passwordResetCooldown', cooldownEnd.toString());
+        startResetCooldown(COOLDOWN_TIME);
+        
+      } catch (err) {
+        let errorMessage = "⚠ ";
+        
+        switch (err.code) {
+          case 'auth/invalid-email':
+            errorMessage += "Invalid email address.";
+            break;
+          case 'auth/user-not-found':
+            errorMessage += "No account found with this email.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage += "Too many requests. Please try again later.";
+            break;
+          default:
+            errorMessage += err.message;
+        }
+        
+        showMessage("resetError", errorMessage, "error");
+      }
+    });
+
+    document.getElementById("retrieveForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("retrieveUsername").value.trim();
+      const password = document.getElementById("retrievePassword").value.trim();
+      const newEmail = document.getElementById("newEmail").value.trim();
+
+      try {
+        const q = query(collection(db, "users"), where("username", "==", username));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          showMessage("retrieveError", "⚠ Username not found", "error");
+          return;
+        }
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
+        const oldEmail = userData.email;
+        const userId = userDoc.id;
+
+        const userCredential = await signInWithEmailAndPassword(auth, oldEmail, password);
+        const user = userCredential.user;
+
+        await verifyBeforeUpdateEmail(user, newEmail);
+
+        sessionStorage.setItem('pendingEmailUpdate', JSON.stringify({
+          userId: userId,
+          oldEmail: oldEmail,
+          newEmail: newEmail,
+          timestamp: Date.now()
+        }));
+
+        showMessage("retrieveSuccess", "📧 Verification email sent to " + newEmail + ". After verifying, return here and click 'Complete Update'.", "success");
+        document.getElementById('completeUpdateBtn').style.display = 'block';
+        document.getElementById("retrieveForm").reset();
+      } catch (err) {
+        showMessage("retrieveError", "⚠ " + err.message, "error");
+      }
+    });
+
+    window.completeEmailUpdate = async function() {
+      try {
+        const pendingUpdate = JSON.parse(sessionStorage.getItem('pendingEmailUpdate') || 'null');
+        
+        if (!pendingUpdate) {
+          showMessage("retrieveError", "⚠ No pending email update found", "error");
+          return;
+        }
+
+        // Create a custom password input dialog
+        const passwordInput = document.createElement('input');
+        passwordInput.type = 'password';
+        passwordInput.placeholder = 'Enter your password';
+        passwordInput.style.cssText = `
+          width: 100%;
+          padding: 0.75rem;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 1rem;
+          margin-top: 0.5rem;
+        `;
+
+        const dialogDiv = document.createElement('div');
+        dialogDiv.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+        `;
+
+        const dialogBox = document.createElement('div');
+        dialogBox.style.cssText = `
+          background: white;
+          padding: 2rem;
+          border-radius: 16px;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+          max-width: 400px;
+          width: 90%;
+        `;
+
+        const title = document.createElement('h3');
+        title.textContent = 'Complete Email Update';
+        title.style.cssText = 'margin: 0 0 1rem 0; font-size: 1.25rem; font-weight: 600; color: #374151;';
+
+        const message = document.createElement('p');
+        message.textContent = 'Enter your password to complete the update:';
+        message.style.cssText = 'margin: 0 0 0.5rem 0; color: #6b7280;';
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.cssText = 'display: flex; gap: 0.5rem; margin-top: 1rem;';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.textContent = 'Confirm';
+        confirmBtn.style.cssText = `
+          flex: 1;
+          padding: 0.75rem;
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: transform 0.2s;
+        `;
+        confirmBtn.onmouseover = () => confirmBtn.style.transform = 'translateY(-2px)';
+        confirmBtn.onmouseout = () => confirmBtn.style.transform = 'translateY(0)';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.style.cssText = `
+          flex: 1;
+          padding: 0.75rem;
+          background: #e5e7eb;
+          color: #374151;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.2s;
+        `;
+        cancelBtn.onmouseover = () => cancelBtn.style.background = '#d1d5db';
+        cancelBtn.onmouseout = () => cancelBtn.style.background = '#e5e7eb';
+
+        cancelBtn.onclick = () => {
+          document.body.removeChild(dialogDiv);
+        };
+
+        confirmBtn.onclick = async () => {
+          const password = passwordInput.value;
+          if (!password) {
+            passwordInput.style.borderColor = '#ef4444';
+            return;
+          }
+
+          document.body.removeChild(dialogDiv);
+
+          try {
+            await signInWithEmailAndPassword(auth, pendingUpdate.newEmail, password);
+            await updateDoc(doc(db, "users", pendingUpdate.userId), { email: pendingUpdate.newEmail });
+            
+            showMessage("retrieveSuccess", "✅ Email updated successfully in database!", "success");
+            sessionStorage.removeItem('pendingEmailUpdate');
+            document.getElementById('completeUpdateBtn').style.display = 'none';
+          } catch (authErr) {
+            if (authErr.code === 'auth/invalid-credential') {
+              showMessage("retrieveError", "⚠ Email not yet verified. Check inbox and verify first.", "error");
+            } else {
+              showMessage("retrieveError", "⚠ " + authErr.message, "error");
+            }
+          }
+        };
+
+        passwordInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            confirmBtn.click();
+          }
+        });
+
+        dialogBox.appendChild(title);
+        dialogBox.appendChild(message);
+        dialogBox.appendChild(passwordInput);
+        buttonContainer.appendChild(cancelBtn);
+        buttonContainer.appendChild(confirmBtn);
+        dialogBox.appendChild(buttonContainer);
+        dialogDiv.appendChild(dialogBox);
+        document.body.appendChild(dialogDiv);
+
+        passwordInput.focus();
+
+      } catch (err) {
+        showMessage("retrieveError", "⚠ " + err.message, "error");
+      }
+    };
+
+    window.addEventListener('load', () => {
+      if (sessionStorage.getItem('pendingEmailUpdate')) {
+        document.getElementById('completeUpdateBtn').style.display = 'block';
+      }
+    });
+  </script>
+  <script type="module" src="role-check.js"></script>
+
+</body>
+</html>

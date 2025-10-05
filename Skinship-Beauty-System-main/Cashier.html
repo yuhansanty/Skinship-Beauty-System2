@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skinship Beauty - POS System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="cashier.css" />
+  <style>
+    .notification-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .notification-dropdown {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .notification-dropdown.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .notification-header {
+      padding: 16px 20px;
+      border-bottom: 2px solid #f3f4f6;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .notification-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .notification-item:hover {
+      background: #fef2f2;
+    }
+    
+    .notification-item.unread {
+      background: #fff7ed;
+    }
+    
+    .notification-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    
+    .notification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notification-modal.show {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-close {
+      float: right;
+      font-size: 24px;
+      cursor: pointer;
+      color: #9ca3af;
+    }
+    
+    .modal-close:hover {
+      color: #da5c73;
+    }
+  </style>
+</head>
+<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
+  <!-- Sidebar -->
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto z-50">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
+    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn active" title="Cashier"><i class="fa-solid fa-cash-register"></i></button>
+    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
+    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+  </aside>
+
+  <main class="flex-1 ml-20">
+    <div class="min-h-screen p-4 md:p-8">
+      <!-- Header with Notifications and User Menu -->
+      <div class="max-w-7xl mx-auto mb-6">
+        <div class="glass-card rounded-2xl p-4">
+          <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+              <div>
+                <h1 class="text-2xl font-bold text-[#b97b8b]">SKINSHIP BEAUTY</h1>
+                <p class="text-sm text-gray-600">Point of Sale System</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-4">
+              <!-- Notification Bell -->
+              <div class="relative">
+                <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
+                  <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
+                  <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+                </button>
+                
+                <!-- Notification Dropdown -->
+                <div id="notificationDropdown" class="notification-dropdown">
+                  <div class="notification-header">
+                    <h3 class="font-bold text-gray-800">Notifications</h3>
+                    <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+                  </div>
+                  <div id="notificationList"></div>
+                </div>
+              </div>
+              
+              <!-- User Menu -->  
+                <span class="font-semibold text-lg" id="usernameDisplay">Loading...</span>
+              <div class="relative">
+                <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
+                <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
+                  <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main POS Container -->
+      <div class="max-w-7xl mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Left Panel - Services -->
+          <div class="lg:col-span-2 glass-card rounded-2xl p-6">
+            <div class="mb-4">
+              <div class="relative">
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Search services..."
+                  class="w-full p-3 pl-12 rounded-xl border-2 border-pink-100 focus:border-pink-300 focus:outline-none"
+                  onkeyup="filterServices()"
+                />
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+
+            <!-- Category Menu -->
+            <div class="category-menu">
+              <!-- Menu Buttons Container -->
+              <div class="menu-buttons-container">
+                <!-- Services Button -->
+                <button class="all-services-btn" onclick="toggleCategoryMenu()">
+                  <span>All Services</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+                
+                <!-- Products Button -->
+                <button class="all-products-btn" onclick="toggleProductsMenu()">
+                  <span>All Products</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </button>
+              </div>
+              
+              <!-- Services Dropdown -->
+              <div class="category-dropdown" id="categoryDropdown">
+                <div class="category-grid" id="categoryGrid">
+                  <!-- Categories will be rendered here -->
+                </div>
+              </div>
+
+              <!-- Products Dropdown -->
+              <div class="category-dropdown" id="productsDropdown">
+                <div class="category-grid" id="productsGrid">
+                  <!-- Product categories will be rendered here -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Services Grid -->
+            <div id="servicesList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[550px] overflow-y-auto pr-2 pt-1">
+              <!-- Services will be rendered here -->
+            </div>
+          </div>
+
+          <!-- Right Panel - Cart & Checkout -->
+          <div class="glass-card rounded-2xl p-6 flex flex-col h-fit sticky top-4">
+            <h2 class="text-2xl font-bold text-center mb-4 text-[#b97b8b]">
+              <i class="fa-solid fa-shopping-cart mr-2"></i>Cart
+            </h2>
+
+<!-- Update the customer info section -->
+<div class="mb-4">
+  <input
+    type="text"
+    id="cashierName"
+    placeholder="Cashier Name"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 bg-gray-50 text-sm"
+    disabled
+  />
+</div>
+
+<!-- Customer Info -->
+<div class="mb-4 space-y-2">
+<input
+  type="text"
+  id="customerName"
+  placeholder="Customer Name *"
+  class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  required
+/>
+  <input
+    type="email"
+    id="customerEmail"
+    placeholder="Email (Only if customer wants receipt copy)"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+  <input
+    type="text"
+    id="customerAddress"
+    placeholder="Address (Optional)"
+    class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+  />
+  <div>
+    <input
+      type="tel"
+      id="customerPhone"
+      placeholder="Mobile No. (Optional)"
+      maxlength="11"
+      class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+      oninput="validatePhoneNumber(this)"
+    />
+    <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Mobile number must start with 09 and be 11 digits</p>
+  </div>
+</div>
+
+            <!-- Cart Items -->
+            <div id="cartItems" class="flex-1 mb-4 space-y-2 max-h-[280px] overflow-y-auto">
+              <div class="text-center text-gray-400 py-8">
+                <i class="fa-solid fa-cart-shopping text-4xl mb-2"></i>
+                <p class="text-sm">No items in cart</p>
+              </div>
+            </div>
+
+            <!-- Total -->
+            <div class="border-t-2 border-pink-200 pt-3 mb-3">
+              <div class="flex justify-between items-center text-xl font-bold text-[#da5c73]">
+                <span>TOTAL:</span>
+                <span>₱<span id="totalAmount">0.00</span></span>
+              </div>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="mb-3">
+              <label class="block text-xs font-medium text-gray-700 mb-2">Payment Method</label>
+              <div class="grid grid-cols-2 gap-2">
+                <button type="button" class="payment-method-btn active" data-method="cash" onclick="selectPaymentMethod('cash')">
+                  <i class="fa-solid fa-money-bill-wave mr-1"></i>Cash
+                </button>
+                <button type="button" class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check')">
+                  <i class="fa-solid fa-building-columns mr-1"></i>Check/Bank
+                </button>
+              </div>
+            </div>
+
+            <!-- Payment Input -->
+            <div class="mb-3">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Payment Amount</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₱</span>
+                <input
+                  type="number"
+                  id="paymentInput"
+                  placeholder="0.00"
+                  class="w-full p-3 pl-7 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-lg font-bold"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            <!-- Reference Number (for Check/Bank) -->
+            <div class="mb-3 hidden" id="referenceNumberContainer">
+              <label class="block text-xs font-medium text-gray-700 mb-1">Reference/Check Number</label>
+              <input
+                type="text"
+                id="referenceNumber"
+                placeholder="Enter reference or check number"
+                class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+              />
+            </div>
+
+            <!-- Change Display -->
+            <div class="mb-3 p-3 bg-green-50 rounded-lg hidden" id="changeDisplay">
+              <div class="flex justify-between items-center">
+                <span class="text-green-700 font-medium text-sm">Change:</span>
+                <span class="text-xl font-bold text-green-600">₱<span id="changeAmount">0.00</span></span>
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                onclick="clearCart()"
+                class="p-3 rounded-lg border-2 border-red-300 text-red-600 font-medium hover:bg-red-50 transition text-sm"
+              >
+                <i class="fa-solid fa-trash mr-1"></i>Clear
+              </button>
+              <button
+                id="checkoutBtn"
+                onclick="checkout()"
+                class="btn-primary p-3 rounded-lg text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled
+              >
+                <i class="fa-solid fa-print mr-1"></i>Print Receipt
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Loading Modal -->
+  <div id="loadingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-8 text-center">
+      <div class="loading-spinner mx-auto mb-4"></div>
+      <p class="text-gray-700 font-medium">Processing receipt...</p>
+    </div>
+  </div>
+
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="cashier.js"></script>
+  
+  <!-- Notification System Script -->
+  <script>
+    function loadNotifications() {
+      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notificationList = document.getElementById('notificationList');
+      const badge = document.getElementById('notificationBadge');
+      
+      const unreadCount = notifications.filter(n => !n.read).length;
+      
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+        return;
+      }
+      
+      notificationList.innerHTML = '';
+      
+      notifications.forEach(notification => {
+        const item = document.createElement('div');
+        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+        item.onclick = () => viewNotification(notification.id);
+        
+        const time = new Date(notification.timestamp);
+        const timeStr = time.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        
+        item.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <strong class="text-[#da5c73]">${notification.message}</strong>
+            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+          </div>
+          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
+          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        `;
+        
+        notificationList.appendChild(item);
+      });
+    }
+
+    function toggleNotifications() {
+      const dropdown = document.getElementById('notificationDropdown');
+      dropdown.classList.toggle('show');
+      loadNotifications();
+    }
+
+    function viewNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notification = notifications.find(n => n.id === id);
+      
+      if (!notification) return;
+      
+      notification.read = true;
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      
+      const modal = document.getElementById('notificationModal');
+      const modalBody = document.getElementById('modalBody');
+      
+      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
+        dateStyle: 'full', 
+        timeStyle: 'short' 
+      });
+      
+      modalBody.innerHTML = `
+        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
+        <div class="space-y-3">
+          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
+          <div><strong>Email:</strong> ${notification.details.email}</div>
+          <div><strong>Phone:</strong> ${notification.details.phone}</div>
+          <div><strong>Service:</strong> ${notification.details.service}</div>
+          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
+          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
+          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
+          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+        </div>
+        <div class="mt-6 flex gap-3">
+          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+            <i class="fa-solid fa-check mr-2"></i>Approve
+          </button>
+          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+            <i class="fa-solid fa-times mr-2"></i>Decline
+          </button>
+        </div>
+      `;
+      
+      modal.classList.add('show');
+      loadNotifications();
+    }
+
+    function closeNotificationModal() {
+      document.getElementById('notificationModal').classList.remove('show');
+    }
+
+    function markAllRead() {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications.forEach(n => n.read = true);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    function approveAppointment(id) {
+      alert('Appointment approved!');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function rejectAppointment(id) {
+      alert('Appointment declined!');
+      closeNotificationModal();
+      deleteNotification(id);
+    }
+
+    function deleteNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications = notifications.filter(n => n.id !== id);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    // Close dropdown when clicking outside
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
+      }
+    });
+
+    // Load notifications on page load and refresh every 5 seconds
+    loadNotifications();
+    setInterval(loadNotifications, 5000);
+  </script>
+  <script type="module" src="role-check.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+
+  if (role === "staff") {
+    const sidebarButtons = document.querySelectorAll(".sidebar-btn");
+
+    sidebarButtons.forEach(btn => {
+      const onclickValue = btn.getAttribute("onclick");
+      if (onclickValue) {
+        const match = onclickValue.match(/'([^']+)'/);
+        if (match && match[1]) {
+          const page = match[1].toLowerCase();
+
+          // ✅ Only keep Dashboard, Sales, and Cashier for Staff
+          if (!["dashboard.html", "sales.html", "cashier.html"].includes(page)) {
+            btn.style.display = "none";
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+
+</body>
+</html>
