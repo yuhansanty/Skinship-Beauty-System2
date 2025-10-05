@@ -314,6 +314,7 @@
             <div id="notificationDropdown" class="notification-dropdown">
               <div class="notification-header">
                 <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
                 <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
               </div>
               <div id="notificationList"></div>
@@ -764,6 +765,11 @@
       loadNotifications();
     }
 
+    function clearAllNotifications() {
+      localStorage.setItem('skinshipNotifications', '[]');
+      loadNotifications();
+    }
+
     function approveAppointment(id) {
       alert('Appointment approved!');
       closeNotificationModal();
@@ -982,6 +988,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load notifications on page load and refresh every 5 seconds
     loadNotifications();
     setInterval(loadNotifications, 5000);
+    
+    // Close user menu and notifications on outside click
+    window.addEventListener('click', (e) => {
+      const userMenu = document.getElementById('userMenu');
+      const btn = document.getElementById('userMenuButton');
+      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.add('hidden');
+      }
+
+      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
+      }
+    });
   </script>
   </script>
 </script>
