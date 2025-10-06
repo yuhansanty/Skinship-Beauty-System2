@@ -34,7 +34,22 @@ body {
   background:#da5c73;
   color:white;
 }
+/* Hide all sidebar buttons by default */
+.sidebar-btn {
+  display: none !important;
+}
 
+html.staff-loaded .sidebar-btn[title="Dashboard"],
+html.staff-loaded .sidebar-btn[title="Reports"],
+html.staff-loaded .sidebar-btn[title="Cashier"],
+html.staff-loaded .sidebar-btn[title="Staff"] {
+  display: flex !important;
+}
+
+/* Show all buttons when NOT staff (admin) */
+html:not(.staff-loaded) .sidebar-btn {
+  display: flex !important;
+}
 .glass-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);

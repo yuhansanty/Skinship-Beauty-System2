@@ -16,7 +16,8 @@ aside.sidebar {
   cursor: pointer;
   width: 50px;
   height: 50px;
-  display: flex;
+  display: flex !important;
+  align-items: center;
   justify-content: center;
   align-items: center;
   transition: all 0.3s ease;
@@ -24,6 +25,17 @@ aside.sidebar {
   margin: 5px 0;
   color: #8c2c3d;
   padding: 0;
+    }
+    html.staff-loaded .sidebar-btn {
+  display: none !important;
+}
+
+/* Show only specific buttons for staff */
+html.staff-loaded .sidebar-btn[title="Dashboard"],
+html.staff-loaded .sidebar-btn[title="Reports"],
+html.staff-loaded .sidebar-btn[title="Cashier"],
+html.staff-loaded .sidebar-btn[title="Staff"] {
+  display: flex !important;
 }
 
 .sidebar-btn:hover, .sidebar-btn:focus {

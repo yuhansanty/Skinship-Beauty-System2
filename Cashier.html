@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Skinship Beauty - POS System</title>
+  <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Skinship Beauty - POS System</title>
+  <script>
+    const storedRole = localStorage.getItem('currentUserRole');
+    if (storedRole === 'staff') {
+      document.documentElement.classList.add('staff-loaded');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
@@ -557,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const page = match[1].toLowerCase();
 
           // ✅ Only keep Dashboard, Sales, and Cashier for Staff
-          if (!["dashboard.html", "sales.html", "cashier.html"].includes(page)) {
+          if (!["dashboard.html", "sales.html", "cashier.html", "staff.html"].includes(page)) {
             btn.style.display = "none";
           }
         }

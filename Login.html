@@ -428,16 +428,15 @@ if (userDoc.exists()) {
   localStorage.setItem("currentUserEmail", email);
   localStorage.setItem("currentUserRole", role);
 
-  // ✅ Role-based redirect
   if (role === "admin") {
-    window.location.href = "dashboard.html";
+  window.location.href = "dashboard.html";
   } else if (role === "staff") {
-    window.location.href = "cashier.html";
+  window.location.href = "dashboard.html";
   } else {
-    await auth.signOut();
-    showError("❌ No valid role assigned. Contact system admin.");
-    submitBtn.disabled = false;
-    submitBtn.textContent = "SIGN IN";
+  await auth.signOut();
+  showError("❌ No valid role assigned. Contact system admin.");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "SIGN IN";
   }
 } else {
   await auth.signOut();
