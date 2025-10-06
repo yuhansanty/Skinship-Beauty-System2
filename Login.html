@@ -416,23 +416,36 @@
         }
 
         // Check if user exists in Firestore
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const role = userDoc.data().role;
-          
-          // Save credentials if remember me is checked
-          saveCredentials(email, password, remember);
-          
-          // Store user email for session
-          localStorage.setItem('currentUserEmail', email);
-          
-          window.location.href = "dashboard.html";
-        } else {
-          await auth.signOut();
-          showError("❌ No role assigned. Contact system admin.");
-          submitBtn.disabled = false;
-          submitBtn.textContent = "SIGN IN";
-        }
+        // ✅ Check if user exists in Firestore
+const userDoc = await getDoc(doc(db, "users", user.uid));
+if (userDoc.exists()) {
+  const role = (userDoc.data().role || "").toLowerCase(); // make sure role is lowercase
+
+  // Save credentials if remember me is checked
+  saveCredentials(email, password, remember);
+
+  // Store info locally for later use
+  localStorage.setItem("currentUserEmail", email);
+  localStorage.setItem("currentUserRole", role);
+
+  // ✅ Role-based redirect
+  if (role === "admin") {
+    window.location.href = "dashboard.html";
+  } else if (role === "staff") {
+    window.location.href = "cashier.html";
+  } else {
+    await auth.signOut();
+    showError("❌ No valid role assigned. Contact system admin.");
+    submitBtn.disabled = false;
+    submitBtn.textContent = "SIGN IN";
+  }
+} else {
+  await auth.signOut();
+  showError("❌ No role assigned. Contact system admin.");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "SIGN IN";
+}
+
       } catch (error) {
         let errorMessage = "Login failed: ";
         
@@ -462,5 +475,7 @@
       }
     });
   </script>
+  <script type="module" src="role-check.js"></script>
+
 </body>
 </html>

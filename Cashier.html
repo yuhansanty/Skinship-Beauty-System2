@@ -541,5 +541,31 @@
     loadNotifications();
     setInterval(loadNotifications, 5000);
   </script>
+  <script type="module" src="role-check.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const role = (localStorage.getItem("currentUserRole") || "").toLowerCase();
+
+  if (role === "staff") {
+    const sidebarButtons = document.querySelectorAll(".sidebar-btn");
+
+    sidebarButtons.forEach(btn => {
+      const onclickValue = btn.getAttribute("onclick");
+      if (onclickValue) {
+        const match = onclickValue.match(/'([^']+)'/);
+        if (match && match[1]) {
+          const page = match[1].toLowerCase();
+
+          // ✅ Only keep Dashboard, Sales, and Cashier for Staff
+          if (!["dashboard.html", "sales.html", "cashier.html"].includes(page)) {
+            btn.style.display = "none";
+          }
+        }
+      }
+    });
+  }
+});
+</script>
+
 </body>
 </html>
