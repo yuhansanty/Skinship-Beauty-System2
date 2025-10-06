@@ -123,13 +123,15 @@
     }
 
     .edit-mode-active {
-  background: #fef3c7 !important;
+  background: #d1d5db !important; /* darker light gray */
   cursor: pointer !important;
 }
 .edit-mode-active:hover {
-  background: #fde68a !important;
+  background: #9ca3af !important; /* slightly darker on hover */
   transform: translateX(4px);
 }
+
+
 .edit-mode-message {
   background: #fef3c7;
   border: 2px solid #f59e0b;
@@ -411,77 +413,6 @@
               </tr>
             </thead>
             <tbody id="inventoryTableBody">
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Hair Products">
-                <td class="py-4 px-4 font-semibold">INV-001</td>
-                <td class="py-4 px-4">Hair Dye - Blonde</td>
-                <td class="py-4 px-4">Hair Products</td>
-                <td class="py-4 px-4 text-center">25</td>
-                <td class="py-4 px-4 text-right">₱ 299</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 7,475</td>
-                <td class="py-4 px-4 text-center text-sm">May 15, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Nail Products">
-                <td class="py-4 px-4 font-semibold">INV-002</td>
-                <td class="py-4 px-4">Nail Polish - Red</td>
-                <td class="py-4 px-4">Nail Products</td>
-                <td class="py-4 px-4 text-center">15</td>
-                <td class="py-4 px-4 text-right">₱ 150</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 2,250</td>
-                <td class="py-4 px-4 text-center text-sm">May 14, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="low-stock" data-category="Skincare">
-                <td class="py-4 px-4 font-semibold">INV-003</td>
-                <td class="py-4 px-4">Facial Cleanser</td>
-                <td class="py-4 px-4">Skincare</td>
-                <td class="py-4 px-4 text-center">8</td>
-                <td class="py-4 px-4 text-right">₱ 450</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 3,600</td>
-                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Lash Products">
-                <td class="py-4 px-4 font-semibold">INV-004</td>
-                <td class="py-4 px-4">Eyelash Glue</td>
-                <td class="py-4 px-4">Lash Products</td>
-                <td class="py-4 px-4 text-center">30</td>
-                <td class="py-4 px-4 text-right">₱ 180</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 5,400</td>
-                <td class="py-4 px-4 text-center text-sm">May 12, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Tools">
-                <td class="py-4 px-4 font-semibold">INV-005</td>
-                <td class="py-4 px-4">Hair Brush</td>
-                <td class="py-4 px-4">Tools</td>
-                <td class="py-4 px-4 text-center">12</td>
-                <td class="py-4 px-4 text-right">₱ 350</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 4,200</td>
-                <td class="py-4 px-4 text-center text-sm">May 11, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition" data-status="out-of-stock" data-category="Hair Products">
-                <td class="py-4 px-4 font-semibold">INV-006</td>
-                <td class="py-4 px-4">Shampoo</td>
-                <td class="py-4 px-4">Hair Products</td>
-                <td class="py-4 px-4 text-center">0</td>
-                <td class="py-4 px-4 text-right">₱ 280</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 0</td>
-                <td class="py-4 px-4 text-center text-sm">May 10, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Out of Stock</span>
-                </td>
               </tr>
             </tbody>
           </table>
@@ -506,7 +437,6 @@
       </h2>
       <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
     </div>
-
     <form id="addProductForm" onsubmit="handleAddProduct(event)">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="form-group">
@@ -563,16 +493,77 @@
     </form>
   </div>
 </div>
+
+
+<!-- Edit Product Modal -->
+<div id="editProductModal" class="add-product-modal">
+  <div class="modal-content" style="max-width:700px;">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-[#da5c73]">
+        <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
+      </h2>
+      <span class="modal-close" onclick="closeEditProductModal()">&times;</span>
+    </div>
+
+    <form id="editProductForm" onsubmit="handleEditProduct(event)">
+      <input type="hidden" id="editFirebaseId" />
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="form-group">
+          <label class="form-label">Item Name</label>
+          <input type="text" id="editItemName" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select id="editItemCategory" class="form-select" required>
+            <option value="Hair Products">Hair Products</option>
+            <option value="Nail Products">Nail Products</option>
+            <option value="Skincare">Skincare</option>
+            <option value="Lash Products">Lash Products</option>
+            <option value="Tools">Tools</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Quantity</label>
+          <input type="number" id="editItemQuantity" class="form-input" min="0" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unit Price (₱)</label>
+          <input type="number" id="editItemPrice" class="form-input" min="0" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Minimum Stock</label>
+          <input type="number" id="editMinStock" class="form-input" min="0" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supplier</label>
+          <input type="text" id="editItemSupplier" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+          <i class="fa-solid fa-save mr-2"></i>Save Changes
+        </button>
+        <button type="button" onclick="closeEditProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-xmark mr-2"></i>Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
   <script>
-    // Sample data for functionality
-    let inventoryData = [
-      {id: 'INV-001', name: 'Hair Dye - Blonde', category: 'Hair Products', qty: 25, price: 299, total: 7475, date: '2025-05-15', status: 'in-stock'},
-      {id: 'INV-002', name: 'Nail Polish - Red', category: 'Nail Products', qty: 15, price: 150, total: 2250, date: '2025-05-14', status: 'in-stock'},
-      {id: 'INV-003', name: 'Facial Cleanser', category: 'Skincare', qty: 8, price: 450, total: 3600, date: '2025-05-13', status: 'low-stock'},
-      {id: 'INV-004', name: 'Eyelash Glue', category: 'Lash Products', qty: 30, price: 180, total: 5400, date: '2025-05-12', status: 'in-stock'},
-      {id: 'INV-005', name: 'Hair Brush', category: 'Tools', qty: 12, price: 350, total: 4200, date: '2025-05-11', status: 'in-stock'},
-      {id: 'INV-006', name: 'Shampoo', category: 'Hair Products', qty: 0, price: 280, total: 0, date: '2025-05-10', status: 'out-of-stock'}
-    ];
+    
+    
 
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', function(e) {
@@ -823,6 +814,29 @@ function closeAddProductModal() {
 }
 
 // Handle Add Product Form Submission (Firebase Version)
+
+
+// --- Generate sequential unique ID from Firestore ---
+async function generateUniqueItemId() {
+  const counterRef = db.collection('metadata').doc('inventoryCounter');
+  let newNumber = 1;
+
+  await db.runTransaction(async (tx) => {
+    const docSnap = await tx.get(counterRef);
+    if (docSnap.exists) {
+      newNumber = (docSnap.data().last || 0) + 1;
+      tx.update(counterRef, { last: newNumber });
+    } else {
+      tx.set(counterRef, { last: 1 });
+      newNumber = 1;
+    }
+  });
+
+  return `INV-${String(newNumber).padStart(3, '0')}`;
+}
+
+
+
 async function handleAddProduct(event) {
   event.preventDefault();
   
@@ -843,7 +857,7 @@ async function handleAddProduct(event) {
   
   // Create new product object
   const newProduct = {
-    id: generateItemId(),
+    id: await generateUniqueItemId(),
     name: name,
     category: category,
     qty: qty,
@@ -870,7 +884,7 @@ async function handleAddProduct(event) {
     addProductToTable(newProduct);
     
     // Update statistics
-    updateStats();
+    updateStats()
     
     // Close modal
     closeAddProductModal();
@@ -881,6 +895,106 @@ async function handleAddProduct(event) {
   } catch (error) {
     console.error('Error adding product to Firebase:', error);
     alert('Error adding product. Please check console for details.');
+  }
+}
+
+ let editMode = false;
+
+// Toggle Edit Mode
+function enableEditMode() {
+  editMode = !editMode;
+  const rows = document.querySelectorAll('#inventoryTableBody tr');
+  const editBtn = document.getElementById('editModeBtn');
+
+  if (editMode) {
+    editBtn.classList.add('active');
+    editBtn.innerHTML = '<i class="fa-solid fa-xmark mr-2"></i>Cancel Edit';
+    rows.forEach(row => {
+      row.classList.add('edit-mode-active');
+      row.addEventListener('click', selectRowForEdit);
+    });
+  } else {
+    editBtn.classList.remove('active');
+    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item';
+    rows.forEach(row => {
+      row.classList.remove('edit-mode-active');
+      row.removeEventListener('click', selectRowForEdit);
+    });
+  }
+}
+
+
+// When a row is clicked in edit mode
+function selectRowForEdit() {
+  if (!editMode) return;
+
+  const idCell = this.querySelector('td').textContent.trim();
+  const product = inventoryData.find(p => p.id === idCell);
+  if (!product) return alert('Product not found.');
+
+  // Fill modal
+  document.getElementById('editFirebaseId').value = product.firebaseId;
+  document.getElementById('editItemName').value = product.name;
+  document.getElementById('editItemCategory').value = product.category;
+  document.getElementById('editItemQuantity').value = product.qty;
+  document.getElementById('editItemPrice').value = product.price;
+  document.getElementById('editMinStock').value = product.minStock || 0;
+  document.getElementById('editItemSupplier').value = product.supplier || '';
+  document.getElementById('editItemDescription').value = product.description || '';
+
+  document.getElementById('editProductModal').classList.add('show');
+}
+
+// Close modal
+function closeEditProductModal() {
+  document.getElementById('editProductModal').classList.remove('show');
+  if (editMode) enableEditMode(); // automatically exit edit mode
+}
+
+// Save edited product
+async function handleEditProduct(e) {
+  e.preventDefault();
+
+  const id = document.getElementById('editFirebaseId').value;
+  const updatedProduct = {
+    name: document.getElementById('editItemName').value.trim(),
+    category: document.getElementById('editItemCategory').value,
+    qty: parseInt(document.getElementById('editItemQuantity').value),
+    price: parseFloat(document.getElementById('editItemPrice').value),
+    minStock: parseInt(document.getElementById('editMinStock').value),
+    supplier: document.getElementById('editItemSupplier').value.trim(),
+    description: document.getElementById('editItemDescription').value.trim(),
+    total:
+      parseInt(document.getElementById('editItemQuantity').value) *
+      parseFloat(document.getElementById('editItemPrice').value),
+    status: determineStatus(
+      parseInt(document.getElementById('editItemQuantity').value),
+      parseInt(document.getElementById('editMinStock').value)
+    ),
+    date: getCurrentDate(),
+  };
+
+  try {
+    if (id) {
+      await db.collection('inventory').doc(id).update(updatedProduct);
+      // Update local data
+      const index = inventoryData.findIndex(p => p.firebaseId === id);
+      if (index !== -1) inventoryData[index] = { ...inventoryData[index], ...updatedProduct };
+
+      // Refresh table
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+      inventoryData.forEach(p => addProductToTable(p));
+      updateStats();
+
+      closeEditProductModal();
+      alert('✅ Product updated successfully!');
+    } else {
+      alert('Error: Missing Firestore document ID.');
+    }
+  } catch (error) {
+    console.error('Error updating product:', error);
+    alert('Error updating product. Check console for details.');
   }
 }
 
@@ -1004,5 +1118,7 @@ document.addEventListener('DOMContentLoaded', function() {
   </script>
   </script>
 </script>
+<script type="module" src="role-check.js"></script>
+
 </body>
 </html>
