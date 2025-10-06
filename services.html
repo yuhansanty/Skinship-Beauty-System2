@@ -207,6 +207,27 @@
     .modal-close:hover {
       color: #da5c73;
     }
+    
+    .add-service-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .add-service-modal.show {
+      display: flex;
+    }
+    
+    .highlight-row {
+      background-color: #fff3cd !important;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -234,8 +255,8 @@
       <!-- Top bar -->
       <div class="flex justify-between items-center mb-6 bg-[#b97b8b] rounded-3xl px-6 py-4 shadow-lg">
         <div class="flex items-center gap-2">
-          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
-          <button class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">Add Service</button>
+          <input id="searchInput" type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" oninput="searchServices()" />
+          <button onclick="openAddServiceModal()" class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">Add Service</button>
         </div>
         <h1 class="text-center text-2xl font-bold text-white drop-shadow">Services</h1>
         <div class="flex items-center gap-4">
@@ -329,9 +350,42 @@
     </div>
   </div>
 
+  <!-- Add Service Modal -->
+  <div id="addServiceModal" class="add-service-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeAddServiceModal()">&times;</span>
+      <h2 class="text-2xl font-bold text-[#da5c73] mb-6">Add New Service</h2>
+      <form id="addServiceForm" onsubmit="addNewService(event)">
+        <div class="mb-4">
+          <label class="block text-gray-700 font-semibold mb-2">Category</label>
+          <select id="newServiceCategory" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
+            <option value="">Select a category</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 font-semibold mb-2">Service Name</label>
+          <input type="text" id="newServiceName" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="Enter service name" required />
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 font-semibold mb-2">Price</label>
+          <input type="text" id="newServicePrice" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="e.g., ₱ 499 or ₱ 499 / ₱ 599" required />
+        </div>
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-4 py-2 rounded hover:bg-[#c44c66] font-semibold">
+            <i class="fa-solid fa-plus mr-2"></i>Add Service
+          </button>
+          <button type="button" onclick="closeAddServiceModal()" class="flex-1 bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 font-semibold">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const services = [
-      "FLEEK EYELASH", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES"
+      "FLEEK EYELASH", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES", "THERAPEUTIC HEAT", "WAX – OUT", "ES-FACIALY FOR YOU", "FACE AND BODY CONTOURING",
+      "LASER HAIR REMOVAL / WHITENING", "PICOSURE LASER TREATMENT", "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)", "CO2 FRACTIONAL LASER LAY-AWAY"
     ];
 
     const serviceData = {
@@ -391,7 +445,77 @@
         { service: 'FOOTSPA + UV GELPEDICURE', price: '₱ 850'},
         { service: 'FOOTSPA + BASI PEDICURE + FOOT REFELEX', price: '₱ 850'},
         { service: 'FOOTSPA + UV GEL PEDICURE +FOOT MASSAGE', price: '₱ 1150'}
-      ]
+      ],
+      'THERAPEUTIC HEAT': [
+        {service: 'HAND PARAFFIN', price: '₱ 250'},
+        {service: 'FOOT PARAFFIN', price: '₱ 300'},
+        {service: 'HAND PARAFFIN + HANDSPA', price: '₱ 550'},
+        {service: 'FOOT PARAFFIN + FOOTSPA', price: '₱ 600'},
+        {service: 'HAND PARAFFIN + HAND MASSAGE', price: '₱ 550'},
+        {service: 'FOOR PARAFFIN + FOOT MASSAGE', price: '₱ 600'}
+      ],
+      'WAX – OUT': [
+        {service: 'WAXING PART', price: 'FEMALE / MALE'},
+        {service: 'UNDER ARM', price: '₱ 399 / ₱ 499'},
+        {service: 'HALF LEGS', price: '₱ 499 / ₱ 599'},
+        {service: 'FULL LEGS', price: '₱ 699 / ₱ 799'},
+        {service: 'BRAZILLIAN', price: '₱ 999 / ₱ 1099'},
+        {service: 'UPPER/LOWER LIP', price: '₱ 299 / ₱ 399'},
+        {service: 'FULL FACE', price: '₱ 899 / ₱ 999'},
+        {service: 'FULL ARMS', price: '₱ 599 / ₱ 699'}
+      ],
+      'ES-FACIALY FOR YOU': [
+        {service: 'HYDRAFACIAL WITH COLLAGEN MASK', price: '₱ 899'},
+        {service: 'BLACK DOLL CARBON LASER', price: '₱ 1999 (2 SESSIONS)'},
+        {service: 'BLACK DOLL CARBON LASER LAY – AWAY PROMO (FACE, NAPE, KNEE, ELBOW)', price: '4+1 SESSIONS  ₱ 4500 DOWN ₱ 2500 SUCCEEDING IS ₱ 1000, 9+1 SESSIONS ₱ 9000 DOWN ₱ 3000 SUCCEEDING IS ₱ 1000'},
+        {service: ' FACIAL COMBO PROMO ', price: 'ADD ₱ 100 FOR PDT LIGHT OR COLLAGEN MASK'},
+        {service: 'HYDRAFACIAL + BLACK DOLL + EXILLIS / HIFU', price: '₱ 3399'},
+        {service: 'HYDRAFACIAL + BBGLOW + COLLAGEN PDT', price: '₱ 1899'},
+        {service: 'BLACK DOLL + EXILLIS / HIFU + PDT', price: '₱ 2499'},
+        {service: 'HYDRAFACIAL + BBGLOWBLUSH + PDT', price: '₱ 2199'}
+      ],
+      'FACE AND BODY CONTOURING': [
+        {service: 'HIFU', price: '₱ 1499 / PER SESSION'},
+        {service: 'EXILLISS', price: '₱ 1499 / PER SESSION 30 MINS'},
+        {service: 'EMSLIM', price: '₱ 2000 / PER SESSION 30 MINS'},
+        {service: 'CRYOLIPOLYSIS', price: '₱ 1499 / PER SESSION / BODY AREA'},
+        {service: 'CRYOLIPOLYSIS', price: '₱ 999 / CHIN AREA'},
+        {service: 'SUPER TRIO COMBO (CRYOLIPOLYSIS - EXILLIS - EMSLIM)', price: '₱ 3499 SESSION EACH'},
+        {service: 'LAY-WAY PROMO', price: '₱ 7499'},
+        {service: 'EXILLIS', price: '6 + 1 SESSIONS'},
+        {service: 'EMSLIM', price: '5 + 1 SESSIONS'},
+        {service: 'POWERCOMBO EXISLIM', price: '3 + 3 SESSIONS'}
+      ],
+      'LASER HAIR REMOVAL / WHITENING': [
+        {service: 'DIODE LASER', price: '1 SESSION 2 SESSION 10 SESSION (LAY-AWAY)'},
+        {service: 'UNDERARM', price: '₱ 899   ₱ 1499   ₱ 4999'},
+        {service: 'BRAZILLIAN', price: '₱ 1999   ₱   3499   ₱ 10499'},
+        {service: 'FULL ARMS', price: '₱ 1499   ₱ 2499   ₱ 8499'}, 
+        {service: 'LOWER / UPPER LEGS', price: '₱ 1999   ₱ 3499   ₱ 10499'},
+        {service: 'UPPER LIP', price: '₱ 599   ₱ 999   ₱ 3999'},
+        {service: 'LOWER LIP', price: '₱ 899   ₱ 1499   ₱ 4999'},
+        {service: 'BIKINI LINE', price: '₱ 1099   ₱ 1999   ₱ 8999'},
+        {service: 'FULL FACE MALE', price: '₱ 2999   ₱ 5499   ₱ 15499'},
+        {service: 'FULL FACE FEMALE', price: '₱ 1999   ₱ 3499   ₱ 10499 '},
+        {service: 'ADD ON FOR WHITENING SCRUB', price: '₱ 200'}
+      ],
+      'PICOSURE LASER TREATMENT': [
+        {service: 'LIP', price: '2 SESSIONS ₱ 999'},
+        {service: 'KNEE / NECK / ELBOW/ UNDERARM / FACE', price: '2 SESSIONS ₱ 1499'},
+        {service: 'PICO MELASMA', price: '2 SESSIONS ₱ 4000'},
+        {service: 'TATOO REMOVAL OR BIRTH 1-3 INC.', price: '2 SESSIONS ₱ 3000'},
+        {service: 'PROMO', price: ''},
+        {service: 'ANY PART', price: '4+1 SESSIONS ₱ 4000'}
+      ],
+      'WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)': [
+        {service: 'FACE / NECK', price: '₱ 1999'},
+        {service: 'BACK', price: '₱ 2999'},
+        {service: 'FACE / NECK / BACK', price: '₱ 5499'},
+        {service: 'SKIN TAG BY AREA', price: '₱ 1499'}
+      ],
+      'CO2 FRACTIONAL LASER LAY-AWAY': [
+        {service: 'CO2 FRACTIONAL LASER LAY-AWAY', price: '3+2 SESSIONS ₱ 7997 DOWN ₱ 3999'}
+      ],
     };
 
     let activeService = "FLEEK EYELASH";
@@ -408,6 +532,15 @@
       });
       
       serviceDropdown.children[0].classList.add('selected');
+      
+      // Populate category dropdown in Add Service modal
+      const categorySelect = document.getElementById('newServiceCategory');
+      services.forEach(service => {
+        const option = document.createElement('option');
+        option.value = service;
+        option.textContent = service;
+        categorySelect.appendChild(option);
+      });
     }
 
     function toggleDropdown() {
@@ -452,6 +585,79 @@
       });
     }
 
+    // Search functionality
+    function searchServices() {
+      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+      const tableBody = document.querySelector('#servicesTable tbody');
+      const rows = tableBody.getElementsByTagName('tr');
+      
+      let foundAny = false;
+      
+      for (let i = 0; i < rows.length; i++) {
+        const serviceName = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
+        const price = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
+        
+        if (serviceName.includes(searchTerm) || price.includes(searchTerm)) {
+          rows[i].style.display = '';
+          rows[i].classList.add('highlight-row');
+          foundAny = true;
+        } else {
+          rows[i].style.display = 'none';
+          rows[i].classList.remove('highlight-row');
+        }
+      }
+      
+      // If search is empty, remove all highlights and show all rows
+      if (searchTerm === '') {
+        for (let i = 0; i < rows.length; i++) {
+          rows[i].style.display = '';
+          rows[i].classList.remove('highlight-row');
+        }
+      }
+    }
+
+    // Add Service Modal functions
+    function openAddServiceModal() {
+      document.getElementById('addServiceModal').classList.add('show');
+      document.getElementById('addServiceForm').reset();
+    }
+
+    function closeAddServiceModal() {
+      document.getElementById('addServiceModal').classList.remove('show');
+    }
+
+    function addNewService(event) {
+      event.preventDefault();
+      
+      const category = document.getElementById('newServiceCategory').value;
+      const serviceName = document.getElementById('newServiceName').value.trim().toUpperCase();
+      const servicePrice = document.getElementById('newServicePrice').value.trim();
+      
+      if (!category || !serviceName || !servicePrice) {
+        alert('Please fill in all fields');
+        return;
+      }
+      
+      // Add service to the data
+      if (!serviceData[category]) {
+        serviceData[category] = [];
+      }
+      
+      serviceData[category].push({
+        service: serviceName,
+        price: servicePrice
+      });
+      
+      // If the current active category is the one we added to, update the table
+      if (activeService === category) {
+        updateServicesTable(category);
+      }
+      
+      // Close modal and show success message
+      closeAddServiceModal();
+      alert(`Service "${serviceName}" has been added to ${category} successfully!`);
+    }
+
     window.onclick = function(event) {
       if (!event.target.matches('.dropdown-button') && !event.target.matches('.dropdown-button *')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
@@ -471,6 +677,11 @@
 
       if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
         document.getElementById('userMenu').classList.add('hidden');
+      }
+      
+      // Close add service modal when clicking outside
+      if (event.target.id === 'addServiceModal') {
+        closeAddServiceModal();
       }
     }
 
