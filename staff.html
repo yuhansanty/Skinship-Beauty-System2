@@ -193,7 +193,7 @@
     <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
       <!-- Top bar -->
       <div class="flex justify-between items-center mb-6">
-        <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+        <input type="text" id="searchInput" placeholder="Search by name, gender, or mobile" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
           <!-- Notification Bell -->
           <div class="relative">
@@ -441,6 +441,10 @@
     const usernameSpan = document.getElementById("usernameDisplay");
     const staffTable = document.getElementById("staffTable");
     const logoutBtn = document.getElementById("logoutBtn");
+    const searchInput = document.getElementById("searchInput");
+
+    // Store all staff data for search functionality
+    let allStaffData = [];
 
     // HISTORY POPUP WITH PAGINATION
     let currentPage = 1;
@@ -583,6 +587,54 @@
     window.openHistory = openHistory;
     window.closeHistory = closeHistory;
 
+    // Function to display staff table
+    function displayStaffTable(staffData) {
+      if (staffData.length === 0) {
+        staffTable.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No staff members found</td></tr>';
+        return;
+      }
+
+      const rows = staffData.map(staff => `
+        <tr class="border-b hover:bg-gray-50">
+          <td class="px-4 py-2">${staff.fullName}</td>
+          <td class="px-4 py-2">${staff.gender}</td>
+          <td class="px-4 py-2">${staff.mobile}</td>
+          <td class="px-4 py-2">
+            <span class="px-3 py-1 rounded text-xs font-semibold ${staff.isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
+              ${staff.isAvailable ? "Available" : "Not Available"}
+            </span>
+          </td>
+          <td class="px-4 py-2">${staff.clockIn}</td>
+          <td class="px-4 py-2">${staff.clockOut}</td>
+          <td class="px-4 py-2">
+            <button class="text-[#da5c73] hover:text-[#b97b8b] font-semibold hover:underline" onclick="openHistory('${staff.id}')">
+              <i class="fa-solid fa-clock-rotate-left mr-1"></i>View
+            </button>
+          </td>
+        </tr>
+      `).join("");
+      
+      staffTable.innerHTML = rows;
+    }
+
+    // Search functionality
+    searchInput.addEventListener('input', (e) => {
+      const searchTerm = e.target.value.toLowerCase().trim();
+      
+      if (searchTerm === '') {
+        displayStaffTable(allStaffData);
+        return;
+      }
+      
+      const filteredData = allStaffData.filter(staff => {
+        return staff.fullName.toLowerCase().includes(searchTerm) ||
+               staff.gender.toLowerCase().includes(searchTerm) ||
+               staff.mobile.toLowerCase().includes(searchTerm);
+      });
+      
+      displayStaffTable(filteredData);
+    });
+
     // MAIN
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -620,7 +672,7 @@
       });
 
       onSnapshot(collection(db, "users"), async (snapshot) => {
-        let rows = [];
+        allStaffData = [];
         const promises = snapshot.docs.map(async (docSnap) => {
           const staff = docSnap.data();
           const logsQuery = query(
@@ -634,29 +686,19 @@
           const isClockedIn = latest.clockIn && !latest.clockOut;
           const isAvailable = isClockedIn;
 
-          rows.push(`
-            <tr class="border-b hover:bg-gray-50">
-              <td class="px-4 py-2">${staff.fullName || "N/A"}</td>
-              <td class="px-4 py-2">${staff.gender || "N/A"}</td>
-              <td class="px-4 py-2">${staff.mobile || "N/A"}</td>
-              <td class="px-4 py-2">
-                <span class="px-3 py-1 rounded text-xs font-semibold ${isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
-                  ${isAvailable ? "Available" : "Not Available"}
-                </span>
-              </td>
-              <td class="px-4 py-2">${latest.clockIn || "N/A"}</td>
-              <td class="px-4 py-2">${latest.clockOut || "N/A"}</td>
-              <td class="px-4 py-2">
-                <button class="text-[#da5c73] hover:text-[#b97b8b] font-semibold hover:underline" onclick="openHistory('${docSnap.id}')">
-                  <i class="fa-solid fa-clock-rotate-left mr-1"></i>View
-                </button>
-              </td>
-            </tr>
-          `);
+          allStaffData.push({
+            id: docSnap.id,
+            fullName: staff.fullName || "N/A",
+            gender: staff.gender || "N/A",
+            mobile: staff.mobile || "N/A",
+            isAvailable,
+            clockIn: latest.clockIn || "N/A",
+            clockOut: latest.clockOut || "N/A"
+          });
         });
 
         await Promise.all(promises);
-        staffTable.innerHTML = rows.join("");
+        displayStaffTable(allStaffData);
       });
     });
 
