@@ -14,10 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.title.toLowerCase().includes("cashier") ||
       btn.innerHTML.toLowerCase().includes("cash-register");
 
-    // Staff should only see Dashboard, Sales, Cashier
     if (
       role === "staff" &&
-      !["dashboard.html", "sales.html", "cashier.html"].includes(page) &&
+      !["dashboard.html", "sales.html", "cashier.html", "staff.html"].includes(page) &&
       !isCashierButton
     ) {
       console.log("Hiding:", page);

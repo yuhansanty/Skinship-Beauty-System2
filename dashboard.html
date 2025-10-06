@@ -1,9 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Skinship Beauty Dashboard</title>
+  <script>
+    // CRITICAL: Check role IMMEDIATELY before any CSS loads
+    const storedRole = localStorage.getItem('currentUserRole');
+    if (storedRole === 'staff') {
+      document.documentElement.classList.add('staff-loaded');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -17,11 +22,25 @@
       color: #da5c73;
       font-size: 20px;
       cursor: pointer;
-      display: flex;
+      display: flex !important;
       align-items: center;
       justify-content: center;
       transition: .3s;
     }
+    
+    /* Hide all buttons for staff by default */
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
+
+    /* Show only specific buttons for staff */
+    html.staff-loaded .sidebar-btn[title="Dashboard"],
+    html.staff-loaded .sidebar-btn[title="Reports"],
+    html.staff-loaded .sidebar-btn[title="Cashier"],
+    html.staff-loaded .sidebar-btn[title="Staff"] {
+      display: flex !important;
+    }
+    
     .sidebar-btn:hover {
       background: #da5c73;
       color: white;
@@ -146,25 +165,37 @@
     .modal-close:hover {
       color: #da5c73;
     }
+
+    .role-restricted {
+      display: none !important;
+    }
+    
+    html.admin-loaded .role-restricted {
+      display: flex !important;
+    }
+    
+    html.admin-loaded a.role-restricted {
+      display: inline-block !important;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto z-50">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto z-50" id="sidebar">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
     <button class="sidebar-btn active" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
-    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
-    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn role-restricted" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn role-restricted" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
-    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn role-restricted" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <button class="sidebar-btn" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn role-restricted" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
+    <button class="sidebar-btn role-restricted" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
-    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
-    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+    <button class="sidebar-btn role-restricted" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
+    <button class="sidebar-btn role-restricted" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
   <!-- Main Content -->
@@ -229,7 +260,7 @@
         <div class="col-span-9 bg-white rounded-lg shadow p-4 h-80">
           <div class="flex justify-between items-center mb-5">
             <h2 class="font-bold">Reservation</h2>
-            <a href="customer.html" class="text-sm text-rose-500">View all</a>
+            <a href="customer.html" id="viewAllReservations" class="text-sm text-rose-500 role-restricted">View all</a>
           </div>
           <table class="w-full text-sm">
             <thead class="text-left font-semibold">
@@ -276,7 +307,7 @@
         <div class="col-span-3 bg-white rounded-lg shadow p-4">
           <div class="flex justify-between items-center mb-2">
             <h2 class="font-bold">Today's Agenda</h2>
-            <a href="calendar.html" class="text-sm text-rose-500">View all</a>
+            <a href="calendar.html" id="viewAllAgenda" class="text-sm text-rose-500 role-restricted">View all</a>
           </div>
           <ul id="agendaList" class="list-disc list-inside text-sm">
             <li class="text-gray-500 italic">Loading...</li>
@@ -322,7 +353,10 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Role-based
+    // Global variable to store user role
+    window.userRole = null;
+
+    // Role-based access control
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -330,15 +364,42 @@
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const data = userSnap.data();
+            const userRole = data.role || "staff";
+            window.userRole = userRole;
+            
             document.getElementById("usernameDisplay").textContent = data.username || data.fullName || user.email || "User";
-            if (data.role !== "admin") {
-              const regBtn = document.getElementById("registrationBtn");
-              if (regBtn) regBtn.style.display = "none";
+            
+            // Update localStorage with current role
+            localStorage.setItem('currentUserRole', userRole);
+            
+            // Show/hide elements based on role immediately
+            if (userRole === "admin") {
+              // Add class to body to enable admin styles
+              document.body.classList.add('admin-loaded');
+              document.documentElement.classList.add('admin-loaded');
+            } else {
+              // Make sure admin class is removed for staff
+              document.body.classList.remove('admin-loaded');
+              document.documentElement.classList.remove('admin-loaded');
+              
+              // Explicitly hide all restricted elements for staff
+              document.querySelectorAll('.role-restricted').forEach(element => {
+                element.style.display = 'none';
+              });
             }
           }
         } catch (err) {
           console.error("Error fetching user document:", err);
+          // On error, hide restricted elements
+          document.querySelectorAll('.role-restricted').forEach(element => {
+            element.style.display = 'none';
+          });
         }
+      } else {
+        // No user logged in - default to hiding restricted elements
+        document.querySelectorAll('.role-restricted').forEach(element => {
+          element.style.display = 'none';
+        });
       }
     });
 
@@ -372,7 +433,7 @@
       }
       let count = 0;
       snapshot.forEach((docSnap) => {
-        if (count >= 10) return; // Limit to 10 records
+        if (count >= 10) return;
         const data = docSnap.data();
         const tr = document.createElement("tr");
         tr.className = "border-b";
@@ -387,7 +448,6 @@
         count++;
       });
     });
-
 
     // Today's agenda
     const agendaList = document.getElementById("agendaList");
@@ -489,7 +549,6 @@
       completedCountEl.textContent = completed.toString().padStart(2, "0");
       revenueTotal.textContent = `Total of: ₱${grandTotal.toLocaleString("en-PH", {minimumFractionDigits: 2})}`;
 
-      // Update Revenue Chart
       const daysOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const revenueData = daysOrder.map(d => totalsByDay[d] || 0);
 
@@ -543,7 +602,6 @@
         const data = docSnap.data();
         let docDate = null;
 
-        // Get date from timestamp or createdAt
         if (data.timestamp && typeof data.timestamp.toDate === "function") {
           docDate = data.timestamp.toDate();
         } else if (data.createdAt) {
@@ -555,15 +613,12 @@
             }
           } catch (e) {}
         } else if (data.date) {
-          // Try to parse date field like "10/2/2025"
           try {
             docDate = new Date(data.date);
           } catch (e) {}
         }
 
-        // Check if within last 7 days (or include all if no date found)
         if (!docDate || docDate >= sevenDaysAgo) {
-          // Get items array from the receipt
           const items = data.items || [];
           items.forEach(item => {
             const name = item.name || "Unknown Service";
@@ -784,7 +839,6 @@
     loadNotifications();
     setInterval(loadNotifications, 5000);
   </script>
-  <script type="module" src="role-check.js"></script>
 
 </body>
 </html>

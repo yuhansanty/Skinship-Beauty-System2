@@ -4,6 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sales Report | Skinship Beauty</title>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sales Report | Skinship Beauty</title>
+  <script>
+    // CRITICAL: Check role IMMEDIATELY before any CSS loads
+    const storedRole = localStorage.getItem('currentUserRole');
+    if (storedRole === 'staff') {
+      document.documentElement.classList.add('staff-loaded');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
@@ -33,6 +44,20 @@
       background: #da5c73;
       color: white;
     }
+  
+    /* Hide all buttons for staff by default */
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
+
+    /* Show only specific buttons for staff */
+    html.staff-loaded .sidebar-btn[title="Dashboard"],
+    html.staff-loaded .sidebar-btn[title="Reports"],
+    html.staff-loaded .sidebar-btn[title="Cashier"],
+    html.staff-loaded .sidebar-btn[title="Staff"] {
+      display: flex !important;
+    }
+    
     .filter-btn {
       padding: 8px 16px;
       border-radius: 8px;
