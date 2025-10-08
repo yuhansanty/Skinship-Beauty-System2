@@ -48,6 +48,7 @@
       display: inline-block;
       transition: background 0.2s, font-size 0.2s, padding 0.2s;
     }
+    /* Ensure Back button never overlaps heading (override inline styles) */
     a[href="landingpage.html"] {
       position: static !important;
       top: auto !important;
@@ -198,7 +199,7 @@
         return;
       }
 
-      // Validate Philippine mobile number
+      // Validate Philippine mobile number: 09XXXXXXXXX or +639XXXXXXXXX
       const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
       if (!phPhoneRegex.test(phone)) {
         alert("Please enter a valid Philippine mobile number (09XXXXXXXXX or +639XXXXXXXXX).");
@@ -212,50 +213,9 @@
         return;
       }
 
-      const dateObj = new Date(appointment);
-      const formattedDate = dateObj.toISOString().split("T")[0];
-      const formattedTime = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
-
-      // information
-      const notificationData = {
-        name: name,
-        email: email,
-        phone: phone,
-        service: service,
-        staff: staff,
-        date: formattedDate,
-        time: formattedTime,
-        notes: notes
-      };
-
-      // existing notifications
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      
-      // Create notification object
-      const notification = {
-        id: Date.now(),
-        type: 'appointment',
-        message: `New appointment request from ${name}`,
-        details: notificationData,
-        read: false,
-        timestamp: new Date().toISOString()
-      };
-      
-      // Add to notifications array
-      notifications.unshift(notification);
-      
-      // Keep only last 99 notifications
-      if (notifications.length > 99) {
-        notifications = notifications.slice(0, 99);
-      }
-      
-      // Save to localStorage
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      console.log("Notification saved!", notification); // Debug log
-
-      // save to firebase
       try {
+        const dateObj = new Date(appointment);
+
         const newData = {
           name,
           email,
@@ -265,8 +225,8 @@
           appointment,
           notes,
           status: "Pending",
-          date: formattedDate,
-          time: formattedTime,
+          date: dateObj.toISOString().split("T")[0],
+          time: dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true }),
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
 
@@ -288,7 +248,5 @@
       }
     });
   </script>
-  <script type="module" src="role-check.js"></script>
-
 </body>
 </html>

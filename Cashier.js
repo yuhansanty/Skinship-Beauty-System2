@@ -1,3 +1,5 @@
+let notifications = [];
+let lastCustomerCheck = null;
 let isCategoryMenuOpen = false;
 let isProductsMenuOpen = false;
 let selectedPaymentMethod = 'cash';
@@ -6,13 +8,18 @@ let inventoryProducts = [];
 let servicesData = [];
 
 function validatePhoneNumber(input) {
+  // Remove any non-digit characters
   let value = input.value.replace(/\D/g, '');
+  
+  // Limit to 11 digits
   if (value.length > 11) {
     value = value.slice(0, 11);
   }
+  
   input.value = value;
   
   const errorMsg = document.getElementById('phoneError');
+  
   if (value.length > 0) {
     if (!value.startsWith('09')) {
       errorMsg.classList.remove('hidden');
@@ -36,17 +43,22 @@ function validatePhoneNumber(input) {
 
 function selectPaymentMethod(method) {
   selectedPaymentMethod = method;
+  
+  // Update button states
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
   });
   document.querySelector(`[data-method="${method}"]`).classList.add('active');
   
+  // Show/hide reference number field
   const referenceContainer = document.getElementById('referenceNumberContainer');
   if (method === 'check') {
     referenceContainer.classList.remove('hidden');
   } else {
     referenceContainer.classList.add('hidden');
   }
+  
+  // Recalculate change (check/bank doesn't show change)
   calculateChange();
 }
 
@@ -55,10 +67,105 @@ function toggleUserMenu() {
 }
 
 window.onclick = function(event) {
+  if (!event.target.closest('#notificationPopup') && !event.target.closest('button[onclick="toggleNotifications()"]')) {
+    document.getElementById('notificationPopup').style.display = 'none';
+  }
   if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
-    const menu = document.getElementById('userMenu');
-    if (menu && !menu.classList.contains('hidden')) {
-      menu.classList.add('hidden');
+    document.getElementById('userMenu').classList.add('hidden');
+  }
+}
+
+function getTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+  if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+  return Math.floor(seconds / 86400) + ' days ago';
+}
+
+function updateNotificationUI() {
+  const badge = document.getElementById('notificationBadge');
+  const list = document.getElementById('notificationList');
+  
+  if (notifications.length > 0) {
+    badge.textContent = notifications.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+  
+  if (notifications.length === 0) {
+    list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #999; font-size: 14px;">No new notifications</div>';
+    return;
+  }
+  
+  list.innerHTML = notifications.map(notif => {
+    const timeAgo = getTimeAgo(notif.timestamp);
+    return `
+      <div onclick="handleNotificationClick('${notif.link}', '${notif.id}')" style="padding: 14px 16px; border-bottom: 1px solid #f9fafb; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; transition: background 0.2s ease;">
+        <div style="flex: 1;">
+          <div style="color: #333; font-size: 13px; line-height: 1.4; margin-bottom: 4px;">${notif.text}</div>
+          <div style="color: #999; font-size: 11px;">${timeAgo}</div>
+        </div>
+        <button onclick="event.stopPropagation(); removeNotification('${notif.id}')" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease;">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function addNotification(notification) {
+  notifications.unshift({
+    ...notification,
+    id: Date.now() + Math.random()
+  });
+  
+  if (notifications.length > 20) {
+    notifications = notifications.slice(0, 20);
+  }
+  
+  updateNotificationUI();
+}
+
+function handleNotificationClick(link, notifId) {
+  removeNotification(notifId);
+  window.location.href = link;
+}
+
+function removeNotification(notifId) {
+  notifications = notifications.filter(n => n.id != notifId);
+  updateNotificationUI();
+}
+
+function clearAllNotifications() {
+  notifications = [];
+  updateNotificationUI();
+}
+
+async function checkForNewCustomers() {
+  try {
+    const snapshot = await db.collection("customers")
+      .orderBy("createdAt", "desc")
+      .limit(10)
+      .get();
+    
+    const latestCustomer = snapshot.docs[0];
+    if (latestCustomer && lastCustomerCheck) {
+      const customerTime = latestCustomer.data().createdAt?.toMillis();
+      if (customerTime && customerTime > lastCustomerCheck) {
+        const customerData = latestCustomer.data();
+        addNotification({
+          type: 'customer',
+          text: `New customer added: ${customerData.name}`,
+          link: 'customer.html',
+          timestamp: new Date()
+        });
+      }
+    }
+    
+    if (latestCustomer) {
+      lastCustomerCheck = latestCustomer.data().createdAt?.toMillis() || Date.now();
     }
   }
   
@@ -177,6 +284,7 @@ let currentView = 'services';
 let cart = [];
 let currentCategory = 'all';
 
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
   authDomain: "skinship-1ff4b.firebaseapp.com",
@@ -342,6 +450,7 @@ function toggleCategoryMenu() {
   const productsDropdown = document.getElementById('productsDropdown');
   const productsBtn = document.querySelector('.all-products-btn');
   
+  // Close products dropdown if open
   if (isProductsMenuOpen) {
     productsDropdown.classList.remove('open');
     productsBtn.classList.remove('active');
@@ -353,31 +462,34 @@ function toggleCategoryMenu() {
   if (isCategoryMenuOpen) {
     btn.classList.add('active');
     dropdown.classList.add('open');
-    currentView = 'services';
+    
     grid.innerHTML = '';
     
+    // Add "View All Services" button first
     const viewAllBtn = document.createElement('button');
     viewAllBtn.className = 'category-btn';
     viewAllBtn.textContent = 'View All Services';
     viewAllBtn.classList.add('first-row');
-    if (currentCategory === 'all' && currentView === 'services') {
+    if (currentCategory === 'all') {
       viewAllBtn.classList.add('active');
     }
     viewAllBtn.onclick = () => showCategory('all', 'All Services');
     grid.appendChild(viewAllBtn);
     
+    // Render categories with animation classes
     categories.forEach((cat, index) => {
       const button = document.createElement('button');
       button.className = 'category-btn';
       button.textContent = cat.name;
       
+      // Adjust animation classes since we added one button
       if (index < 3) {
         button.classList.add('first-row');
       } else {
         button.classList.add('remaining-rows');
       }
       
-      if (currentCategory === cat.value && currentView === 'services') {
+      if (currentCategory === cat.value) {
         button.classList.add('active');
       }
       
@@ -397,6 +509,7 @@ function toggleProductsMenu() {
   const servicesDropdown = document.getElementById('categoryDropdown');
   const servicesBtn = document.querySelector('.all-services-btn');
   
+  // Close services dropdown if open
   if (isCategoryMenuOpen) {
     servicesDropdown.classList.remove('open');
     servicesBtn.classList.remove('active');
@@ -408,19 +521,18 @@ function toggleProductsMenu() {
   if (isProductsMenuOpen) {
     btn.classList.add('active');
     dropdown.classList.add('open');
-    currentView = 'products';
+    
     grid.innerHTML = '';
     
+     // Add "View All Products" button first
     const viewAllBtn = document.createElement('button');
     viewAllBtn.className = 'category-btn product-btn';
     viewAllBtn.textContent = 'View All Products';
     viewAllBtn.classList.add('first-row');
-    if (currentCategory === 'all' && currentView === 'products') {
-      viewAllBtn.classList.add('active');
-    }
     viewAllBtn.onclick = () => showProductCategory('all', 'All Products');
     grid.appendChild(viewAllBtn);
     
+    // Render product categories
     productCategories.forEach((cat, index) => {
       const button = document.createElement('button');
       button.className = 'category-btn product-btn';
@@ -430,10 +542,6 @@ function toggleProductsMenu() {
         button.classList.add('first-row');
       } else {
         button.classList.add('remaining-rows');
-      }
-      
-      if (currentCategory === cat.value && currentView === 'products') {
-        button.classList.add('active');
       }
       
       button.onclick = () => showProductCategory(cat.value, cat.name);
@@ -463,6 +571,7 @@ function showProductCategory(category, categoryName) {
     }
   });
   
+  // Filter and render products
   if (category === 'all') {
     renderServices(inventoryProducts);
   } else {
@@ -511,7 +620,7 @@ function showCategory(category, categoryName) {
   const allServicesBtn = document.querySelector('.all-services-btn span');
   allServicesBtn.textContent = categoryName || 'All Services';
   
-  const buttons = document.querySelectorAll('#categoryGrid .category-btn');
+  const buttons = document.querySelectorAll('.category-btn');
   buttons.forEach(btn => {
     const cat = categories.find(c => c.name === btn.textContent);
     if (cat && cat.value === category) {
@@ -523,6 +632,7 @@ function showCategory(category, categoryName) {
     }
   });
   
+  // Filter services
   if (category === 'all') {
     renderServices(servicesData);
   } else {
@@ -568,17 +678,8 @@ function addToCart(item) {
 }
 
 function removeFromCart(id) {
-  const cartItemElement = event.target.closest('.cart-item');
-  if (cartItemElement) {
-    cartItemElement.classList.add('removing');
-    setTimeout(() => {
-      cart = cart.filter(item => item.id !== id);
-      updateCart();
-    }, 300);
-  } else {
-    cart = cart.filter(item => item.id !== id);
-    updateCart();
-  }
+  cart = cart.filter(item => item.id !== id);
+  updateCart();
 }
 
 function updateCart() {
@@ -624,6 +725,7 @@ function calculateChange() {
   
   const changeDisplay = document.getElementById('changeDisplay');
   
+  // Only show change for cash payments
   if (selectedPaymentMethod === 'cash' && payment > 0 && change >= 0) {
     changeDisplay.classList.remove('hidden');
     document.getElementById('changeAmount').textContent = change.toFixed(2);
@@ -631,6 +733,8 @@ function calculateChange() {
     changeDisplay.classList.add('hidden');
   }
 }
+
+document.getElementById('paymentInput').addEventListener('input', calculateChange);
 
 function clearCart() {
   cart = [];
@@ -644,6 +748,7 @@ function clearCart() {
   document.getElementById('changeDisplay').classList.add('hidden');
   document.getElementById('phoneError').classList.add('hidden');
   
+  // Reset payment method to cash
   selectedPaymentMethod = 'cash';
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -661,16 +766,17 @@ function checkout() {
   const referenceNumber = document.getElementById('referenceNumber').value.trim();
   
   if (!customerName) {
-    alert('Customer name is required');
-    document.getElementById('customerName').focus();
+    alert('Please enter customer name');
     return;
   }
   
+  // Validate email if provided
   if (customerEmail && !customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
     alert('Please enter a valid email address');
     return;
   }
   
+  // Validate phone number
   if (customerPhone) {
     if (!customerPhone.startsWith('09') || customerPhone.length !== 11) {
       alert('Mobile number must start with 09 and be exactly 11 digits');
@@ -683,6 +789,7 @@ function checkout() {
     return;
   }
   
+  // Validate reference number for check/bank payments
   if (selectedPaymentMethod === 'check' && !referenceNumber) {
     alert('Please enter reference or check number');
     return;
@@ -736,7 +843,7 @@ async function generateReceipt() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  const customerName = document.getElementById('customerName').value.trim() || 'Walk-in Customer';
+  const customerName = document.getElementById('customerName').value.trim();
   const customerEmail = document.getElementById('customerEmail').value.trim();
   const customerAddress = document.getElementById('customerAddress').value.trim();
   const customerPhone = document.getElementById('customerPhone').value.trim();
@@ -748,10 +855,10 @@ async function generateReceipt() {
   const time = new Date().toLocaleTimeString('en-PH');
   const receiptNumber = 'RCP-' + Date.now();
   const paymentMethodText = selectedPaymentMethod === 'cash' ? 'Cash' : 'Check/Bank Transfer';
-  const cashierName = currentUserData ? currentUserData.fullName : 'Unknown';
   
   let y = 20;
   
+  // Header
   doc.setFontSize(18);
   doc.setFont(undefined, 'bold');
   doc.text('Skinship Beauty', 105, y, { align: 'center' });
@@ -766,6 +873,7 @@ async function generateReceipt() {
   doc.text('0917-5880889 / 0915-9123020', 105, y, { align: 'center' });
   y += 10;
   
+  // Title
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.text('ACKNOWLEDGEMENT RECEIPT', 105, y, { align: 'center' });
@@ -774,6 +882,7 @@ async function generateReceipt() {
   doc.text(`Receipt No: ${receiptNumber}`, 105, y, { align: 'center' });
   y += 10;
   
+  // Customer Info
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
   doc.text(`SOLD TO: ${customerName}`, 20, y);
@@ -793,9 +902,9 @@ async function generateReceipt() {
     y += 6;
   }
   doc.text(`TIME: ${time}`, 20, y);
-  doc.text(`CASHIER: ${cashierName}`, 150, y);
   y += 8;
   
+  // Table Header
   doc.setFont(undefined, 'bold');
   doc.line(20, y, 190, y);
   y += 6;
@@ -807,6 +916,7 @@ async function generateReceipt() {
   doc.line(20, y, 190, y);
   y += 6;
   
+  // Items
   doc.setFont(undefined, 'normal');
   cart.forEach(item => {
     if (y > 250) {
@@ -816,32 +926,34 @@ async function generateReceipt() {
     doc.text('1', 25, y);
     const lines = doc.splitTextToSize(item.name, 90);
     doc.text(lines, 50, y);
-    doc.text(`PHP ${item.price.toFixed(2)}`, 150, y);
-    doc.text(`PHP ${item.price.toFixed(2)}`, 175, y);
+    doc.text(`₱${item.price.toFixed(2)}`, 150, y);
+    doc.text(`₱${item.price.toFixed(2)}`, 175, y);
     y += Math.max(6, lines.length * 5);
   });
   
+  // Total Section
   y += 4;
   doc.line(20, y, 190, y);
   y += 6;
   doc.setFont(undefined, 'bold');
   doc.text('TOTAL:', 150, y);
-  doc.text(`PHP ${total.toFixed(2)}`, 175, y);
+  doc.text(`₱${total.toFixed(2)}`, 175, y);
   y += 6;
   doc.setFont(undefined, 'normal');
   doc.text('PAYMENT:', 150, y);
-  doc.text(`PHP ${payment.toFixed(2)}`, 175, y);
+  doc.text(`₱${payment.toFixed(2)}`, 175, y);
   y += 6;
   
   if (selectedPaymentMethod === 'cash') {
     doc.setFont(undefined, 'bold');
     doc.text('CHANGE:', 150, y);
-    doc.text(`PHP ${change.toFixed(2)}`, 175, y);
+    doc.text(`₱${change.toFixed(2)}`, 175, y);
     y += 10;
   } else {
     y += 4;
   }
   
+  // Payment Info
   doc.setFont(undefined, 'normal');
   doc.text(`Mode of Payment: ${paymentMethodText}`, 20, y);
   y += 6;
@@ -853,18 +965,19 @@ async function generateReceipt() {
     y += 4;
   }
   
+  // Footer
   doc.line(140, y, 190, y);
   y += 5;
   doc.setFontSize(9);
   doc.text('AUTHORIZED SIGNATURE', 165, y, { align: 'center' });
   
+  // Prepare receipt data for Firebase
   const receiptData = {
     receiptNumber: receiptNumber,
     customerName: customerName,
     customerEmail: customerEmail || '',
     customerAddress: customerAddress || '',
     customerPhone: customerPhone || '',
-    cashierName: cashierName,
     items: cart.map(item => ({
       name: item.name,
       category: item.category,
@@ -897,6 +1010,7 @@ async function generateReceipt() {
     await db.collection("cashier_receipt").add(receiptData);
     await loadInventoryProducts();
     
+    // Save PDF
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
     
     let emailSent = false;
@@ -943,6 +1057,7 @@ async function generateReceipt() {
     document.getElementById('loadingModal').classList.add('hidden');
     alert('Receipt printed but failed to save to database. Please check your connection.');
     
+    // Still save PDF even if Firebase fails
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
     doc.save(fileName);
     

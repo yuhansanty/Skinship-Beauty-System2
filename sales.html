@@ -38,20 +38,6 @@
       background: #da5c73;
       color: white;
     }
-  
-    /* Hide all buttons for staff by default */
-    html.staff-loaded .sidebar-btn {
-      display: none !important;
-    }
-
-    /* Show only specific buttons for staff */
-    html.staff-loaded .sidebar-btn[title="Dashboard"],
-    html.staff-loaded .sidebar-btn[title="Reports"],
-    html.staff-loaded .sidebar-btn[title="Cashier"],
-    html.staff-loaded .sidebar-btn[title="Staff"] {
-      display: flex !important;
-    }
-    
     .filter-btn {
       padding: 8px 16px;
       border-radius: 8px;
@@ -445,7 +431,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Sales</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalSales">₱ 0</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalSales">₱ 3,094</p>
             </div>
             <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -454,7 +440,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Transactions</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalTransactions">0</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalTransactions">6</p>
             </div>
             <i class="fa-solid fa-receipt text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -463,7 +449,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Top Service</p>
-              <p class="text-lg font-bold text-[#da5c73]" id="topService">-</p>
+              <p class="text-lg font-bold text-[#da5c73]" id="topService">Hair Color</p>
             </div>
             <i class="fa-solid fa-crown text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -472,7 +458,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Avg. Sale</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="avgSale">₱ 0</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="avgSale">₱ 516</p>
             </div>
             <i class="fa-solid fa-chart-simple text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -481,17 +467,17 @@
 
       <!-- Filters -->
       <div class="flex gap-3 mb-6 flex-wrap">
-        <button class="filter-btn active" onclick="filterByPeriod('all', this)">All Time</button>
-        <button class="filter-btn" onclick="filterByPeriod('today', this)">Today</button>
-        <button class="filter-btn" onclick="filterByPeriod('week', this)">This Week</button>
-        <button class="filter-btn" onclick="filterByPeriod('month', this)">This Month</button>
+        <button class="filter-btn active" onclick="filterByPeriod('all')">All Time</button>
+        <button class="filter-btn" onclick="filterByPeriod('today')">Today</button>
+        <button class="filter-btn" onclick="filterByPeriod('week')">This Week</button>
+        <button class="filter-btn" onclick="filterByPeriod('month')">This Month</button>
         <input type="date" id="startDate" class="filter-btn">
         <input type="date" id="endDate" class="filter-btn">
         <button class="filter-btn" onclick="filterByDateRange()">
           <i class="fa-solid fa-filter mr-2"></i>Apply Date Range
         </button>
         <button class="filter-btn" onclick="exportToCSV()">
-          <i class="fa-solid fa-download mr-2"></i>Export CSV
+          <i class="fa-solid fa-download mr-2"></i>Export
         </button>
       </div>
 
@@ -501,8 +487,9 @@
           <table class="w-full text-sm" id="salesTable">
             <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
               <tr>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Receipt No.</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Customer Name</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Transaction ID</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Invoice Number</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item #</th>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Service/Item</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Qty</th>
                 <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Price</th>
@@ -510,11 +497,59 @@
               </tr>
             </thead>
             <tbody id="salesTableBody">
-              <tr>
-                <td colspan="6" class="py-8 text-center text-gray-400">
-                  <i class="fa-solid fa-spinner fa-spin text-3xl mb-2"></i>
-                  <p>Loading sales data...</p>
-                </td>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">31293-93221</td>
+                <td class="py-4 px-4">21M&KFFKNXBS6PT6N</td>
+                <td class="py-4 px-4">123-456</td>
+                <td class="py-4 px-4">Hair-Color</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 8, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">71233-32164</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Haircut</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">92125-61268</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Foot Massage</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 9, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">71204-51152</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">Manicure</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              </tr>
+              <tr class="border-b hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">91230-05235</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">EYELASH NATURAL (1 SIZE)</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 499</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
+              </tr>
+              <tr class="hover:bg-gray-50 transition">
+                <td class="py-4 px-4 font-semibold">91230-05235</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">—</td>
+                <td class="py-4 px-4">EYELASH DOLLEYE (2 SIZE)</td>
+                <td class="py-4 px-4 text-center">1</td>
+                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 599</td>
+                <td class="py-4 px-4 text-center text-sm">May 5, 2025</td>
               </tr>
             </tbody>
           </table>
@@ -522,14 +557,6 @@
       </div>
     </div>
   </main>
-
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
-    </div>
-  </div>
 
   <!-- Logout Confirmation Modal -->
   <div class="modal-overlay" id="logoutModal">
@@ -1008,21 +1035,12 @@
     // Search functionality
     document.getElementById('searchInput').addEventListener('input', function(e) {
       const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#salesTableBody tr');
       
-      if (searchTerm === '') {
-        filteredSalesData = [...allSalesData];
-      } else {
-        filteredSalesData = allSalesData.filter(row => {
-          const itemsText = row.items.map(item => item.name).join(' ').toLowerCase();
-          return row.receiptNumber.toLowerCase().includes(searchTerm) ||
-                 row.customerName.toLowerCase().includes(searchTerm) ||
-                 itemsText.includes(searchTerm) ||
-                 row.date.toLowerCase().includes(searchTerm);
-        });
-      }
-      
-      renderTable();
-      updateStats();
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
     });
 
     // Filter by period
@@ -1033,41 +1051,10 @@
           btn.classList.remove('active');
         }
       });
-      button.classList.add('active');
+      event.target.classList.add('active');
       
-      const now = new Date();
-      now.setHours(23, 59, 59, 999);
-      
-      let startDate;
-      
-      switch(period) {
-        case 'today':
-          startDate = new Date(now);
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case 'week':
-          startDate = new Date(now);
-          startDate.setDate(now.getDate() - 7);
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        case 'month':
-          startDate = new Date(now);
-          startDate.setMonth(now.getMonth() - 1);
-          startDate.setHours(0, 0, 0, 0);
-          break;
-        default:
-          filteredSalesData = [...allSalesData];
-          renderTable();
-          updateStats();
-          return;
-      }
-      
-      filteredSalesData = allSalesData.filter(row => {
-        return row.timestamp >= startDate && row.timestamp <= now;
-      });
-      
-      renderTable();
-      updateStats();
+      // Add your filter logic here
+      console.log('Filtering by:', period);
     }
 
     // Filter by date range
@@ -1075,7 +1062,10 @@
       const startDateInput = document.getElementById('startDate').value;
       const endDateInput = document.getElementById('endDate').value;
       
-      if(!startDateInput || !endDateInput) {
+      if(startDate && endDate) {
+        console.log('Filtering from', startDate, 'to', endDate);
+        // Add your date range filter logic here
+      } else {
         alert('Please select both start and end dates');
         return;
       }
@@ -1115,18 +1105,16 @@
       
       let csv = 'Receipt No.,Customer Name,Service/Item,Quantity,Price,Date\n';
       
-      filteredSalesData.forEach(row => {
-        const itemsText = row.items.map(item => item.name).join('; ');
-        csv += `${row.receiptNumber},"${row.customerName}","${itemsText}",${row.items.length},${row.subtotal},"${row.date}"\n`;
+      salesData.forEach(row => {
+        csv += `${row.id},${row.invoice},${row.item},${row.service},${row.qty},${row.price},${row.date}\n`;
       });
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = 'sales_report.csv';
       a.click();
-      window.URL.revokeObjectURL(url);
     }
 
     // Notification System

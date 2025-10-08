@@ -34,22 +34,7 @@ body {
   background:#da5c73;
   color:white;
 }
-/* Hide all sidebar buttons by default */
-.sidebar-btn {
-  display: none !important;
-}
 
-html.staff-loaded .sidebar-btn[title="Dashboard"],
-html.staff-loaded .sidebar-btn[title="Reports"],
-html.staff-loaded .sidebar-btn[title="Cashier"],
-html.staff-loaded .sidebar-btn[title="Staff"] {
-  display: flex !important;
-}
-
-/* Show all buttons when NOT staff (admin) */
-html:not(.staff-loaded) .sidebar-btn {
-  display: flex !important;
-}
 .glass-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -254,48 +239,6 @@ html:not(.staff-loaded) .sidebar-btn {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.max-w-7xl.mx-auto.mb-6 {
-  position: relative;
-  z-index: 100;
-}
-
-/* Ensure notification button container is properly positioned */
-.flex.items-center.gap-4 {
-  position: relative;
-  z-index: 100;
-}
-
-/* Update notification dropdown z-index */
-.notification-dropdown {
-  position: absolute;
-  top: 50px;
-  right: 0;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-  width: 400px;
-  max-height: 500px;
-  overflow-y: auto;
-  z-index: 9999 !important; /* Add !important to override */
-  display: none;
-}
-
-/* Ensure main content doesn't overlap */
-main {
-  position: relative;
-  z-index: 1;
-}
-
-/* Ensure cart card doesn't overlap notification */
-.glass-card.rounded-2xl.p-6.flex.flex-col.h-fit.sticky {
-  z-index: 10; /* Lower than notification dropdown */
-}
-
-/* Ensure notification modal is on top */
-.notification-modal {
-  z-index: 10000 !important;
 }
 
 .category-dropdown.open {

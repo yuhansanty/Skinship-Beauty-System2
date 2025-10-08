@@ -595,24 +595,19 @@
       <div class="flex justify-between items-center mb-6">
         <input type="text" id="searchInput" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
-          <!-- Notification Bell -->
-          <div class="relative">
-            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+          <div style="position: relative; display: inline-block;">
+            <button onclick="toggleNotifications()" style="background: none; border: none; cursor: pointer; position: relative;">
+              <i class="fa-regular fa-bell text-xl"></i>
+              <span id="notificationBadge" style="display: none; position: absolute; top: -4px; right: -4px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 11px; align-items: center; justify-content: center; font-weight: bold;"></span>
             </button>
-            
-            <!-- Notification Dropdown -->
-            <div id="notificationDropdown" class="notification-dropdown">
-              <div class="notification-header">
-                <h3 class="font-bold text-gray-800">Notifications</h3>
-                <button onclick="clearAllNotifications()"class="text-sm text-[#da5c73] hover:underline">Clear all</button>
-                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+            <div id="notificationPopup" style="display: none; position: absolute; top: 100%; right: 0; margin-top: 10px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000;">
+              <div style="padding: 16px; border-bottom: 1px solid #f0f0f0; font-weight: 600; color: #333; display: flex; justify-content: space-between; align-items: center;">
+                <span>Notifications</span>
+                <button onclick="clearAllNotifications()" style="color: #da5c73; font-size: 13px; cursor: pointer; border: none; background: none; padding: 0;">Clear all</button>
               </div>
               <div id="notificationList"></div>
             </div>
           </div>
-          
           <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="toggleUserMenu()">
@@ -1317,6 +1312,135 @@
       document.getElementById('userMenu').classList.toggle('hidden');
     }
 
+    function toggleNotifications() {
+      const popup = document.getElementById('notificationPopup');
+      if (popup.style.display === 'none' || popup.style.display === '') {
+        popup.style.display = 'block';
+      } else {
+        popup.style.display = 'none';
+      }
+    }
+
+    function updateNotificationUI() {
+      const badge = document.getElementById('notificationBadge');
+      const list = document.getElementById('notificationList');
+      
+      if (notifications.length > 0) {
+        badge.textContent = notifications.length;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      
+      if (notifications.length === 0) {
+        list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #999; font-size: 14px;">No new notifications</div>';
+        return;
+      }
+      
+      list.innerHTML = notifications.map(notif => {
+        const timeAgo = getTimeAgo(notif.timestamp);
+        return `
+          <div onclick="handleNotificationClick('${notif.link}', '${notif.id}')" style="padding: 14px 16px; border-bottom: 1px solid #f9fafb; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; transition: background 0.2s ease;">
+            <div style="flex: 1;">
+              <div style="color: #333; font-size: 13px; line-height: 1.4; margin-bottom: 4px;">${notif.text}</div>
+              <div style="color: #999; font-size: 11px;">${timeAgo}</div>
+            </div>
+            <button onclick="event.stopPropagation(); removeNotification('${notif.id}')" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease;">
+              <i class="fa-solid fa-times"></i>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getTimeAgo(date) {
+      const seconds = Math.floor((new Date() - date) / 1000);
+      
+      if (seconds < 60) return 'Just now';
+      if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
+      if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
+      return Math.floor(seconds / 86400) + ' days ago';
+    }
+
+    function handleNotificationClick(link, notifId) {
+      removeNotification(notifId);
+      window.location.href = link;
+    }
+
+    function removeNotification(notifId) {
+      notifications = notifications.filter(n => n.id != notifId);
+      updateNotificationUI();
+    }
+
+    function clearAllNotifications() {
+      notifications = [];
+      updateNotificationUI();
+    }
+
+    function addNotification(notification) {
+      notifications.unshift({
+        ...notification,
+        id: Date.now() + Math.random()
+      });
+      
+      if (notifications.length > 20) {
+        notifications = notifications.slice(0, 20);
+      }
+      
+      updateNotificationUI();
+    }
+
+    async function checkForNewCustomers() {
+      try {
+        const snapshot = await db.collection("customers")
+          .orderBy("createdAt", "desc")
+          .limit(10)
+          .get();
+        
+        const latestCustomer = snapshot.docs[0];
+        if (latestCustomer && lastCustomerCheck) {
+          const customerTime = latestCustomer.data().createdAt?.toMillis();
+          if (customerTime && customerTime > lastCustomerCheck) {
+            const customerData = latestCustomer.data();
+            addNotification({
+              type: 'customer',
+              text: `New customer added: ${customerData.name}`,
+              link: 'customer.html',
+              timestamp: new Date()
+            });
+          }
+        }
+        
+        if (latestCustomer) {
+          lastCustomerCheck = latestCustomer.data().createdAt?.toMillis() || Date.now();
+        }
+      } catch (error) {
+        console.error("Error checking customers:", error);
+      }
+    }
+
+    async function initializeNotifications() {
+      try {
+        const customerSnapshot = await db.collection("customers")
+          .orderBy("createdAt", "desc")
+          .limit(1)
+          .get();
+        
+        if (!customerSnapshot.empty) {
+          lastCustomerCheck = customerSnapshot.docs[0].data().createdAt?.toMillis() || Date.now();
+        } else {
+          lastCustomerCheck = Date.now();
+        }
+      } catch (error) {
+        console.error("Error initializing notifications:", error);
+        lastCustomerCheck = Date.now();
+      }
+
+      setInterval(() => {
+        checkForNewCustomers();
+      }, 5000);
+    }
+
     window.onclick = function(event) {
       if (!event.target.matches('.dropdown-button') && !event.target.matches('.dropdown-button *')) {
         document.getElementById('serviceDropdown').classList.remove('show');
@@ -1328,8 +1452,8 @@
         document.getElementById('userMenu').classList.add('hidden');
       }
 
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
+      if (!event.target.closest('#notificationPopup') && !event.target.closest('button[onclick="toggleNotifications()"]')) {
+        document.getElementById('notificationPopup').style.display = 'none';
       }
     }
 
@@ -1400,6 +1524,7 @@
       const searchTerm = searchInput.value.toLowerCase();
 
       const filtered = allCustomers.filter(c => {
+        // Check service match - handle both slug and full name
         let matchesService = activeService === "All Services";
         if (!matchesService) {
           const serviceSlug = serviceMap[activeService];
@@ -1419,6 +1544,7 @@
       filtered.forEach(c => {
         const tr = document.createElement('tr');
         
+        // Display service name from slug
         let displayService = c.service;
         const foundService = Object.keys(serviceMap).find(key => serviceMap[key] === c.service);
         if (foundService) {
