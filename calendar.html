@@ -369,6 +369,7 @@
               <div id="notificationList"></div>
             </div>
           </div>
+          
           <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
@@ -520,6 +521,14 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
     </div>
   </div>
 
@@ -854,9 +863,11 @@
       deleteNotification(id);
     }
 
-    function removeNotification(notifId) {
-      notifications = notifications.filter(n => n.id != notifId);
-      updateNotificationUI();
+    function deleteNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications = notifications.filter(n => n.id !== id);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
     }
 
     window.toggleUserMenu = function() {
@@ -907,10 +918,11 @@
         this.bindEvents();
         await this.loadUserInfo();
         await this.loadStaff();
-        await this.initializeNotifications();
         await this.loadCustomers();
         this.renderCalendar();
         this.setMinDateTime();
+        loadNotifications();
+        setInterval(loadNotifications, 5000);
       }
 
       async loadUserInfo() {
@@ -1203,7 +1215,6 @@
         const serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].text;
         const dateTime = new Date(date + ' ' + time);
         
-        // Convert 24-hour time to 12-hour format
         const [hours, minutes] = time.split(':').map(Number);
         const period = hours >= 12 ? 'PM' : 'AM';
         const displayHours = hours % 12 || 12;
