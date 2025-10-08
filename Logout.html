@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logout Popup</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #8b5cf6;
+      --danger: #ef4444;
+      --success: #10b981;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --bg-overlay: rgba(0, 0, 0, 0.5);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+
+    .demo-btn {
+      padding: 1rem 2rem;
+      background: white;
+      color: var(--primary);
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .demo-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Logout Modal Overlay */
+    .logout-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--bg-overlay);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .logout-modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Logout Modal Container */
+    .logout-modal {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .logout-modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    /* Modal Header */
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: var(--text-primary);
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+
+    /* Modal Body */
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: var(--primary);
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: var(--text-primary);
+      font-size: 0.95rem;
+    }
+
+    /* Modal Actions */
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: var(--text-primary);
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm:active {
+      transform: translateY(0);
+    }
+
+    /* Loading State */
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Demo Button -->
+  <button class="demo-btn" onclick="showLogoutModal()">
+    <i class="fa-solid fa-right-from-bracket"></i> Trigger Logout Popup
+  </button>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="logout-modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">John Doe</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>All unsaved changes will be lost</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, updateDoc, collection, query, where, getDocs, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // Make functions globally available
+    window.showLogoutModal = function() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    window.hideLogoutModal = function() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    // Clock out function
+    async function handleClockOut() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const today = new Date().toLocaleDateString();
+        const logsRef = collection(db, "staffLogs", user.uid, "history");
+        
+        const todayQuery = query(logsRef, where("date", "==", today));
+        const todaySnap = await getDocs(todayQuery);
+        
+        if (!todaySnap.empty) {
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
+          }
+        }
+
+        // Set user as unavailable
+        const staffRef = doc(db, "users", user.uid);
+        await updateDoc(staffRef, { 
+          availability: false,
+          lastUpdated: serverTimestamp()
+        });
+        
+        console.log("User clocked out and set to unavailable");
+      } catch (error) {
+        console.error("Error during clock out:", error);
+      }
+    }
+
+    window.confirmLogout = async function() {
+      const confirmBtn = document.getElementById('confirmLogoutBtn');
+      confirmBtn.classList.add('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
+      try {
+        // Clock out and set unavailable
+        await handleClockOut();
+        
+        // Sign out
+        await signOut(auth);
+        
+        // Redirect to login page
+        window.location.href = "Login.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        
+        // Reset button state
+        confirmBtn.classList.remove('loading');
+        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+        
+        // Show error message
+        alert("An error occurred during logout. Please try again.");
+        
+        // Force sign out even if there's an error
+        await signOut(auth);
+        window.location.href = "Login.html";
+      }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('logoutModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideLogoutModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        hideLogoutModal();
+      }
+    });
+  </script>
+</body>
+</html>

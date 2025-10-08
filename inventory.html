@@ -8,264 +8,186 @@
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="inventory.css">
   <style>
-    /* Add Product Modal Styles */
-.add-product-modal {
-  display: none;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 2000;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
-.add-product-modal.show {
-  display: flex;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: border-color 0.3s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #da5c73;
-}
-
-.form-select {
-  width: 100%;
-  padding: 10px 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 14px;
-  background: white;
-  cursor: pointer;
-  transition: border-color 0.3s;
-}
-
-.form-select:focus {
-  outline: none;
-  border-color: #da5c73;
-}
-    .sidebar-btn { 
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      color: #da5c73;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: .3s;
-    }
-    .sidebar-btn:hover { 
-      background: #da5c73;
-      color: white;
-      transform: scale(1.1);
-    }
-    .sidebar-btn.active { 
-      background: #da5c73;
-      color: white;
-    }
-    .filter-btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 2px solid #da5c73;
-      background: white;
-      color: #da5c73;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .filter-btn:hover {
-      background: #da5c73;
-      color: white;
-    }
-    .filter-btn.active {
-      background: #da5c73;
-      color: white;
-    }
-
-    .filter-btn:disabled {
-      opacity: 0.5;
-           cursor: not-allowed;
-    }
-
-    .edit-mode-active {
-  background: #d1d5db !important; /* darker light gray */
-  cursor: pointer !important;
-}
-.edit-mode-active:hover {
-  background: #9ca3af !important; /* slightly darker on hover */
-  transform: translateX(4px);
-}
-
-
-.edit-mode-message {
-  background: #fef3c7;
-  border: 2px solid #f59e0b;
-  padding: 12px 20px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  display: none;
-  align-items: center;
-  gap: 12px;
-  animation: slideDown 0.3s ease;
-}
-    
-    .stat-card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: transform 0.3s;
-    }
-    .stat-card:hover {
-      transform: translateY(-4px);
-    }
-    
-    .notification-badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #dc2626;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    
-    .notification-dropdown {
-      position: absolute;
-      top: 50px;
-      right: 0;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      width: 400px;
-      max-height: 500px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-    
-    .notification-dropdown.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-    
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .notification-header {
-      padding: 16px 20px;
-      border-bottom: 2px solid #f3f4f6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .notification-item {
-      padding: 16px 20px;
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .notification-item:hover {
-      background: #fef2f2;
-    }
-    
-    .notification-item.unread {
-      background: #fff7ed;
-    }
-    
-    .notification-empty {
-      padding: 40px 20px;
-      text-align: center;
-      color: #9ca3af;
-    }
-    
-    .notification-modal {
-      display: none;
+    /* Logout Modal Styles */
+    .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
     }
-    
-    .notification-modal.show {
-      display: flex;
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
     }
-    
-    .modal-content {
+
+    .logout-modal {
       background: white;
-      border-radius: 16px;
-      padding: 30px;
-      max-width: 600px;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
       width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
     }
-    
-    .modal-close {
-      float: right;
-      font-size: 24px;
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
       cursor: pointer;
-      color: #9ca3af;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
-    
-    .modal-close:hover {
-      color: #da5c73;
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -301,8 +223,6 @@
           <button class="filter-btn" onclick="enableEditMode()" id="editModeBtn">
             <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item
           </button>
-          </button> 
-          </button>
         </div>
         <div class="flex items-center gap-4">
           <!-- Notification Bell -->
@@ -323,13 +243,15 @@
             </div>
           </div>
           
-          <span class="font-semibold text-lg text-white">Username</span>
+          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
               <i class="fa-solid fa-user-circle text-2xl text-white"></i>
             </button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
@@ -343,7 +265,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Items</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">6</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
             </div>
             <i class="fa-solid fa-boxes-stacked text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -352,7 +274,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Value</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 22,925</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
             </div>
             <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -361,7 +283,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Low Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">1</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">0</p>
             </div>
             <i class="fa-solid fa-triangle-exclamation text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -370,7 +292,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Out of Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">1</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">0</p>
             </div>
             <i class="fa-solid fa-circle-xmark text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -385,11 +307,6 @@
         <button class="filter-btn" onclick="filterByStatus('out-of-stock')">Out of Stock</button>
         <select id="categoryFilter" class="filter-btn" onchange="filterByCategory()">
           <option value="all">All Categories</option>
-          <option value="Hair Products">Hair Products</option>
-          <option value="Nail Products">Nail Products</option>
-          <option value="Skincare">Skincare</option>
-          <option value="Lash Products">Lash Products</option>
-          <option value="Tools">Tools</option>
         </select>
         <button class="filter-btn" onclick="exportToCSV()">
           <i class="fa-solid fa-download mr-2"></i>Export
@@ -413,7 +330,6 @@
               </tr>
             </thead>
             <tbody id="inventoryTableBody">
-              </tr>
             </tbody>
           </table>
         </div>
@@ -428,697 +344,243 @@
       <div id="modalBody"></div>
     </div>
   </div>
-<!-- Add Product Modal -->
-<div id="addProductModal" class="add-product-modal">
-  <div class="modal-content" style="max-width: 700px;">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-[#da5c73]">
-        <i class="fa-solid fa-plus-circle mr-2"></i>Add New Product
-      </h2>
-      <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
-    </div>
-    <form id="addProductForm" onsubmit="handleAddProduct(event)">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="form-group">
-          <label class="form-label">Item Name <span class="text-red-500">*</span></label>
-          <input type="text" id="itemName" class="form-input" placeholder="e.g., Hair Dye - Blonde" required />
-        </div>
 
-        <div class="form-group">
-          <label class="form-label">Category <span class="text-red-500">*</span></label>
-          <select id="itemCategory" class="form-select" required>
-            <option value="">Select Category</option>
-            <option value="Hair Products">Hair Products</option>
-            <option value="Nail Products">Nail Products</option>
-            <option value="Skincare">Skincare</option>
-            <option value="Lash Products">Lash Products</option>
-            <option value="Tools">Tools</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Quantity (per piece) <span class="text-red-500">*</span></label>
-          <input type="number" id="itemQuantity" class="form-input" placeholder="0" min="0" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Unit Price (₱) <span class="text-red-500">*</span></label>
-          <input type="number" id="itemPrice" class="form-input" placeholder="0.00" min="0" step="0.01" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Minimum Stock Level <span class="text-red-500">*</span></label>
-          <input type="number" id="minStock" class="form-input" placeholder="10" min="0" value="10" required />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Supplier (Optional)</label>
-          <input type="text" id="itemSupplier" class="form-input" placeholder="e.g., Beauty Co." />
-        </div>
+  <!-- Add Product Modal -->
+  <div id="addProductModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-plus-circle mr-2"></i>Add New Product
+        </h2>
+        <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Description (Optional)</label>
-        <textarea id="itemDescription" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
-      </div>
-
-      <div class="flex gap-3 mt-6">
-        <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-          <i class="fa-solid fa-check mr-2"></i>Add Product
-        </button>
-        <button type="button" onclick="closeAddProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-          <i class="fa-solid fa-times mr-2"></i>Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-
-<!-- Edit Product Modal -->
-<div id="editProductModal" class="add-product-modal">
-  <div class="modal-content" style="max-width:700px;">
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-bold text-[#da5c73]">
-        <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
-      </h2>
-      <span class="modal-close" onclick="closeEditProductModal()">&times;</span>
-    </div>
-
-    <form id="editProductForm" onsubmit="handleEditProduct(event)">
-      <input type="hidden" id="editFirebaseId" />
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="form-group">
-          <label class="form-label">Item Name</label>
-          <input type="text" id="editItemName" class="form-input" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Category</label>
-          <select id="editItemCategory" class="form-select" required>
-            <option value="Hair Products">Hair Products</option>
-            <option value="Nail Products">Nail Products</option>
-            <option value="Skincare">Skincare</option>
-            <option value="Lash Products">Lash Products</option>
-            <option value="Tools">Tools</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Quantity</label>
-          <input type="number" id="editItemQuantity" class="form-input" min="0" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Unit Price (₱)</label>
-          <input type="number" id="editItemPrice" class="form-input" min="0" step="0.01" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Minimum Stock</label>
-          <input type="number" id="editMinStock" class="form-input" min="0" required />
-        </div>
-        <div class="form-group">
-          <label class="form-label">Supplier</label>
-          <input type="text" id="editItemSupplier" class="form-input" />
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Description</label>
-        <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
-      </div>
-
-      <div class="flex gap-3 mt-6">
-        <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-          <i class="fa-solid fa-save mr-2"></i>Save Changes
-        </button>
-        <button type="button" onclick="closeEditProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-          <i class="fa-solid fa-xmark mr-2"></i>Cancel
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-
-
-
-  <script>
-    
-    
-
-    // Search functionality
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-
-    // Filter by status
-    function filterByStatus(status) {
-      const buttons = document.querySelectorAll('.filter-btn');
-      buttons.forEach(btn => {
-        if(btn.textContent.includes('All Items') || btn.textContent.includes('In Stock') || 
-           btn.textContent.includes('Low Stock') || btn.textContent.includes('Out of Stock')) {
-          btn.classList.remove('active');
-        }
-      });
-      event.target.classList.add('active');
-      
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      rows.forEach(row => {
-        if(status === 'all') {
-          row.style.display = '';
-        } else {
-          const rowStatus = row.getAttribute('data-status');
-          row.style.display = rowStatus === status ? '' : 'none';
-        }
-      });
-    }
-    
-    // Filter by category
-    function filterByCategory() {
-      const category = document.getElementById('categoryFilter').value;
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      
-      rows.forEach(row => {
-        if(category === 'all') {
-          row.style.display = '';
-        } else {
-          const rowCategory = row.getAttribute('data-category');
-          row.style.display = rowCategory === category ? '' : 'none';
-        }
-      });
-    }
-
-    // Add new item
-    function addNewItem() {
-    openAddProductModal();
-    }
-
-    // Export to CSV
-    function exportToCSV() {
-      let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status\n';
-      
-      inventoryData.forEach(row => {
-        csv += `${row.id},${row.name},${row.category},${row.qty},${row.price},${row.total},${row.date},${row.status}\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory_report.csv';
-      a.click();
-    }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-      const userMenu = document.getElementById('userMenu');
-      const userMenuButton = document.getElementById('userMenuButton');
-      
-      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-        userMenu.classList.add('hidden');
-      }
-
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-    });
-
-    // Notification System
-    function loadNotifications() {
-      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notificationList = document.getElementById('notificationList');
-      const badge = document.getElementById('notificationBadge');
-      
-      const unreadCount = notifications.filter(n => !n.read).length;
-      
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-      
-      if (notifications.length === 0) {
-        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
-        return;
-      }
-      
-      notificationList.innerHTML = '';
-      
-      notifications.forEach(notification => {
-        const item = document.createElement('div');
-        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-        item.onclick = () => viewNotification(notification.id);
-        
-        const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
-        
-        item.innerHTML = `
-          <div class="flex justify-between items-start mb-1">
-            <strong class="text-[#da5c73]">${notification.message}</strong>
-            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+      <form id="addProductForm" onsubmit="handleAddProduct(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Item Name <span class="text-red-500">*</span></label>
+            <input type="text" id="itemName" class="form-input" placeholder="e.g., Hair Dye - Blonde" required />
           </div>
-          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-        `;
-        
-        notificationList.appendChild(item);
-      });
-    }
 
-    function toggleNotifications() {
-      const dropdown = document.getElementById('notificationDropdown');
-      dropdown.classList.toggle('show');
-      loadNotifications();
-    }
+          <div class="form-group">
+            <label class="form-label">Category <span class="text-red-500">*</span></label>
+            <select id="itemCategory" class="form-select" required>
+              <option value="">Select Category</option>
+            </select>
+          </div>
 
-    function viewNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notification = notifications.find(n => n.id === id);
-      
-      if (!notification) return;
-      
-      notification.read = true;
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      const modal = document.getElementById('notificationModal');
-      const modalBody = document.getElementById('modalBody');
-      
-      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-      });
-      
-      modalBody.innerHTML = `
-        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-        <div class="space-y-3">
-          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-          <div><strong>Email:</strong> ${notification.details.email}</div>
-          <div><strong>Phone:</strong> ${notification.details.phone}</div>
-          <div><strong>Service:</strong> ${notification.details.service}</div>
-          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+          <div class="form-group">
+            <label class="form-label">Quantity (per piece) <span class="text-red-500">*</span></label>
+            <input type="number" id="itemQuantity" class="form-input" placeholder="0" min="0" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Unit Price (₱) <span class="text-red-500">*</span></label>
+            <input type="number" id="itemPrice" class="form-input" placeholder="0.00" min="0" step="0.01" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Minimum Stock Level <span class="text-red-500">*</span></label>
+            <input type="number" id="minStock" class="form-input" placeholder="10" min="0" value="10" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Supplier (Optional)</label>
+            <input type="text" id="itemSupplier" class="form-input" placeholder="e.g., Beauty Co." />
+          </div>
         </div>
-        <div class="mt-6 flex gap-3">
-          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            <i class="fa-solid fa-check mr-2"></i>Approve
+
+        <div class="form-group">
+          <label class="form-label">Description (Optional)</label>
+          <textarea id="itemDescription" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Product
           </button>
-          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-            <i class="fa-solid fa-times mr-2"></i>Decline
+          <button type="button" onclick="closeAddProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
           </button>
         </div>
-      `;
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div id="editProductModal" class="add-product-modal">
+    <div class="modal-content" style="max-width:700px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
+        </h2>
+        <span class="modal-close" onclick="closeEditProductModal()">&times;</span>
+      </div>
+
+      <form id="editProductForm" onsubmit="handleEditProduct(event)">
+        <input type="hidden" id="editFirebaseId" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Item Name</label>
+            <input type="text" id="editItemName" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="editItemCategory" class="form-select" required>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input type="number" id="editItemQuantity" class="form-input" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit Price (₱)</label>
+            <input type="number" id="editItemPrice" class="form-input" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Stock</label>
+            <input type="number" id="editMinStock" class="form-input" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supplier</label>
+            <input type="text" id="editItemSupplier" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-save mr-2"></i>Save Changes
+          </button>
+          <button type="button" onclick="deleteProduct()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
+            <i class="fa-solid fa-trash mr-2"></i>Remove Item
+          </button>
+          <button type="button" onclick="closeEditProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-xmark mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Category Modal -->
+  <div id="addCategoryModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-tag mr-2"></i>Add New Category
+        </h2>
+        <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
+      </div>
+      <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
+        <div class="form-group">
+          <label class="form-label">Category Name <span class="text-red-500">*</span></label>
+          <input type="text" id="newCategoryName" class="form-input" placeholder="e.g., Facial Products" required />
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Category
+          </button>
+          <button type="button" onclick="closeAddCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Categories Modal -->
+  <div id="manageCategoriesModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-layer-group mr-2"></i>Manage Categories
+        </h2>
+        <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
+      </div>
       
-      modal.classList.add('show');
-      loadNotifications();
-    }
+      <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div class="flex items-start gap-2">
+          <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-1"></i>
+          <div class="text-sm text-yellow-800">
+            <strong>Warning:</strong> Deleting a category will also delete all inventory items associated with it. This action cannot be undone.
+          </div>
+        </div>
+      </div>
 
-    function closeNotificationModal() {
-      document.getElementById('notificationModal').classList.remove('show');
-    }
+      <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
+        <!-- Categories will be loaded here -->
+      </div>
 
-    function markAllRead() {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications.forEach(n => n.read = true);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
-    }
+      <div class="mt-6">
+        <button onclick="closeManageCategoriesModal()" class="w-full bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
 
-    function clearAllNotifications() {
-      localStorage.setItem('skinshipNotifications', '[]');
-      loadNotifications();
-    }
+  <!-- Edit History Modal -->
+  <div id="editHistoryModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeEditHistoryModal()">&times;</span>
+      <div id="editHistoryBody"></div>
+    </div>
+  </div>
 
-    function approveAppointment(id) {
-      alert('Appointment approved!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
+  <!-- Last Updated Item Modal -->
+  <div id="lastUpdatedModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeLastUpdatedModal()">&times;</span>
+      <div id="lastUpdatedBody"></div>
+    </div>
+  </div>
 
-    function rejectAppointment(id) {
-      alert('Appointment declined!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
 
-    function deleteNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications = notifications.filter(n => n.id !== id);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
-    }
-// Generate next Item ID
-function generateItemId() {
-  const maxId = inventoryData.reduce((max, item) => {
-    const num = parseInt(item.id.split('-')[1]);
-    return num > max ? num : max;
-  }, 0);
-  return `INV-${String(maxId + 1).padStart(3, '0')}`;
-}
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
 
-// Get current date
-function getCurrentDate() {
-  const today = new Date();
-  const options = { year: 'numeric', month: 'short', day: 'numeric' };
-  return today.toLocaleDateString('en-US', options);
-}
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
 
-// Determine status based on quantity
-function determineStatus(qty, minStock) {
-  if (qty === 0) return 'out-of-stock';
-  if (qty <= minStock) return 'low-stock';
-  return 'in-stock';
-}
-
-// Open Add Product Modal
-function openAddProductModal() {
-  document.getElementById('addProductModal').classList.add('show');
-}
-
-// Close Add Product Modal
-function closeAddProductModal() {
-  document.getElementById('addProductModal').classList.remove('show');
-  document.getElementById('addProductForm').reset();
-}
-
-// Handle Add Product Form Submission (Firebase Version)
-
-
-// --- Generate sequential unique ID from Firestore ---
-async function generateUniqueItemId() {
-  const counterRef = db.collection('metadata').doc('inventoryCounter');
-  let newNumber = 1;
-
-  await db.runTransaction(async (tx) => {
-    const docSnap = await tx.get(counterRef);
-    if (docSnap.exists) {
-      newNumber = (docSnap.data().last || 0) + 1;
-      tx.update(counterRef, { last: newNumber });
-    } else {
-      tx.set(counterRef, { last: 1 });
-      newNumber = 1;
-    }
-  });
-
-  return `INV-${String(newNumber).padStart(3, '0')}`;
-}
-
-
-
-async function handleAddProduct(event) {
-  event.preventDefault();
-  
-  // Get form values
-  const name = document.getElementById('itemName').value.trim();
-  const category = document.getElementById('itemCategory').value;
-  const qty = parseInt(document.getElementById('itemQuantity').value);
-  const price = parseFloat(document.getElementById('itemPrice').value);
-  const minStock = parseInt(document.getElementById('minStock').value);
-  const supplier = document.getElementById('itemSupplier').value.trim();
-  const description = document.getElementById('itemDescription').value.trim();
-  
-  // Calculate total value
-  const total = qty * price;
-  
-  // Determine status
-  const status = determineStatus(qty, minStock);
-  
-  // Create new product object
-  const newProduct = {
-    id: await generateUniqueItemId(),
-    name: name,
-    category: category,
-    qty: qty,
-    price: price,
-    total: total,
-    date: getCurrentDate(),
-    status: status,
-    minStock: minStock,
-    supplier: supplier,
-    description: description
-  };
-  
-  try {
-    // Save to Firebase
-    const docRef = await db.collection('inventory').add(newProduct);
-    
-    // Update the product with Firebase document ID
-    newProduct.firebaseId = docRef.id;
-    
-    // Add to local inventory data
-    inventoryData.push(newProduct);
-    
-    // Add to table
-    addProductToTable(newProduct);
-    
-    // Update statistics
-    updateStats()
-    
-    // Close modal
-    closeAddProductModal();
-    
-    // Show success message
-    alert(`Product "${name}" added successfully to Firebase!`);
-    
-  } catch (error) {
-    console.error('Error adding product to Firebase:', error);
-    alert('Error adding product. Please check console for details.');
-  }
-}
-
- let editMode = false;
-
-// Toggle Edit Mode
-function enableEditMode() {
-  editMode = !editMode;
-  const rows = document.querySelectorAll('#inventoryTableBody tr');
-  const editBtn = document.getElementById('editModeBtn');
-
-  if (editMode) {
-    editBtn.classList.add('active');
-    editBtn.innerHTML = '<i class="fa-solid fa-xmark mr-2"></i>Cancel Edit';
-    rows.forEach(row => {
-      row.classList.add('edit-mode-active');
-      row.addEventListener('click', selectRowForEdit);
-    });
-  } else {
-    editBtn.classList.remove('active');
-    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item';
-    rows.forEach(row => {
-      row.classList.remove('edit-mode-active');
-      row.removeEventListener('click', selectRowForEdit);
-    });
-  }
-}
-
-
-// When a row is clicked in edit mode
-function selectRowForEdit() {
-  if (!editMode) return;
-
-  const idCell = this.querySelector('td').textContent.trim();
-  const product = inventoryData.find(p => p.id === idCell);
-  if (!product) return alert('Product not found.');
-
-  // Fill modal
-  document.getElementById('editFirebaseId').value = product.firebaseId;
-  document.getElementById('editItemName').value = product.name;
-  document.getElementById('editItemCategory').value = product.category;
-  document.getElementById('editItemQuantity').value = product.qty;
-  document.getElementById('editItemPrice').value = product.price;
-  document.getElementById('editMinStock').value = product.minStock || 0;
-  document.getElementById('editItemSupplier').value = product.supplier || '';
-  document.getElementById('editItemDescription').value = product.description || '';
-
-  document.getElementById('editProductModal').classList.add('show');
-}
-
-// Close modal
-function closeEditProductModal() {
-  document.getElementById('editProductModal').classList.remove('show');
-  if (editMode) enableEditMode(); // automatically exit edit mode
-}
-
-// Save edited product
-async function handleEditProduct(e) {
-  e.preventDefault();
-
-  const id = document.getElementById('editFirebaseId').value;
-  const updatedProduct = {
-    name: document.getElementById('editItemName').value.trim(),
-    category: document.getElementById('editItemCategory').value,
-    qty: parseInt(document.getElementById('editItemQuantity').value),
-    price: parseFloat(document.getElementById('editItemPrice').value),
-    minStock: parseInt(document.getElementById('editMinStock').value),
-    supplier: document.getElementById('editItemSupplier').value.trim(),
-    description: document.getElementById('editItemDescription').value.trim(),
-    total:
-      parseInt(document.getElementById('editItemQuantity').value) *
-      parseFloat(document.getElementById('editItemPrice').value),
-    status: determineStatus(
-      parseInt(document.getElementById('editItemQuantity').value),
-      parseInt(document.getElementById('editMinStock').value)
-    ),
-    date: getCurrentDate(),
-  };
-
-  try {
-    if (id) {
-      await db.collection('inventory').doc(id).update(updatedProduct);
-      // Update local data
-      const index = inventoryData.findIndex(p => p.firebaseId === id);
-      if (index !== -1) inventoryData[index] = { ...inventoryData[index], ...updatedProduct };
-
-      // Refresh table
-      const tbody = document.getElementById('inventoryTableBody');
-      tbody.innerHTML = '';
-      inventoryData.forEach(p => addProductToTable(p));
-      updateStats();
-
-      closeEditProductModal();
-      alert('✅ Product updated successfully!');
-    } else {
-      alert('Error: Missing Firestore document ID.');
-    }
-  } catch (error) {
-    console.error('Error updating product:', error);
-    alert('Error updating product. Check console for details.');
-  }
-}
-
-// Add product to table
-function addProductToTable(product) {
-  const tbody = document.getElementById('inventoryTableBody');
-  const row = document.createElement('tr');
-  row.className = 'border-b hover:bg-gray-50 transition';
-  row.setAttribute('data-status', product.status || 'in-stock');
-  row.setAttribute('data-category', product.category || '');
-  
-  // Determine status badge
-  let statusBadge = '';
-  if (product.status === 'in-stock') {
-    statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>';
-  } else if (product.status === 'low-stock') {
-    statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>';
-  } else {
-    statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Out of Stock</span>';
-  }
-  
-  // Handle undefined values safely
-  const price = product.price || 0;
-  const total = product.total || 0;
-  const qty = product.qty || 0;
-  
-  row.innerHTML = `
-    <td class="py-4 px-4 font-semibold">${product.id || 'N/A'}</td>
-    <td class="py-4 px-4">${product.name || 'N/A'}</td>
-    <td class="py-4 px-4">${product.category || 'N/A'}</td>
-    <td class="py-4 px-4 text-center">${qty}</td>
-    <td class="py-4 px-4 text-right">₱ ${price.toLocaleString()}</td>
-    <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${total.toLocaleString()}</td>
-    <td class="py-4 px-4 text-center text-sm">${product.date || 'N/A'}</td>
-    <td class="py-4 px-4 text-center">${statusBadge}</td>
-  `;
-  
-  tbody.appendChild(row);
-}
-
-// Update statistics
-function updateStats() {
-  const totalItems = inventoryData.length;
-  const totalValue = inventoryData.reduce((sum, item) => sum + item.total, 0);
-  const lowStock = inventoryData.filter(item => item.status === 'low-stock').length;
-  const outOfStock = inventoryData.filter(item => item.status === 'out-of-stock').length;
-  
-  document.getElementById('totalItems').textContent = totalItems;
-  document.getElementById('totalValue').textContent = `₱ ${totalValue.toLocaleString()}`;
-  document.getElementById('lowStock').textContent = lowStock;
-  document.getElementById('outOfStock').textContent = outOfStock;
-}
-
-// Load inventory from Firebase on page load
-async function loadInventoryFromFirebase() {
-  try {
-    const snapshot = await db.collection('inventory').get();
-    
-    inventoryData = []; // Clear existing data
-    const tbody = document.getElementById('inventoryTableBody');
-    tbody.innerHTML = ''; // Clear table
-    
-    snapshot.forEach(doc => {
-      const product = doc.data();
-      product.firebaseId = doc.id; // Store Firebase document ID
-      
-      inventoryData.push(product);
-      addProductToTable(product);
-    });
-    
-    updateStats();
-    
-  } catch (error) {
-    console.error('Error loading inventory from Firebase:', error);
-    alert('Error loading inventory. Check console and Firebase connection.');
-  }
-}
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-  loadInventoryFromFirebase(); // Load from Firebase
-  loadNotifications();
-  setInterval(loadNotifications, 5000);
-});
-
-    // Load notifications on page load and refresh every 5 seconds
-    loadNotifications();
-    setInterval(loadNotifications, 5000);
-
-     // Your Firebase configuration
-    
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
-      authDomain: "skinship-1ff4b.firebaseapp.com",
-      projectId: "skinship-1ff4b",
-      storageBucket: "skinship-1ff4b.appspot.com",
-      messagingSenderId: "963752770497",
-      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // Load notifications on page load and refresh every 5 seconds
-    loadNotifications();
-    setInterval(loadNotifications, 5000);
-    
-    // Close user menu and notifications on outside click
-    window.addEventListener('click', (e) => {
-      const userMenu = document.getElementById('userMenu');
-      const btn = document.getElementById('userMenuButton');
-      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
-        userMenu.classList.add('hidden');
-      }
-
-      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-    });
-  </script>
-  </script>
-</script>
-<script type="module" src="role-check.js"></script>
-
+  <script type="module" src="role-check.js"></script>
+  <script src="inventory.js"></script>
 </body>
 </html>

@@ -1,11 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Skinship Beauty Dashboard</title>
   <script>
-    // CRITICAL: Check role IMMEDIATELY before any CSS loads
     const storedRole = localStorage.getItem('currentUserRole');
-    if (storedRole === 'staff') {
+    if (storedRole === 'admin') {
+      document.documentElement.classList.add('admin-loaded');
+    } else {
       document.documentElement.classList.add('staff-loaded');
     }
   </script>
@@ -13,6 +16,38 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body, html {
+      height: 100%;
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    aside {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100vh;
+      z-index: 1000;
+      background-color: #f7d4d0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border-radius: 0 1.5rem 1.5rem 0;
+      overflow-y: auto;
+    }
+    
     .sidebar-btn {
       width: 50px;
       height: 50px;
@@ -26,19 +61,7 @@
       align-items: center;
       justify-content: center;
       transition: .3s;
-    }
-    
-    /* Hide all buttons for staff by default */
-    html.staff-loaded .sidebar-btn {
-      display: none !important;
-    }
-
-    /* Show only specific buttons for staff */
-    html.staff-loaded .sidebar-btn[title="Dashboard"],
-    html.staff-loaded .sidebar-btn[title="Reports"],
-    html.staff-loaded .sidebar-btn[title="Cashier"],
-    html.staff-loaded .sidebar-btn[title="Staff"] {
-      display: flex !important;
+      flex-shrink: 0;
     }
     
     .sidebar-btn:hover {
@@ -46,12 +69,32 @@
       color: white;
       transform: scale(1.1);
     }
+    
     .sidebar-btn.active {
       background: #da5c73;
       color: white;
     }
-    .inventory-critical { background: #ffe6e6; border: 1px solid #ffb3b3; }
-    .inventory-low { background: #fff4e6; border: 1px solid #ffd1a8; }
+    
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
+    
+    html.staff-loaded .sidebar-btn[title="Dashboard"],
+    html.staff-loaded .sidebar-btn[title="Reports"],
+    html.staff-loaded .sidebar-btn[title="Cashier"],
+    html.staff-loaded .sidebar-btn[title="Staff"] {
+      display: flex !important;
+    }
+    
+    .inventory-critical { 
+      background: #ffe6e6; 
+      border: 1px solid #ffb3b3; 
+    }
+    
+    .inventory-low { 
+      background: #fff4e6; 
+      border: 1px solid #ffd1a8; 
+    }
     
     .notification-badge {
       position: absolute;
@@ -177,11 +220,294 @@
     html.admin-loaded a.role-restricted {
       display: inline-block !important;
     }
+
+    html.admin-loaded button.role-restricted {
+      display: flex !important;
+    }
+    
+    main {
+      margin-left: 80px;
+      width: calc(100% - 80px);
+      min-height: 100vh;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+    
+    .dashboard-container {
+      background-color: #b97b8b;
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    #inventoryList {
+      height: 100px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .inventory-carousel {
+      display: flex;
+      flex-direction: column;
+      gap: 3.1rem;
+      transition: transform 0.5s ease;
+    }
+    
+    .inventory-item-wrapper {
+      flex-shrink: 0;
+      height: 100px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .inventory-nav {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    
+    .inventory-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d1d5db;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .inventory-dot.active {
+      background: #da5c73;
+      width: 20px;
+      border-radius: 4px;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+      max-width: 100%;
+      width: 100%;
+    }
+    
+    .table-wrapper table {
+      width: 100%;
+      min-width: 100%;
+      table-layout: auto;
+    }
+    
+    .table-wrapper td, 
+    .table-wrapper th {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 8px;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    /* Logout Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .logout-modal {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-grid > div {
+        grid-column: span 12 !important;
+      }
+      
+      main {
+        margin-left: 0;
+        width: 100%;
+      }
+      
+      aside {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        position: relative;
+        border-radius: 0;
+      }
+
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
-<body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
-  <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl h-screen overflow-y-auto z-50" id="sidebar">
+<body class="bg-[#e6bfc7]">
+  <aside id="sidebar">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -198,113 +524,107 @@
     <button class="sidebar-btn role-restricted" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
-  <!-- Main Content -->
-  <main class="flex-1 p-6 w-full ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg relative h-full">
-      <!-- Topbar -->
+  <main>
+    <div class="dashboard-container">
       <div class="flex justify-end items-center gap-4 mb-6">
-        <!-- Notification Bell -->
         <div class="relative">
           <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
             <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
             <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
           </button>
           
-          <!-- Notification Dropdown -->
           <div id="notificationDropdown" class="notification-dropdown">
             <div class="notification-header">
               <h3 class="font-bold text-gray-800">Notifications</h3>
-              <button onclick="clearAllNotifications()"class="text-sm text-[#da5c73] hover:underline">Clear all</button>
+              <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
               <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
             </div>
             <div id="notificationList"></div>
           </div>
         </div>
         
-        <span class="font-semibold text-lg" id="usernameDisplay">admin</span>
+        <span class="font-semibold text-lg" id="usernameDisplay">Loading...</span>
         <div class="relative">
           <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
           <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-            <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
-          </div>
+            <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+              <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+            </button>
+          </div>      
         </div>
       </div>
 
-      <!-- Dashboard content -->
-      <div class="grid grid-cols-12 gap-6">
-        <!-- Completed -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+      <div class="dashboard-grid">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-10 text-center">
           <p id="completedCount" class="text-green-600 font-bold text-lg">0</p>
           <div class="font-bold">Completed</div>
         </div>
 
-        <!-- Pending -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-10 text-center">
           <p id="pendingCount" class="text-yellow-600 font-bold text-lg">00</p>
           <div class="font-bold">Pending</div>
         </div>
 
-        <!-- Cancelled -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-10 text-center h-30 justify-center">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-10 text-center">
           <p id="cancelledCount" class="text-red-600 font-bold text-lg">00</p>
           <div class="font-bold">Cancelled</div>
         </div>
         
-        <!-- Inventory Alerts -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-4">
-          <h2 class="font-bold mb-2">Inventory Alerts</h2>
-          <div id="inventoryList" class="space-y-2 text-sm"></div>
-        </div>
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-4">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold">Inventory Alerts</h2>
+            <a href="inventory.html" class="text-sm text-rose-500 hover:underline">View all</a>
+          </div>
 
-        <!-- Reservation -->
-        <div class="col-span-9 bg-white rounded-lg shadow p-4 h-80">
+          <div id="inventoryList" class="text-sm"></div>
+          <div id="inventoryNav" class="inventory-nav"></div>
+        </div>
+        <div style="grid-column: span 9;" class="bg-white rounded-lg shadow p-4">
           <div class="flex justify-between items-center mb-5">
             <h2 class="font-bold">Reservation</h2>
             <a href="customer.html" id="viewAllReservations" class="text-sm text-rose-500 role-restricted">View all</a>
           </div>
-          <table class="w-full text-sm">
-            <thead class="text-left font-semibold">
-              <tr>
-                <th>Customer</th>
-                <th>Time</th>
-                <th>Status</th>
-                <th>Service</th>
-                <th>Staff</th>
-              </tr>
-            </thead>
-            <tbody id="reservationTable">
-              <tr>
-                <td colspan="5" class="text-center text-gray-500 italic">Loading reservations...</td>
-              </tr>
-            </tbody>
-          </table>
+          <div class="table-wrapper">
+            <table class="w-full text-sm">
+              <thead class="text-left font-semibold">
+                <tr>
+                  <th>Customer</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Service</th>
+                  <th>Staff</th>
+                </tr>
+              </thead>
+              <tbody id="reservationTable">
+                <tr>
+                  <td colspan="5" class="text-center text-gray-500 italic">Loading reservations...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <!-- Staff Availability -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-3">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-3">
           <h2 class="font-bold mb-2">Staff Availability</h2>
           <div id="staffAvailabilityList">
             <p class="text-gray-500 italic">Loading...</p>
           </div>
         </div>
 
-        <!-- Top 3 Services Sold (Last 7 Days) -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-4">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-4">
           <h2 class="font-bold mb-3">Top 3 Services Sold (Last 7 Days)</h2>
           <div style="height: 180px; position: relative;">
             <canvas id="topServicesChart"></canvas>
           </div>
         </div>
 
-        <!-- Revenue (by Weekday) Chart -->
-        <div class="col-span-6 bg-white rounded-lg shadow p-4">
+        <div style="grid-column: span 6;" class="bg-white rounded-lg shadow p-4">
           <h2 class="font-bold mb-3">Revenue (by Weekday)</h2>
           <canvas id="revenueChart" style="max-height: 200px;"></canvas>
           <p id="revenueTotal" class="text-right font-bold text-rose-600">Total of: ₱0.00</p>
         </div>
 
-        <!-- Today's Agenda -->
-        <div class="col-span-3 bg-white rounded-lg shadow p-4">
+        <div style="grid-column: span 3;" class="bg-white rounded-lg shadow p-4">
           <div class="flex justify-between items-center mb-2">
             <h2 class="font-bold">Today's Agenda</h2>
             <a href="calendar.html" id="viewAllAgenda" class="text-sm text-rose-500 role-restricted">View all</a>
@@ -317,7 +637,6 @@
     </div>
   </main>
 
-  <!-- Notification Detail Modal -->
   <div id="notificationModal" class="notification-modal">
     <div class="modal-content">
       <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
@@ -325,10 +644,48 @@
     </div>
   </div>
 
-  <!-- Firebase -->
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
     import {
       getFirestore,
       doc,
@@ -337,7 +694,13 @@
       query,
       where,
       onSnapshot,
-      orderBy
+      orderBy,
+      getDocs,
+      limit,
+      addDoc,
+      updateDoc,
+      serverTimestamp,
+      setDoc
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -352,13 +715,108 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    // Global variable to store user role
     window.userRole = null;
+    let currentUserId = null;
+    let currentUserFullName = "";
 
-    // Role-based access control
+    // Clock out function
+    async function handleClockOut() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const today = new Date().toLocaleDateString();
+        const logsRef = collection(db, "staffLogs", user.uid, "history");
+        
+        const todayQuery = query(logsRef, where("date", "==", today));
+        const todaySnap = await getDocs(todayQuery);
+        
+        if (!todaySnap.empty) {
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
+          }
+        }
+
+        // Set user as unavailable
+        const staffRef = doc(db, "users", user.uid);
+        await updateDoc(staffRef, { 
+          availability: false,
+          lastUpdated: serverTimestamp()
+        });
+        
+        console.log("User clocked out and set to unavailable");
+      } catch (error) {
+        console.error("Error during clock out:", error);
+      }
+    }
+
+    // Logout modal functions
+    window.showLogoutModal = function() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    window.hideLogoutModal = function() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    window.confirmLogout = async function() {
+      const confirmBtn = document.getElementById('confirmLogoutBtn');
+      confirmBtn.classList.add('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
+      try {
+        // Clock out and set unavailable
+        await handleClockOut();
+        
+        // Clear local storage
+        localStorage.removeItem('currentUserEmail');
+        localStorage.removeItem('currentUserRole');
+        localStorage.removeItem('currentUsername');
+        localStorage.removeItem('currentUserFullName');
+        
+        // Sign out
+        await signOut(auth);
+        
+        // Redirect to login page
+        window.location.href = "Login.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        
+        // Reset button state
+        confirmBtn.classList.remove('loading');
+        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+        
+        alert("An error occurred during logout. Please try again.");
+        
+        // Force sign out even if there's an error
+        await signOut(auth);
+        window.location.href = "Login.html";
+      }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('logoutModal')?.addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideLogoutModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('logoutModal');
+        if (modal && modal.classList.contains('show')) {
+          hideLogoutModal();
+        }
+      }
+    });
+
     onAuthStateChanged(auth, async (user) => {
       if (user) {
+        currentUserId = user.uid;
         try {
           const userRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userRef);
@@ -366,63 +824,120 @@
             const data = userSnap.data();
             const userRole = data.role || "staff";
             window.userRole = userRole;
+            currentUserFullName = data.username || data.fullName || user.email || "User";
+            document.getElementById("usernameDisplay").textContent = currentUserFullName;
+            document.getElementById("logoutUsername").textContent = currentUserFullName;
             
-            document.getElementById("usernameDisplay").textContent = data.username || data.fullName || user.email || "User";
-            
-            // Update localStorage with current role
-            localStorage.setItem('currentUserRole', userRole);
-            
-            // Show/hide elements based on role immediately
             if (userRole === "admin") {
-              // Add class to body to enable admin styles
-              document.body.classList.add('admin-loaded');
               document.documentElement.classList.add('admin-loaded');
+              document.documentElement.classList.remove('staff-loaded');
             } else {
-              // Make sure admin class is removed for staff
-              document.body.classList.remove('admin-loaded');
+              document.documentElement.classList.add('staff-loaded');
               document.documentElement.classList.remove('admin-loaded');
-              
-              // Explicitly hide all restricted elements for staff
-              document.querySelectorAll('.role-restricted').forEach(element => {
-                element.style.display = 'none';
-              });
             }
+
+            // AUTO CLOCK IN AND SET AVAILABILITY ON DASHBOARD LOAD
+            const today = new Date().toLocaleDateString();
+            const logsRef = collection(db, "staffLogs", user.uid, "history");
+            
+            const todayQuery = query(logsRef, where("date", "==", today));
+            const todaySnap = await getDocs(todayQuery);
+            
+            let needsNewLog = true;
+            if (!todaySnap.empty) {
+              const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
+              if (activeSession) {
+                needsNewLog = false;
+              }
+            }
+            
+            if (needsNewLog) {
+              await addDoc(logsRef, {
+                date: today,
+                clockIn: new Date().toLocaleString(),
+                clockOut: null,
+                timestamp: serverTimestamp()
+              });
+              console.log("Auto clock-in successful for user:", user.uid);
+            }
+
+            // Set user as available with real-time update
+            await updateDoc(userRef, { 
+              availability: true,
+              lastUpdated: serverTimestamp()
+            });
+            console.log("User set to available on dashboard load");
+
           }
         } catch (err) {
           console.error("Error fetching user document:", err);
-          // On error, hide restricted elements
-          document.querySelectorAll('.role-restricted').forEach(element => {
-            element.style.display = 'none';
-          });
+          document.documentElement.classList.add('staff-loaded');
+          document.documentElement.classList.remove('admin-loaded');
         }
       } else {
-        // No user logged in - default to hiding restricted elements
-        document.querySelectorAll('.role-restricted').forEach(element => {
-          element.style.display = 'none';
+        window.location.href = 'Login.html';
+      }
+    });
+
+    const staffAvailabilityList = document.getElementById("staffAvailabilityList");
+    
+    // Listen to all users in REAL-TIME
+    onSnapshot(collection(db, "users"), async (snapshot) => {
+      staffAvailabilityList.innerHTML = '<p class="text-gray-500 italic">Checking availability...</p>';
+      
+      if (snapshot.empty) {
+        staffAvailabilityList.innerHTML = `<p class="text-gray-500 italic">No staff members found</p>`;
+        return;
+      }
+
+      const today = new Date().toLocaleDateString();
+      const availableStaff = [];
+
+      // Check each staff member's availability
+      for (const docSnap of snapshot.docs) {
+        const staffId = docSnap.id;
+        const staffData = docSnap.data();
+        const name = staffData.fullName || staffData.username || "Unnamed";
+
+        // Check if staff has clocked in today without clocking out
+        const logsRef = collection(db, "staffLogs", staffId, "history");
+        const todayQuery = query(logsRef, where("date", "==", today), orderBy("timestamp", "desc"), limit(1));
+        
+        try {
+          const todaySnap = await getDocs(todayQuery);
+          
+          if (!todaySnap.empty) {
+            const latestLog = todaySnap.docs[0].data();
+            // Staff is available if they have clocked in, not clocked out, AND availability is true
+            if (latestLog.clockIn && !latestLog.clockOut && staffData.availability === true) {
+              availableStaff.push(name);
+            }
+          }
+        } catch (error) {
+          console.error(`Error checking availability for ${staffId}:`, error);
+        }
+      }
+
+      // Display available staff
+      staffAvailabilityList.innerHTML = "";
+      
+      if (availableStaff.length === 0) {
+        staffAvailabilityList.innerHTML = `<p class="text-gray-500 italic">No staff available</p>`;
+      } else {
+        availableStaff.forEach(name => {
+          const div = document.createElement("div");
+          div.className = "bg-rose-100 p-2 rounded mb-2";
+          div.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <i class="fa-solid fa-circle" style="color: #10b981; font-size: 0.5rem;"></i>
+              <span>${name}</span>
+            </div>
+          `;
+          staffAvailabilityList.appendChild(div);
         });
       }
     });
 
-    // Staff availability
-    const staffAvailabilityList = document.getElementById("staffAvailabilityList");
-    const staffQuery = query(collection(db, "users"), where("availability", "==", true));
-    onSnapshot(staffQuery, (snapshot) => {
-      staffAvailabilityList.innerHTML = "";
-      if (snapshot.empty) {
-        staffAvailabilityList.innerHTML = `<p class="text-gray-500 italic">No staff available</p>`;
-        return;
-      }
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const name = data.fullName || data.username || "Unnamed";
-        const div = document.createElement("div");
-        div.className = "bg-rose-100 p-2 rounded mb-2";
-        div.textContent = name;
-        staffAvailabilityList.appendChild(div);
-      });
-    });
-
-    // Reservations list
     const reservationTable = document.getElementById("reservationTable");
     const reservationQuery = query(collection(db, "customers"), orderBy("createdAt", "desc"));
     onSnapshot(reservationQuery, (snapshot) => {
@@ -433,7 +948,7 @@
       }
       let count = 0;
       snapshot.forEach((docSnap) => {
-        if (count >= 10) return;
+        if (count >=5) return;
         const data = docSnap.data();
         const tr = document.createElement("tr");
         tr.className = "border-b";
@@ -449,7 +964,6 @@
       });
     });
 
-    // Today's agenda
     const agendaList = document.getElementById("agendaList");
     const todayISO = new Date().toISOString().split("T")[0];
     const apptQuery = query(collection(db, "customers"));
@@ -474,84 +988,149 @@
       }
     });
 
-    // Inventory Alerts
     const inventoryList = document.getElementById("inventoryList");
-    onSnapshot(collection(db, "products"), (snapshot) => {
+    const inventoryNav = document.getElementById("inventoryNav");
+    let currentInventoryIndex = 0;
+    let inventoryItems = [];
+    let inventoryInterval = null;
+
+    function createInventoryCarousel(items) {
       inventoryList.innerHTML = "";
+      inventoryNav.innerHTML = "";
+      inventoryItems = items;
+
+      if (items.length === 0) {
+        inventoryList.innerHTML = `
+          <div class="text-center py-6">
+            <i class="fa-solid fa-check-circle text-4xl text-green-500 mb-2"></i>
+            <p class="text-gray-600 font-semibold">All stocks are sufficient</p>
+            <p class="text-xs text-gray-500 mt-1">No low stock alerts</p>
+          </div>
+        `;
+        return;
+      }
+
+      const carousel = document.createElement('div');
+      carousel.className = 'inventory-carousel';
+      carousel.id = 'inventoryCarousel';
+
+      items.forEach((item, index) => {
+        const cls = item.quantity === 0 ? "inventory-critical" : "inventory-low";
+        const statusText = item.quantity === 0 ? "OUT OF STOCK" : "LOW STOCK";
+        const statusColor = item.quantity === 0 ? "text-red-600" : "text-yellow-600";
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'inventory-item-wrapper';
+        
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `${cls} p-3 rounded cursor-pointer hover:shadow-md transition-all w-full`;
+        alertDiv.onclick = () => {
+          localStorage.setItem('highlightInventoryItem', item.productId);
+          window.location.href = 'inventory.html';
+        };
+        
+        alertDiv.innerHTML = `
+          <div class="flex justify-between items-start">
+            <div class="flex-1">
+              <div class="font-semibold text-gray-800">${item.productName}</div>
+              <div class="text-xs ${statusColor} font-bold mt-1">${statusText}</div>
+            </div>
+            <div class="text-right">
+              <div class="font-bold text-lg ${statusColor}">${item.quantity}</div>
+              <div class="text-xs text-gray-500">/ ${item.minStock} min</div>
+            </div>
+          </div>
+          <div class="mt-2 flex items-center gap-2">
+            <div class="flex-1 bg-gray-200 rounded-full h-2">
+              <div class="h-2 rounded-full transition-all ${item.quantity === 0 ? 'bg-red-500' : 'bg-yellow-500'}" 
+                   style="width: ${Math.min((item.quantity / item.minStock) * 100, 100)}%"></div>
+            </div>
+            <span class="text-xs text-gray-600">${Math.round((item.quantity / item.minStock) * 100)}%</span>
+          </div>
+        `;
+        
+        wrapper.appendChild(alertDiv);
+        carousel.appendChild(wrapper);
+
+        const dot = document.createElement('div');
+        dot.className = `inventory-dot ${index === 0 ? 'active' : ''}`;
+        dot.onclick = () => goToInventorySlide(index);
+        inventoryNav.appendChild(dot);
+      });
+
+      inventoryList.appendChild(carousel);
+      if (items.length > 1) startInventoryAutoScroll();
+    }
+
+    function goToInventorySlide(index) {
+      currentInventoryIndex = index;
+      const carousel = document.getElementById('inventoryCarousel');
+      if (carousel) carousel.style.transform = `translateY(-${index * 150}px)`;
+      const dots = inventoryNav.querySelectorAll('.inventory-dot');
+      dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+      if (inventoryInterval) {
+        clearInterval(inventoryInterval);
+        startInventoryAutoScroll();
+      }
+    }
+
+    function startInventoryAutoScroll() {
+      inventoryInterval = setInterval(() => {
+        currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
+        goToInventorySlide(currentInventoryIndex);
+      }, 5000);
+    }
+
+    onSnapshot(collection(db, "inventory"), (snapshot) => {
+      const lowStockItems = [];
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const productName = data.name || "Unnamed Product";
-        const quantity = (typeof data.quantity !== "undefined") ? Number(data.quantity) : 0;
-
-        if (quantity < 10) {
-          const cls = quantity < 5 ? "inventory-critical" : "inventory-low";
-          inventoryList.innerHTML += `
-            <div class="${cls} p-2 rounded">
-              <div class="font-semibold">${productName}</div>
-              <div class="text-gray-600">Qty: ${quantity}</div>
-            </div>
-          `;
+        const quantity = (typeof data.quantity !== "undefined") ? Number(data.quantity) : Number(data.qty) || 0;
+        const minStock = Number(data.minStock) || 10;
+        const productId = data.id || docSnap.id;
+        if (quantity <= minStock) {
+          lowStockItems.push({productName, quantity, minStock, productId, data});
         }
       });
-
-      if (!inventoryList.innerHTML) {
-        inventoryList.innerHTML = `<p class="text-gray-500">All stocks are sufficient</p>`;
-      }
+      lowStockItems.sort((a, b) => a.quantity - b.quantity);
+      createInventoryCarousel(lowStockItems);
     });
 
-    // Revenue Chart + Completed Count
     const revenueTotal = document.getElementById("revenueTotal");
     const completedCountEl = document.getElementById("completedCount");
-    
     let revenueChart = null;
 
     onSnapshot(collection(db, "cashier_receipt"), (snapshot) => {
-      const totalsByDay = {
-        "Monday": 0, "Tuesday": 0, "Wednesday": 0,
-        "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0
-      };
+      const totalsByDay = {"Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0};
       let grandTotal = 0;
       let completed = 0;
-
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         const cost = Number(data.subtotal || data.amount || data.price || data.total_cost || 0);
-
-        if (data.subtotal || data.receiptNumber || data.payment) {
-          completed++;
-        }
-
+        if (data.subtotal || data.receiptNumber || data.payment) completed++;
         let day = null;
         if (data.day) {
           day = data.day;
         } else if (data.timestamp && typeof data.timestamp.toDate === "function") {
-          const d = data.timestamp.toDate();
-          day = d.toLocaleDateString("en-US", { weekday: "long" });
+          day = data.timestamp.toDate().toLocaleDateString("en-US", { weekday: "long" });
         } else if (data.createdAt) {
           try {
             if (typeof data.createdAt === "string") {
               const d = new Date(data.createdAt);
               if (!isNaN(d)) day = d.toLocaleDateString("en-US", { weekday: "long" });
             } else if (typeof data.createdAt.toDate === "function") {
-              const d = data.createdAt.toDate();
-              day = d.toLocaleDateString("en-US", { weekday: "long" });
+              day = data.createdAt.toDate().toLocaleDateString("en-US", { weekday: "long" });
             }
           } catch (e) {}
         }
-
-        if (day && totalsByDay[day] !== undefined) {
-          totalsByDay[day] += cost;
-        }
-
+        if (day && totalsByDay[day] !== undefined) totalsByDay[day] += cost;
         grandTotal += cost;
       });
-
       completedCountEl.textContent = completed.toString().padStart(2, "0");
       revenueTotal.textContent = `Total of: ₱${grandTotal.toLocaleString("en-PH", {minimumFractionDigits: 2})}`;
-
       const daysOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const revenueData = daysOrder.map(d => totalsByDay[d] || 0);
-
       if (revenueChart) {
         revenueChart.data.datasets[0].data = revenueData;
         revenueChart.update();
@@ -561,47 +1140,26 @@
           type: 'bar',
           data: {
             labels: daysOrder,
-            datasets: [{
-              label: 'Revenue',
-              data: revenueData,
-              backgroundColor: '#f5a3b5',
-              borderColor: '#da5c73',
-              borderWidth: 1
-            }]
+            datasets: [{label: 'Revenue', data: revenueData, backgroundColor: '#f5a3b5', borderColor: '#da5c73', borderWidth: 1}]
           },
           options: {
             responsive: true,
             maintainAspectRatio: true,
-            plugins: {
-              legend: { display: false }
-            },
-            scales: {
-              y: {
-                beginAtZero: true,
-                ticks: {
-                  callback: function(value) {
-                    return '₱' + value.toLocaleString();
-                  }
-                }
-              }
-            }
+            plugins: {legend: {display: false}},
+            scales: {y: {beginAtZero: true, ticks: {callback: function(value) {return '₱' + value.toLocaleString();}}}}
           }
         });
       }
     });
 
-    // Top 3 Services Sold (Last 7 Days)
     let topServicesChart = null;
-    
     onSnapshot(collection(db, "cashier_receipt"), (snapshot) => {
       const serviceCounts = {};
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
       snapshot.forEach((docSnap) => {
         const data = docSnap.data();
         let docDate = null;
-
         if (data.timestamp && typeof data.timestamp.toDate === "function") {
           docDate = data.timestamp.toDate();
         } else if (data.createdAt) {
@@ -613,11 +1171,8 @@
             }
           } catch (e) {}
         } else if (data.date) {
-          try {
-            docDate = new Date(data.date);
-          } catch (e) {}
+          try {docDate = new Date(data.date);} catch (e) {}
         }
-
         if (!docDate || docDate >= sevenDaysAgo) {
           const items = data.items || [];
           items.forEach(item => {
@@ -626,15 +1181,10 @@
           });
         }
       });
-
-      const sorted = Object.entries(serviceCounts)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
-
+      const sorted = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
       const labels = sorted.map(s => s[0]);
       const counts = sorted.map(s => s[1]);
       const colors = ['#5b9bd5', '#70ad47', '#ffc000'];
-
       if (topServicesChart) {
         topServicesChart.data.labels = labels;
         topServicesChart.data.datasets[0].data = counts;
@@ -644,37 +1194,12 @@
         const ctx = document.getElementById('topServicesChart').getContext('2d');
         topServicesChart = new Chart(ctx, {
           type: 'bar',
-          data: {
-            labels: labels,
-            datasets: [{
-              label: 'Services Sold',
-              data: counts,
-              backgroundColor: colors,
-              borderWidth: 0
-            }]
-          },
-          options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-              legend: { display: false }
-            },
-            scales: {
-              x: {
-                beginAtZero: true,
-                ticks: {
-                  stepSize: 1,
-                  precision: 0
-                }
-              }
-            }
-          }
+          data: {labels: labels, datasets: [{label: 'Services Sold', data: counts, backgroundColor: colors, borderWidth: 0}]},
+          options: {indexAxis: 'y', responsive: true, maintainAspectRatio: true, plugins: {legend: {display: false}}, scales: {x: {beginAtZero: true, ticks: {stepSize: 1, precision: 0}}}}
         });
       }
     });
 
-    // Pending / Cancelled counts
     onSnapshot(collection(db, "customers"), (snapshot) => {
       let pendingCount = 0;
       let cancelledCount = 0;
@@ -689,56 +1214,54 @@
       if (cEl) cEl.textContent = cancelledCount.toString().padStart(2, "0");
     });
 
-    // Close user menu and notifications on outside click
+    // Updated Logout handler with modal
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        showLogoutModal();
+      });
+    }
+
+    // Handle page unload
+    window.addEventListener("beforeunload", async (e) => {
+      await handleClockOut();
+    });
+
     window.addEventListener('click', (e) => {
       const userMenu = document.getElementById('userMenu');
       const btn = document.getElementById('userMenuButton');
       if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
         userMenu.classList.add('hidden');
       }
-
       if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
         document.getElementById('notificationDropdown').classList.remove('show');
       }
     });
   </script>
 
-  <!-- Notification System Script -->
   <script>
     function loadNotifications() {
       const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
       const notificationList = document.getElementById('notificationList');
       const badge = document.getElementById('notificationBadge');
-      
       const unreadCount = notifications.filter(n => !n.read).length;
-      
       if (unreadCount > 0) {
         badge.textContent = unreadCount;
         badge.style.display = 'flex';
       } else {
         badge.style.display = 'none';
       }
-      
       if (notifications.length === 0) {
         notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
         return;
       }
-      
       notificationList.innerHTML = '';
-      
       notifications.forEach(notification => {
         const item = document.createElement('div');
         item.className = `notification-item ${notification.read ? '' : 'unread'}`;
         item.onclick = () => viewNotification(notification.id);
-        
         const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
-        
+        const timeStr = time.toLocaleString('en-US', {month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'});
         item.innerHTML = `
           <div class="flex justify-between items-start mb-1">
             <strong class="text-[#da5c73]">${notification.message}</strong>
@@ -747,7 +1270,6 @@
           <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
           <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
         `;
-        
         notificationList.appendChild(item);
       });
     }
@@ -761,20 +1283,12 @@
     function viewNotification(id) {
       let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
       const notification = notifications.find(n => n.id === id);
-      
       if (!notification) return;
-      
       notification.read = true;
       localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
       const modal = document.getElementById('notificationModal');
       const modalBody = document.getElementById('modalBody');
-      
-      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-      });
-      
+      const time = new Date(notification.timestamp).toLocaleString('en-US', {dateStyle: 'full', timeStyle: 'short'});
       modalBody.innerHTML = `
         <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
         <div class="space-y-3">
@@ -796,7 +1310,6 @@
           </button>
         </div>
       `;
-      
       modal.classList.add('show');
       loadNotifications();
     }

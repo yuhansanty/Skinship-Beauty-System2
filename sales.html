@@ -4,10 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Sales Report | Skinship Beauty</title>
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sales Report | Skinship Beauty</title>
   <script>
     // CRITICAL: Check role IMMEDIATELY before any CSS loads
     const storedRole = localStorage.getItem('currentUserRole');
@@ -18,8 +14,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -218,6 +212,169 @@
     .modal-close:hover {
       color: #da5c73;
     }
+
+    /* Logout Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .logout-modal {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -266,13 +423,15 @@
             </div>
           </div>
           
-          <span class="font-semibold text-lg text-white">Username</span>
+          <span class="font-semibold text-lg text-white" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
               <i class="fa-solid fa-user-circle text-2xl text-white"></i>
             </button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
@@ -372,8 +531,62 @@
     </div>
   </div>
 
-  <script>
-    // Firebase Configuration
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      getDocs,
+      orderBy,
+      serverTimestamp,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
       authDomain: "skinship-1ff4b.firebaseapp.com",
@@ -382,16 +595,157 @@
       messagingSenderId: "963752770497",
       appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUserId = null;
+    let currentUserFullName = "";
+
+    // Clock out function
+    async function handleClockOut() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const today = new Date().toLocaleDateString();
+        const logsRef = collection(db, "staffLogs", user.uid, "history");
+        
+        const todayQuery = query(logsRef, where("date", "==", today));
+        const todaySnap = await getDocs(todayQuery);
+        
+        if (!todaySnap.empty) {
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
+          }
+        }
+
+        // Set user as unavailable
+        const staffRef = doc(db, "users", user.uid);
+        await updateDoc(staffRef, { 
+          availability: false,
+          lastUpdated: serverTimestamp()
+        });
+        
+        console.log("User clocked out and set to unavailable");
+      } catch (error) {
+        console.error("Error during clock out:", error);
+      }
+    }
+
+    // Logout modal functions
+    window.showLogoutModal = function() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    window.hideLogoutModal = function() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    window.confirmLogout = async function() {
+      const confirmBtn = document.getElementById('confirmLogoutBtn');
+      confirmBtn.classList.add('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
+      try {
+        // Clock out and set unavailable
+        await handleClockOut();
+        
+        // Clear local storage
+        localStorage.removeItem('currentUserEmail');
+        localStorage.removeItem('currentUserRole');
+        localStorage.removeItem('currentUsername');
+        localStorage.removeItem('currentUserFullName');
+        
+        // Sign out
+        await signOut(auth);
+        
+        // Redirect to login page
+        window.location.href = "Login.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        
+        // Reset button state
+        confirmBtn.classList.remove('loading');
+        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+        
+        alert("An error occurred during logout. Please try again.");
+        
+        // Force sign out even if there's an error
+        await signOut(auth);
+        window.location.href = "Login.html";
+      }
+    }
+
+    // Close modal on overlay click
+    document.getElementById('logoutModal')?.addEventListener('click', function(e) {
+      if (e.target === this) {
+        hideLogoutModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('logoutModal');
+        if (modal && modal.classList.contains('show')) {
+          hideLogoutModal();
+        }
+      }
+    });
+
+    // Auth state observer
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUserId = user.uid;
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            currentUserFullName = data.username || data.fullName || user.email || "User";
+            document.getElementById("usernameDisplay").textContent = currentUserFullName;
+            document.getElementById("logoutUsername").textContent = currentUserFullName;
+          }
+        } catch (err) {
+          console.error("Error fetching user document:", err);
+        }
+      } else {
+        window.location.href = 'Login.html';
+      }
+    });
+
+    // Updated Logout handler with modal
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+      logoutBtn.addEventListener('click', () => {
+        showLogoutModal();
+      });
+    }
+
+    // Handle page unload
+    window.addEventListener("beforeunload", async (e) => {
+      await handleClockOut();
+    });
+
+    // Make db available globally
+    window.db = db;
+    window.auth = auth;
+  </script>
+
+  <script>
     let allSalesData = [];
     let filteredSalesData = [];
 
     // Load sales data from Firebase
     async function loadSalesData() {
       try {
-        const snapshot = await db.collection("cashier_receipt").orderBy("timestamp", "desc").get();
+        const { collection, query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
+        const salesQuery = query(collection(window.db, "cashier_receipt"), orderBy("timestamp", "desc"));
+        const snapshot = await getDocs(salesQuery);
         allSalesData = [];
         
         snapshot.forEach(doc => {
@@ -550,6 +904,9 @@
       doc.save(fileName);
     }
 
+    // Make downloadReceiptPDF available globally
+    window.downloadReceiptPDF = downloadReceiptPDF;
+
     // Render table
     function renderTable() {
       const tbody = document.getElementById('salesTableBody');
@@ -669,7 +1026,7 @@
     });
 
     // Filter by period
-    function filterByPeriod(period, button) {
+    window.filterByPeriod = function(period, button) {
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
            btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
@@ -714,7 +1071,7 @@
     }
 
     // Filter by date range
-    function filterByDateRange() {
+    window.filterByDateRange = function() {
       const startDateInput = document.getElementById('startDate').value;
       const endDateInput = document.getElementById('endDate').value;
       
@@ -750,7 +1107,7 @@
     }
 
     // Export to CSV
-    function exportToCSV() {
+    window.exportToCSV = function() {
       if (filteredSalesData.length === 0) {
         alert('No data to export');
         return;
@@ -771,20 +1128,6 @@
       a.click();
       window.URL.revokeObjectURL(url);
     }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-      const userMenu = document.getElementById('userMenu');
-      const userMenuButton = document.getElementById('userMenuButton');
-      
-      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-        userMenu.classList.add('hidden');
-      }
-
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-    });
 
     // Notification System
     function loadNotifications() {
@@ -918,30 +1261,40 @@
       loadNotifications();
     }
 
+    // Make notification functions globally available
+    window.toggleNotifications = toggleNotifications;
+    window.closeNotificationModal = closeNotificationModal;
+    window.markAllRead = markAllRead;
+    window.clearAllNotifications = clearAllNotifications;
+    window.approveAppointment = approveAppointment;
+    window.rejectAppointment = rejectAppointment;
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const userMenu = document.getElementById('userMenu');
+      const userMenuButton = document.getElementById('userMenuButton');
+      
+      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+        userMenu.classList.add('hidden');
+      }
+
+      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+        document.getElementById('notificationDropdown').classList.remove('show');
+      }
+    });
+
     // Load notifications on page load and refresh every 5 seconds
     loadNotifications();
     setInterval(loadNotifications, 5000);
 
-    // Initialize: Load sales data
-    loadSalesData();
+    // Initialize: Load sales data after a short delay to ensure Firebase is ready
+    setTimeout(() => {
+      loadSalesData();
+    }, 1000);
 
     // Reload data every 30 seconds to catch new transactions
     setInterval(loadSalesData, 30000);
-    
-    // Close user menu and notifications on outside click
-    window.addEventListener('click', (e) => {
-      const userMenu = document.getElementById('userMenu');
-      const btn = document.getElementById('userMenuButton');
-      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
-        userMenu.classList.add('hidden');
-      }
-
-      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-    });
   </script>
-  <script type="module" src="role-check.js"></script>
 
 </body>
 </html>

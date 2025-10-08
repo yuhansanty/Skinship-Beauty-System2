@@ -5,228 +5,187 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Services | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="services.css">
   <style>
-    .sidebar-btn { 
-      width:50px;
-      height:50px;
-      border-radius:50%;
-      border:none;
-      background:transparent;
-      color:#da5c73;
-      font-size:20px;
-      cursor:pointer;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transition:.3s;
-    }
-    .sidebar-btn:hover { 
-      background:#da5c73;
-      color:white;
-      transform:scale(1.1);
-    }
-    .sidebar-btn.active { 
-      background:#da5c73;
-      color:white;
-    }
-    
-    .service-dropdown {
-      position: relative;
-      display: inline-block;
-      margin-bottom: 1rem;
-    }
-    
-    .dropdown-button {
-      background: #c44c66;
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-      min-width: 200px;
-      justify-content: space-between;
-    }
-    
-    .dropdown-button:hover {
-      background: #c44c66;
-    }
-    
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      background-color: white;
-      min-width: 250px;
-      max-height: 300px;
-      overflow-y: auto;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      z-index: 1000;
-      top: 100%;
-      left: 0;
-      margin-top: 2px;
-    }
-    
-    .dropdown-content.show {
-      display: block;
-    }
-    
-    .dropdown-item {
-      color: #333;
-      padding: 10px 12px;
-      text-decoration: none;
-      display: block;
-      cursor: pointer;
-      font-size: 14px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-    
-    .dropdown-item:hover {
-      background-color: #f8f9fa;
-    }
-    
-    .dropdown-item.selected {
-      background-color: #c44c66;
-      color: white;
-    }
-    
-    .notification-badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #dc2626;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    
-    .notification-dropdown {
-      position: absolute;
-      top: 50px;
-      right: 0;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      width: 400px;
-      max-height: 500px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-    
-    .notification-dropdown.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-    
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .notification-header {
-      padding: 16px 20px;
-      border-bottom: 2px solid #f3f4f6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .notification-item {
-      padding: 16px 20px;
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .notification-item:hover {
-      background: #fef2f2;
-    }
-    
-    .notification-item.unread {
-      background: #fff7ed;
-    }
-    
-    .notification-empty {
-      padding: 40px 20px;
-      text-align: center;
-      color: #9ca3af;
-    }
-    
-    .notification-modal {
-      display: none;
+    /* Logout Modal Styles */
+    .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
     }
-    
-    .notification-modal.show {
-      display: flex;
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
     }
-    
-    .modal-content {
+
+    .logout-modal {
       background: white;
-      border-radius: 16px;
-      padding: 30px;
-      max-width: 600px;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
       width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
     }
-    
-    .modal-close {
-      float: right;
-      font-size: 24px;
-      cursor: pointer;
-      color: #9ca3af;
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
     }
-    
-    .modal-close:hover {
-      color: #da5c73;
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
     }
-    
-    .add-service-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
       align-items: center;
       justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
     }
-    
-    .add-service-modal.show {
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
       display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
     }
-    
-    .highlight-row {
-      background-color: #fff3cd !important;
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -240,27 +199,30 @@
     <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
     <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
-    <button class="sidebar-btn active" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn active" title="Services"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
     <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <button id="registrationBtn" class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
-  
+
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
-    <div class="bg-[#e6bfc7] rounded-3xl p-6 relative h-full flex flex-col">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Top bar -->
-      <div class="flex justify-between items-center mb-6 bg-[#b97b8b] rounded-3xl px-6 py-4 shadow-lg">
+      <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-          <input id="searchInput" type="text" placeholder="Search by services" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" oninput="searchServices()" />
-          <button onclick="openAddServiceModal()" class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">Add Service</button>
+          <input type="text" id="searchInput" placeholder="Search services..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          <button class="filter-btn" onclick="openAddServiceModal()">
+            <i class="fa-solid fa-plus mr-2"></i>Add Service
+          </button>
+          <button class="filter-btn" onclick="toggleEditMode()" id="editModeBtn">
+            <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Service
+          </button>
         </div>
-        <h1 class="text-center text-2xl font-bold text-white drop-shadow">Services</h1>
         <div class="flex items-center gap-4">
-          <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
               <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
@@ -271,563 +233,301 @@
             <div id="notificationDropdown" class="notification-dropdown">
               <div class="notification-header">
                 <h3 class="font-bold text-gray-800">Notifications</h3>
-                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
                 <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
               </div>
               <div id="notificationList"></div>
             </div>
           </div>
-          
-          <span class="font-semibold text-lg text-white" id="usernameDisplay">Username</span>
+          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
               <i class="fa-solid fa-user-circle text-2xl text-white"></i>
             </button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="logout()">Logout</button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
       </div>
-      
-      <!-- Category Dropdown -->
-      <div class="px-4 py-2">
-        <div class="service-dropdown">
-          <button class="dropdown-button" onclick="toggleDropdown()">
-            <span id="selectedService">FLEEK EYELASH</span>
-            <i class="fa-solid fa-chevron-down" id="dropdownIcon"></i>
-          </button>
-          <div class="dropdown-content" id="serviceDropdown">
+
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">SERVICES</h1>
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Total Services</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalServices">0</p>
+            </div>
+            <i class="fa-solid fa-scissors text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Categories</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalCategories">0</p>
+            </div>
+            <i class="fa-solid fa-layer-group text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Avg. Price</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="avgPrice">₱0</p>
+            </div>
+            <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Last Updated Service</p>
+              <p class="text-lg font-bold text-[#da5c73] hover:underline transition" id="lastUpdatedService" title="Click to see who updated this">N/A</p>
+            </div>
+            <i class="fa-solid fa-clock-rotate-left text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
       </div>
-      
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button class="filter-btn active" onclick="filterByCategory('all')">All Services</button>
+        <select id="categoryFilter" class="filter-btn" onchange="filterByCategory(this.value)">
+          <option value="all">Filter by Category</option>
+        </select>
+        <button class="filter-btn" onclick="exportToCSV()">
+          <i class="fa-solid fa-download mr-2"></i>Export
+        </button>
+      </div>
+
       <!-- Services Table -->
-      <div class="flex-1 overflow-auto">
-        <table id="servicesTable" class="w-full bg-white rounded-xl shadow text-center">
-          <thead>
-            <tr class="bg-[#f7d4d0]">
-              <th class="py-4 px-6 text-lg font-bold border-b border-black">SERVICES</th>
-              <th class="py-4 px-6 text-lg font-bold border-b border-black">PRICES</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="border-b border-black">
-              <td class="py-6 px-6 font-bold text-lg">EYELASH NATURAL (1 SIZE)</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 499</td>
-            </tr>
-            <tr class="border-b border-black">
-              <td class="py-6 px-6 font-bold text-lg">EYELASH NATURAL VOLUME</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 599</td>
-            </tr>
-            <tr class="border-b border-black">
-              <td class="py-6 px-6 font-bold text-lg">EYELASH DOLL EYE (2 SIZE)</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 599</td>
-            </tr>
-            <tr class="border-b border-black">
-              <td class="py-6 px-6 font-bold text-lg">EYELASH CAT EYE (3 SIZE)</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 699</td>
-            </tr>
-            <tr class="border-b border-black">
-              <td class="py-6 px-6 font-bold text-lg">WISPY NATURAL</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 699</td>
-            </tr>
-            <tr>
-              <td class="py-6 px-6 font-bold text-lg">WISPY VOLUME</td>
-              <td class="py-6 px-6 font-bold text-lg">₱ 799</td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm" id="servicesTable">
+            <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
+              <tr>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Service ID</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Service Name</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Category</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Price</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Last Updated</th>
+              </tr>
+            </thead>
+            <tbody id="servicesTableBody">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
   <!-- Add Service Modal -->
-  <div id="addServiceModal" class="add-service-modal">
+  <div id="addServiceModal" class="service-modal">
     <div class="modal-content">
-      <span class="modal-close" onclick="closeAddServiceModal()">&times;</span>
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-6">Add New Service</h2>
-      <form id="addServiceForm" onsubmit="addNewService(event)">
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Category</label>
-          <select id="newServiceCategory" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
-            <option value="">Select a category</option>
-          </select>
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Service Name</label>
-          <input type="text" id="newServiceName" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="Enter service name" required />
-        </div>
-        <div class="mb-4">
-          <label class="block text-gray-700 font-semibold mb-2">Price</label>
-          <input type="text" id="newServicePrice" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="e.g., ₱ 499 or ₱ 499 / ₱ 599" required />
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-plus-circle mr-2"></i>Add New Service
+        </h2>
+        <span class="modal-close" onclick="closeAddServiceModal()">&times;</span>
+      </div>
+      <form id="addServiceForm" onsubmit="handleAddService(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Service Name <span class="text-red-500">*</span></label>
+            <input type="text" id="serviceName" class="form-input" placeholder="e.g., Eyelash Extension" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category <span class="text-red-500">*</span></label>
+            <select id="serviceCategorySelect" class="form-select" required>
+              <option value="">Select Category</option>
+            </select>
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Price (₱) <span class="text-red-500">*</span></label>
+            <input type="number" id="servicePrice" class="form-input" placeholder="0.00" min="0" step="0.01" required />
+          </div>
         </div>
         <div class="flex gap-3 mt-6">
-          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-4 py-2 rounded hover:bg-[#c44c66] font-semibold">
-            <i class="fa-solid fa-plus mr-2"></i>Add Service
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Service
           </button>
-          <button type="button" onclick="closeAddServiceModal()" class="flex-1 bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 font-semibold">
-            Cancel
+          <button type="button" onclick="closeAddServiceModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
           </button>
         </div>
       </form>
     </div>
   </div>
 
-  <script>
-    const services = [
-      "FLEEK EYELASH", "BROWMAZING", "WOKE UP LIKE THIS", "EXPRESS OFFERS", "HAPPY NAILS", "PROMO PACKAGES", "THERAPEUTIC HEAT", "WAX – OUT", "ES-FACIALY FOR YOU", "FACE AND BODY CONTOURING",
-      "LASER HAIR REMOVAL / WHITENING", "PICOSURE LASER TREATMENT", "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)", "CO2 FRACTIONAL LASER LAY-AWAY"
-    ];
-
-    const serviceData = {
-      'FLEEK EYELASH': [
-        { service: 'EYELASH NATURAL (1 SIZE)', price: '₱ 499' },
-        { service: 'EYELASH NATURAL VOLUME', price: '₱ 599' },
-        { service: 'EYELASH DOLL EYE (2 SIZE)', price: '₱ 599' },
-        { service: 'EYELASH CAT EYE (3 SIZE)', price: '₱ 699' },
-        { service: 'WISPY NATURAL', price: '₱ 699' },
-        { service: 'WISPY VOLUME', price: '₱ 799' },
-        { service: 'EYELASH REMOVAL', price: 'IN 100/ OUT 200'},
-        { service: 'LASH LIFT', price: '₱ 499 WITH TINT ₱ 599'}
-      ],
-      'BROWMAZING': [
-        { service: 'THREADING', price: '₱ 200' },
-        { service: 'SHAVING', price: '₱ 150' },
-        { service: 'BROWLAMINATION', price: '₱ 499 WITH TINT ₱ 699' },
-        { service: 'BROWWAXING', price: '₱ 249' }
-      ],
-      'WOKE UP LIKE THIS': [
-        { service: 'MICROBLADING', price: '₱ 1499 (2 SESSIONS)' },
-        { service: 'COMBI/OMBRE/COMBIBROWS', price: '₱ 2499 (2 SESSIONS)' },
-        { service: 'TOP/LOWER EYELINER', price: '₱ 1999 (2 SESSIONS)' },
-        { service: 'KOREAN BBGLOW', price: '₱ 1499 (PER SESSIONS)' },
-        { service: 'LIP TATTOO/ LIP PIGMENTATION', price: '₱ 2999 (2 SESSIONS)' }
-      ],
-      'EXPRESS OFFERS': [
-        { service: 'BACK MASSAGE', price: '₱ 399' },
-        { service: 'HEAD MASSAGE', price: '₱ 399' },
-        { service: 'FOOT MASSAGE', price: '₱ 399' },
-        { service: 'HAND MASSAGE', price: '₱ 399' },
-        { service: 'FOOT REFLEX', price: '₱ 499' },
-        { service: 'HAND REFLEX', price: '₱ 499' },
-        { service: 'HEAD MASSAGE + EAR CANDLING', price: '₱ 499' },
-        { service: 'EAR CANDLING', price: '₱ 199' }
-      ],
-      'HAPPY NAILS': [
-        { service: 'BASIC MANICURE', price: '₱ 120' },
-        { service: 'BASIC PEDICURE', price: '₱ 170' },
-        { service: 'FOOTSPA', price: '₱ 300' },
-        { service: 'HANDSPA', price: '₱ 300' },
-        { service: 'GEL REMOVAL', price: 'IN 100 / OUT 200' },
-        { service: 'SOFT GEL REMOVAL', price: 'IN 200 /  OUT 300' },
-        { service: 'SOFTGEL NAIL EXTENSIONS', price: '₱ 1700' },
-        { service: 'GEL MANICURE', price: '₱ 550' },
-        { service: 'GEL PEDICURE', price: '₱ 650' },
-        { service: 'FOOTSPA OR HANDSPA WITH WITHENING SCRUB', price: '₱ 400 WITH CALLUS REMOVAL ₱ 450' }
-      ],
-      'PROMO PACKAGES': [
-        { service: 'UV GEL MANICURE + BASIC PEDICURE + CLASSIC FOOTSPA ', price: '₱ 850' },
-        { service: 'UV GEL MANICURE + BASIC PEDICURE + DELUXE FOOTSPA', price: '₱ 900'},
-        { service: 'UV GEL MANICURE + UV GEL PEDICURE + CLASSIC FOOTSPA', price: '₱ 1300'},
-        { service: 'UV GEL MANICURE + UV GEL PEDICURE + DELUXE FOOTSPA WITH WITHENING SCRUB', price: '₱ 1400'},
-        { service: 'CLASSIC FOOTSPA + BASIC PEDICURE + 30 MINS. FOOT MASSAGE', price: '₱ 750'},
-        { service: 'DELUXE FOOTSPA WITH WITHENING SCRUB + BASIC PEDICURE + 30 MINS. FOOT MASSAGE', price: '₱ 800'},
-        { service: 'NATURAL EYELASH OR LASH LFT (ADD 1OO FOR TINT) + UV GEL MANICURE', price: '₱ 950'},
-        { service: 'FOOTSPA + UV GELPEDICURE', price: '₱ 850'},
-        { service: 'FOOTSPA + BASI PEDICURE + FOOT REFELEX', price: '₱ 850'},
-        { service: 'FOOTSPA + UV GEL PEDICURE +FOOT MASSAGE', price: '₱ 1150'}
-      ],
-      'THERAPEUTIC HEAT': [
-        {service: 'HAND PARAFFIN', price: '₱ 250'},
-        {service: 'FOOT PARAFFIN', price: '₱ 300'},
-        {service: 'HAND PARAFFIN + HANDSPA', price: '₱ 550'},
-        {service: 'FOOT PARAFFIN + FOOTSPA', price: '₱ 600'},
-        {service: 'HAND PARAFFIN + HAND MASSAGE', price: '₱ 550'},
-        {service: 'FOOR PARAFFIN + FOOT MASSAGE', price: '₱ 600'}
-      ],
-      'WAX – OUT': [
-        {service: 'WAXING PART', price: 'FEMALE / MALE'},
-        {service: 'UNDER ARM', price: '₱ 399 / ₱ 499'},
-        {service: 'HALF LEGS', price: '₱ 499 / ₱ 599'},
-        {service: 'FULL LEGS', price: '₱ 699 / ₱ 799'},
-        {service: 'BRAZILLIAN', price: '₱ 999 / ₱ 1099'},
-        {service: 'UPPER/LOWER LIP', price: '₱ 299 / ₱ 399'},
-        {service: 'FULL FACE', price: '₱ 899 / ₱ 999'},
-        {service: 'FULL ARMS', price: '₱ 599 / ₱ 699'}
-      ],
-      'ES-FACIALY FOR YOU': [
-        {service: 'HYDRAFACIAL WITH COLLAGEN MASK', price: '₱ 899'},
-        {service: 'BLACK DOLL CARBON LASER', price: '₱ 1999 (2 SESSIONS)'},
-        {service: 'BLACK DOLL CARBON LASER LAY – AWAY PROMO (FACE, NAPE, KNEE, ELBOW)', price: '4+1 SESSIONS  ₱ 4500 DOWN ₱ 2500 SUCCEEDING IS ₱ 1000, 9+1 SESSIONS ₱ 9000 DOWN ₱ 3000 SUCCEEDING IS ₱ 1000'},
-        {service: ' FACIAL COMBO PROMO ', price: 'ADD ₱ 100 FOR PDT LIGHT OR COLLAGEN MASK'},
-        {service: 'HYDRAFACIAL + BLACK DOLL + EXILLIS / HIFU', price: '₱ 3399'},
-        {service: 'HYDRAFACIAL + BBGLOW + COLLAGEN PDT', price: '₱ 1899'},
-        {service: 'BLACK DOLL + EXILLIS / HIFU + PDT', price: '₱ 2499'},
-        {service: 'HYDRAFACIAL + BBGLOWBLUSH + PDT', price: '₱ 2199'}
-      ],
-      'FACE AND BODY CONTOURING': [
-        {service: 'HIFU', price: '₱ 1499 / PER SESSION'},
-        {service: 'EXILLISS', price: '₱ 1499 / PER SESSION 30 MINS'},
-        {service: 'EMSLIM', price: '₱ 2000 / PER SESSION 30 MINS'},
-        {service: 'CRYOLIPOLYSIS', price: '₱ 1499 / PER SESSION / BODY AREA'},
-        {service: 'CRYOLIPOLYSIS', price: '₱ 999 / CHIN AREA'},
-        {service: 'SUPER TRIO COMBO (CRYOLIPOLYSIS - EXILLIS - EMSLIM)', price: '₱ 3499 SESSION EACH'},
-        {service: 'LAY-WAY PROMO', price: '₱ 7499'},
-        {service: 'EXILLIS', price: '6 + 1 SESSIONS'},
-        {service: 'EMSLIM', price: '5 + 1 SESSIONS'},
-        {service: 'POWERCOMBO EXISLIM', price: '3 + 3 SESSIONS'}
-      ],
-      'LASER HAIR REMOVAL / WHITENING': [
-        {service: 'DIODE LASER', price: '1 SESSION 2 SESSION 10 SESSION (LAY-AWAY)'},
-        {service: 'UNDERARM', price: '₱ 899   ₱ 1499   ₱ 4999'},
-        {service: 'BRAZILLIAN', price: '₱ 1999   ₱   3499   ₱ 10499'},
-        {service: 'FULL ARMS', price: '₱ 1499   ₱ 2499   ₱ 8499'}, 
-        {service: 'LOWER / UPPER LEGS', price: '₱ 1999   ₱ 3499   ₱ 10499'},
-        {service: 'UPPER LIP', price: '₱ 599   ₱ 999   ₱ 3999'},
-        {service: 'LOWER LIP', price: '₱ 899   ₱ 1499   ₱ 4999'},
-        {service: 'BIKINI LINE', price: '₱ 1099   ₱ 1999   ₱ 8999'},
-        {service: 'FULL FACE MALE', price: '₱ 2999   ₱ 5499   ₱ 15499'},
-        {service: 'FULL FACE FEMALE', price: '₱ 1999   ₱ 3499   ₱ 10499 '},
-        {service: 'ADD ON FOR WHITENING SCRUB', price: '₱ 200'}
-      ],
-      'PICOSURE LASER TREATMENT': [
-        {service: 'LIP', price: '2 SESSIONS ₱ 999'},
-        {service: 'KNEE / NECK / ELBOW/ UNDERARM / FACE', price: '2 SESSIONS ₱ 1499'},
-        {service: 'PICO MELASMA', price: '2 SESSIONS ₱ 4000'},
-        {service: 'TATOO REMOVAL OR BIRTH 1-3 INC.', price: '2 SESSIONS ₱ 3000'},
-        {service: 'PROMO', price: ''},
-        {service: 'ANY PART', price: '4+1 SESSIONS ₱ 4000'}
-      ],
-      'WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)': [
-        {service: 'FACE / NECK', price: '₱ 1999'},
-        {service: 'BACK', price: '₱ 2999'},
-        {service: 'FACE / NECK / BACK', price: '₱ 5499'},
-        {service: 'SKIN TAG BY AREA', price: '₱ 1499'}
-      ],
-      'CO2 FRACTIONAL LASER LAY-AWAY': [
-        {service: 'CO2 FRACTIONAL LASER LAY-AWAY', price: '3+2 SESSIONS ₱ 7997 DOWN ₱ 3999'}
-      ],
-    };
-
-    let activeService = "FLEEK EYELASH";
-    const serviceDropdown = document.getElementById('serviceDropdown');
-    const selectedServiceSpan = document.getElementById('selectedService');
-
-    function initializeDropdown() {
-      services.forEach(service => {
-        const item = document.createElement('a');
-        item.className = 'dropdown-item';
-        item.textContent = service;
-        item.onclick = () => selectService(service);
-        serviceDropdown.appendChild(item);
-      });
-      
-      serviceDropdown.children[0].classList.add('selected');
-      
-      // Populate category dropdown in Add Service modal
-      const categorySelect = document.getElementById('newServiceCategory');
-      services.forEach(service => {
-        const option = document.createElement('option');
-        option.value = service;
-        option.textContent = service;
-        categorySelect.appendChild(option);
-      });
-    }
-
-    function toggleDropdown() {
-      const dropdown = document.getElementById('serviceDropdown');
-      const icon = document.getElementById('dropdownIcon');
-      
-      dropdown.classList.toggle('show');
-      icon.classList.toggle('fa-chevron-down');
-      icon.classList.toggle('fa-chevron-up');
-    }
-
-    function selectService(service) {
-      activeService = service;
-      selectedServiceSpan.textContent = service;
-      
-      document.querySelectorAll('.dropdown-item').forEach(item => {
-        item.classList.remove('selected');
-      });
-      event.target.classList.add('selected');
-      
-      document.getElementById('serviceDropdown').classList.remove('show');
-      document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
-      document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
-      
-      updateServicesTable(service);
-    }
-
-    function updateServicesTable(category) {
-      const tableBody = document.querySelector('#servicesTable tbody');
-      const services = serviceData[category] || [];
-      
-      tableBody.innerHTML = '';
-      
-      services.forEach((service, index) => {
-        const row = document.createElement('tr');
-        row.className = index < services.length - 1 ? 'border-b border-black' : '';
-        row.innerHTML = `
-          <td class="py-6 px-6 font-bold text-lg">${service.service}</td>
-          <td class="py-6 px-6 font-bold text-lg">${service.price}</td>
-        `;
-        tableBody.appendChild(row);
-      });
-    }
-
-    // Search functionality
-    function searchServices() {
-      const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-      const tableBody = document.querySelector('#servicesTable tbody');
-      const rows = tableBody.getElementsByTagName('tr');
-      
-      let foundAny = false;
-      
-      for (let i = 0; i < rows.length; i++) {
-        const serviceName = rows[i].getElementsByTagName('td')[0].textContent.toLowerCase();
-        const price = rows[i].getElementsByTagName('td')[1].textContent.toLowerCase();
-        
-        if (serviceName.includes(searchTerm) || price.includes(searchTerm)) {
-          rows[i].style.display = '';
-          rows[i].classList.add('highlight-row');
-          foundAny = true;
-        } else {
-          rows[i].style.display = 'none';
-          rows[i].classList.remove('highlight-row');
-        }
-      }
-      
-      // If search is empty, remove all highlights and show all rows
-      if (searchTerm === '') {
-        for (let i = 0; i < rows.length; i++) {
-          rows[i].style.display = '';
-          rows[i].classList.remove('highlight-row');
-        }
-      }
-    }
-
-    // Add Service Modal functions
-    function openAddServiceModal() {
-      document.getElementById('addServiceModal').classList.add('show');
-      document.getElementById('addServiceForm').reset();
-    }
-
-    function closeAddServiceModal() {
-      document.getElementById('addServiceModal').classList.remove('show');
-    }
-
-    function addNewService(event) {
-      event.preventDefault();
-      
-      const category = document.getElementById('newServiceCategory').value;
-      const serviceName = document.getElementById('newServiceName').value.trim().toUpperCase();
-      const servicePrice = document.getElementById('newServicePrice').value.trim();
-      
-      if (!category || !serviceName || !servicePrice) {
-        alert('Please fill in all fields');
-        return;
-      }
-      
-      // Add service to the data
-      if (!serviceData[category]) {
-        serviceData[category] = [];
-      }
-      
-      serviceData[category].push({
-        service: serviceName,
-        price: servicePrice
-      });
-      
-      // If the current active category is the one we added to, update the table
-      if (activeService === category) {
-        updateServicesTable(category);
-      }
-      
-      // Close modal and show success message
-      closeAddServiceModal();
-      alert(`Service "${serviceName}" has been added to ${category} successfully!`);
-    }
-
-    window.onclick = function(event) {
-      if (!event.target.matches('.dropdown-button') && !event.target.matches('.dropdown-button *')) {
-        const dropdowns = document.getElementsByClassName("dropdown-content");
-        for (let i = 0; i < dropdowns.length; i++) {
-          const openDropdown = dropdowns[i];
-          if (openDropdown.classList.contains('show')) {
-            openDropdown.classList.remove('show');
-            document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
-            document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
-          }
-        }
-      }
-
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
-
-      if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
-        document.getElementById('userMenu').classList.add('hidden');
-      }
-      
-      // Close add service modal when clicking outside
-      if (event.target.id === 'addServiceModal') {
-        closeAddServiceModal();
-      }
-    }
-
-    // Notification System
-    function loadNotifications() {
-      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notificationList = document.getElementById('notificationList');
-      const badge = document.getElementById('notificationBadge');
-      
-      const unreadCount = notifications.filter(n => !n.read).length;
-      
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-      
-      if (notifications.length === 0) {
-        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
-        return;
-      }
-      
-      notificationList.innerHTML = '';
-      
-      notifications.forEach(notification => {
-        const item = document.createElement('div');
-        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-        item.onclick = () => viewNotification(notification.id);
-        
-        const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
-        
-        item.innerHTML = `
-          <div class="flex justify-between items-start mb-1">
-            <strong class="text-[#da5c73]">${notification.message}</strong>
-            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+  <!-- Edit Service Modal -->
+  <div id="editServiceModal" class="service-modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Service
+        </h2>
+        <span class="modal-close" onclick="closeEditServiceModal()">&times;</span>
+      </div>
+      <form id="editServiceForm" onsubmit="handleEditService(event)">
+        <input type="hidden" id="editFirebaseId" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Service Name</label>
+            <input type="text" id="editServiceName" class="form-input" required />
           </div>
-          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-        `;
-        
-        notificationList.appendChild(item);
-      });
-    }
-
-    function toggleNotifications() {
-      const dropdown = document.getElementById('notificationDropdown');
-      dropdown.classList.toggle('show');
-      loadNotifications();
-    }
-
-    function viewNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notification = notifications.find(n => n.id === id);
-      
-      if (!notification) return;
-      
-      notification.read = true;
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      const modal = document.getElementById('notificationModal');
-      const modalBody = document.getElementById('modalBody');
-      
-      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-      });
-      
-      modalBody.innerHTML = `
-        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-        <div class="space-y-3">
-          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-          <div><strong>Email:</strong> ${notification.details.email}</div>
-          <div><strong>Phone:</strong> ${notification.details.phone}</div>
-          <div><strong>Service:</strong> ${notification.details.service}</div>
-          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="editServiceCategorySelect" class="form-select" required>
+            </select>
+          </div>
+          <div class="form-group md:col-span-2">
+            <label class="form-label">Price (₱)</label>
+            <input type="number" id="editServicePrice" class="form-input" min="0" step="0.01" required />
+          </div>
         </div>
-        <div class="mt-6 flex gap-3">
-          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            <i class="fa-solid fa-check mr-2"></i>Approve
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-save mr-2"></i>Save Changes
           </button>
-          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-            <i class="fa-solid fa-times mr-2"></i>Decline
+          <button type="button" onclick="handleDeleteService()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
+            <i class="fa-solid fa-trash mr-2"></i>Delete Service
+          </button>
+          <button type="button" onclick="closeEditServiceModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-xmark mr-2"></i>Cancel
           </button>
         </div>
-      `;
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Category Modal -->
+  <div id="addCategoryModal" class="service-modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-tag mr-2"></i>Add New Category
+        </h2>
+        <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
+      </div>
+      <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
+        <div class="form-group">
+          <label class="form-label">Category Name <span class="text-red-500">*</span></label>
+          <input type="text" id="newCategoryName" class="form-input" placeholder="e.g., Facial Services" required />
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Category
+          </button>
+          <button type="button" onclick="closeAddCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Categories Modal -->
+  <div id="manageCategoriesModal" class="service-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-layer-group mr-2"></i>Manage Categories
+        </h2>
+        <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
+      </div>
       
-      modal.classList.add('show');
-      loadNotifications();
-    }
+      <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div class="flex items-start gap-2">
+          <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-1"></i>
+          <div class="text-sm text-yellow-800">
+            <strong>Warning:</strong> Deleting a category will also delete all services associated with it. This action cannot be undone.
+          </div>
+        </div>
+      </div>
 
-    function closeNotificationModal() {
-      document.getElementById('notificationModal').classList.remove('show');
-    }
+      <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
+        <!-- Categories will be loaded here -->
+      </div>
 
-    function markAllRead() {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications.forEach(n => n.read = true);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
-    }
+      <div class="mt-6">
+        <button onclick="closeManageCategoriesModal()" class="w-full bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
 
-    function clearAllNotifications() {
-      localStorage.setItem('skinshipNotifications', '[]');
-      loadNotifications();
-    }
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="service-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
-    function approveAppointment(id) {
-      alert('Appointment approved!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
+  <!-- Edit History Modal -->
+  <div id="editHistoryModal" class="service-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeEditHistoryModal()">&times;</span>
+      <div id="editHistoryBody"></div>
+    </div>
+  </div>
 
-    function rejectAppointment(id) {
-      alert('Appointment declined!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
+  <!-- Last Updated Service Modal -->
+  <div id="lastUpdatedModal" class="service-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeLastUpdatedModal()">&times;</span>
+      <div id="lastUpdatedBody"></div>
+    </div>
+  </div>
 
-    function deleteNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications = notifications.filter(n => n.id !== id);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
-    }
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
 
-    function logout() {
-      window.location.href = "Login.html";
-    }
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
 
-    initializeDropdown();
-    updateServicesTable(activeService);
-    loadNotifications();
-    
-    setInterval(loadNotifications, 5000);
-  </script>
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="role-check.js"></script>
-
+  <script src="services.js"></script>
 </body>
 </html>
