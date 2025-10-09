@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Skinship Beauty Login kaso bakit ganun hindi mo padin siya kilala</title>
+  <title>Skinship Beauty Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -81,7 +81,8 @@
     }
 
     input[type="email"],
-    input[type="password"] {
+    input[type="password"],
+    input[type="text"] {
       display: block;
       width: 100%;
       padding: 13px 15px;
@@ -96,12 +97,14 @@
     }
 
     input[type="email"]::placeholder,
-    input[type="password"]::placeholder {
+    input[type="password"]::placeholder,
+    input[type="text"]::placeholder {
       color: #af9d99cc;
     }
 
     input[type="email"]:focus,
-    input[type="password"]:focus {
+    input[type="password"]:focus,
+    input[type="text"]:focus {
       border-color: #da5c73;
       box-shadow: 0 0 10px #e88ea4cc;
       background-color: #fbe7eb;
@@ -160,6 +163,11 @@
       background-color: #e2798d;
     }
 
+    button.signin-btn:disabled {
+      background-color: #c4a5a8;
+      cursor: not-allowed;
+    }
+
     .image-section {
       width: 420px;
       height: 420px;
@@ -197,6 +205,105 @@
     .image-section > div:nth-child(4) {
       clip-path: polygon(100% 0, 0 100%, 100% 100%);
     }
+
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .warning-message {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .warning-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .twofa-section {
+      display: none;
+    }
+
+    .twofa-section.show {
+      display: block;
+    }
+
+    .code-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .code-input {
+      width: 50px;
+      height: 60px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border: 2px solid #b89a96;
+      border-radius: 10px;
+      background-color: #f7d4d0;
+    }
+
+    .code-input:focus {
+      border-color: #da5c73;
+      box-shadow: 0 0 10px #e88ea4cc;
+      background-color: #fbe7eb;
+    }
+
+    .resend-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: #2b2b2bcc;
+    }
+
+    .resend-link a {
+      color: #da5c73;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .resend-link a:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -208,25 +315,58 @@
           <path d="M30 15 Q45 50 30 80 Q55 50 45 15" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
-      <h1 class="welcome-text">WELCOME BACK!</h1>
-      <p class="subtext">Please enter your login details</p>
-      <form id="loginForm">
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email" aria-required="true"/>
+      
+      <!-- Login Form -->
+      <div id="loginSection">
+        <h1 class="welcome-text">WELCOME BACK!</h1>
+        <p class="subtext">Please enter your login details</p>
+        <form id="loginForm">
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email" aria-required="true"/>
+          
+          <label for="password" class="mt-4">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
+          
+          <div class="checkbox-group">
+            <input type="checkbox" id="remember" name="remember" />
+            <label for="remember" class="select-none">Remember me</label>
+            <span class="forgot-password" onclick="window.location.href='forgotpassword.html'" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
+          </div>
+
+          <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
+        </form>
+      </div>
+
+      <!-- 2FA Verification Section -->
+      <div id="twofaSection" class="twofa-section">
+        <h1 class="welcome-text" style="font-size: 2rem;">VERIFY YOUR IDENTITY</h1>
+        <p class="subtext">Enter the 6-digit code sent to your email</p>
         
-        <label for="password" class="mt-4">Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
-        
-        <div class="checkbox-group">
-          <input type="checkbox" id="remember" name="remember" />
-          <label for="remember" class="select-none">Remember me</label>
-          <span class="forgot-password" onclick="window.location.href='forgotpassword.html'" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
+        <div class="code-inputs">
+          <input type="text" maxlength="1" class="code-input" id="code1" />
+          <input type="text" maxlength="1" class="code-input" id="code2" />
+          <input type="text" maxlength="1" class="code-input" id="code3" />
+          <input type="text" maxlength="1" class="code-input" id="code4" />
+          <input type="text" maxlength="1" class="code-input" id="code5" />
+          <input type="text" maxlength="1" class="code-input" id="code6" />
         </div>
 
-        <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
-      </form>
-      <p id="loginError" class="text-red-600 mt-3 hidden"></p>
+        <button id="verifyBtn" class="signin-btn">VERIFY CODE</button>
+        
+        <div class="resend-link">
+          Didn't receive the code? <a id="resendLink">Resend Code</a>
+        </div>
+
+        <div class="resend-link" style="margin-top: 10px;">
+          <a id="backToLoginLink">← Back to Login</a>
+        </div>
+      </div>
+
+      <div id="loginError" class="error-message"></div>
+      <div id="loginWarning" class="warning-message"></div>
+      <div id="loginSuccess" class="success-message"></div>
     </section>
+    
     <section class="image-section" aria-label="Decorative beauty images">
       <div><img src="https://images.unsplash.com/photo-1587502536263-3e95976f7e34?auto=format&fit=crop&w=400&q=80" alt="Woman with perfectly shaped eyebrows receiving treatment"/></div>
       <div><img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Close up of hands holding and manicured nails"/></div>
@@ -235,10 +375,16 @@
     </section>
   </main>
   
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    // Initialize EmailJS with your public key
+    emailjs.init("JcMrqAedryjLalsIq"); // Replace with your EmailJS public key
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -254,30 +400,401 @@
     const db = getFirestore(app);
 
     const loginForm = document.getElementById("loginForm");
+    const loginSection = document.getElementById("loginSection");
+    const twofaSection = document.getElementById("twofaSection");
     const errorMsg = document.getElementById("loginError");
+    const warningMsg = document.getElementById("loginWarning");
+    const successMsg = document.getElementById("loginSuccess");
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const verifyBtn = document.getElementById("verifyBtn");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const rememberCheckbox = document.getElementById("remember");
+    const resendLink = document.getElementById("resendLink");
+    const backToLoginLink = document.getElementById("backToLoginLink");
+
+    let currentUser = null;
+    let generatedCode = null;
+    let userEmail = null;
+
+    // Code input handling
+    const codeInputs = [
+      document.getElementById("code1"),
+      document.getElementById("code2"),
+      document.getElementById("code3"),
+      document.getElementById("code4"),
+      document.getElementById("code5"),
+      document.getElementById("code6")
+    ];
+
+    codeInputs.forEach((input, index) => {
+      input.addEventListener("input", (e) => {
+        if (e.target.value.length === 1 && index < 5) {
+          codeInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && e.target.value === "" && index > 0) {
+          codeInputs[index - 1].focus();
+        }
+      });
+
+      input.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData("text").slice(0, 6);
+        pastedData.split("").forEach((char, i) => {
+          if (codeInputs[i]) {
+            codeInputs[i].value = char;
+          }
+        });
+        if (pastedData.length === 6) {
+          codeInputs[5].focus();
+        }
+      });
+    });
+
+    // Simple encoding for basic obfuscation
+    function encodeData(str) {
+      return btoa(str);
+    }
+
+    function decodeData(str) {
+      try {
+        return atob(str);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    // Check if 2FA is still valid (within 12 hours)
+    function is2FAValid(uid) {
+      const twoFAData = sessionStorage.getItem(`2fa_${uid}`);
+      if (!twoFAData) return false;
+
+      try {
+        const data = JSON.parse(twoFAData);
+        const now = Date.now();
+        const twelveHours = 12 * 60 * 60 * 1000;
+        
+        return (now - data.timestamp) < twelveHours;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Mark 2FA as validated
+    function mark2FAValidated(uid) {
+      const data = {
+        timestamp: Date.now(),
+        validated: true
+      };
+      sessionStorage.setItem(`2fa_${uid}`, JSON.stringify(data));
+    }
+
+    // Generate 6-digit code
+    function generateCode() {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+async function sendVerificationCode(email, code) {
+  try {
+    // Store code in Firestore
+    await setDoc(doc(db, "verificationCodes", email), {
+      code: code,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + (10 * 60 * 1000) // 10 minutes expiry
+    });
+
+    // Send email using EmailJS
+    const templateParams = {
+      to_email: email,
+      verification_code: code,
+      user_email: email
+    };
+
+    await emailjs.send(
+      'service_s0oyzpd',        // Replace with your EmailJS service ID
+      'template_bzyzwxf',       // Replace with your EmailJS template ID
+      templateParams
+    );
+
+    return true;
+  } catch (error) {
+    console.error("Error sending code:", error);
+    return false;
+  }
+}
+
+    // Load remembered credentials
+    function loadRememberedCredentials() {
+      const savedEmail = sessionStorage.getItem('rememberedEmail');
+      const savedPassword = sessionStorage.getItem('rememberedPassword');
+      const wasRemembered = sessionStorage.getItem('rememberMe') === 'true';
+
+      if (wasRemembered && savedEmail && savedPassword) {
+        const decodedEmail = decodeData(savedEmail);
+        const decodedPassword = decodeData(savedPassword);
+        
+        if (decodedEmail && decodedPassword) {
+          emailInput.value = decodedEmail;
+          passwordInput.value = decodedPassword;
+          rememberCheckbox.checked = true;
+        }
+      }
+    }
+
+    // Save credentials if remember me is checked
+    function saveCredentials(email, password, remember) {
+      if (remember) {
+        sessionStorage.setItem('rememberedEmail', encodeData(email));
+        sessionStorage.setItem('rememberedPassword', encodeData(password));
+        sessionStorage.setItem('rememberMe', 'true');
+      } else {
+        sessionStorage.removeItem('rememberedEmail');
+        sessionStorage.removeItem('rememberedPassword');
+        sessionStorage.removeItem('rememberMe');
+      }
+    }
+
+    rememberCheckbox.addEventListener('change', (e) => {
+      if (!e.target.checked) {
+        sessionStorage.removeItem('rememberedEmail');
+        sessionStorage.removeItem('rememberedPassword');
+        sessionStorage.removeItem('rememberMe');
+      }
+    });
+
+    loadRememberedCredentials();
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.add("show");
+      warningMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+      setTimeout(() => {
+        errorMsg.classList.remove("show");
+      }, 6000);
+    }
+
+    function showWarning(message) {
+      warningMsg.textContent = message;
+      warningMsg.classList.add("show");
+      errorMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+    }
+
+    function showSuccess(message) {
+      successMsg.textContent = message;
+      successMsg.classList.add("show");
+      errorMsg.classList.remove("show");
+      warningMsg.classList.remove("show");
+      setTimeout(() => {
+        successMsg.classList.remove("show");
+      }, 4000);
+    }
+
+    function switchTo2FA() {
+      loginSection.classList.add("hidden");
+      twofaSection.classList.add("show");
+      codeInputs[0].focus();
+    }
+
+    function switchToLogin() {
+      twofaSection.classList.remove("show");
+      loginSection.classList.remove("hidden");
+      codeInputs.forEach(input => input.value = "");
+    }
+
+    backToLoginLink.addEventListener("click", switchToLogin);
+
+    async function sendCode() {
+      generatedCode = generateCode();
+      const sent = await sendVerificationCode(userEmail, generatedCode);
+      
+      if (sent) {
+        showSuccess(`✅ Verification code sent to ${userEmail}`);
+      } else {
+        showError("Failed to send verification code. Please try again.");
+      }
+    }
+
+    resendLink.addEventListener("click", async () => {
+      resendLink.style.pointerEvents = "none";
+      resendLink.textContent = "Sending...";
+      
+      await sendCode();
+      
+      setTimeout(() => {
+        resendLink.style.pointerEvents = "auto";
+        resendLink.textContent = "Resend Code";
+      }, 3000);
+    });
 
     loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      
+      errorMsg.classList.remove("show");
+      warningMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "SIGNING IN...";
 
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value;
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const remember = rememberCheckbox.checked;
 
       try {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
 
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const role = userDoc.data().role;
+        // Check if email is verified
+        if (!user.emailVerified) {
+          await auth.signOut();
+          showWarning("⚠️ Please verify your email before logging in. Check your inbox for the verification link.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
 
+        // Check if user exists in Firestore
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) {
+          await auth.signOut();
+          showError("❌ No role assigned. Contact system admin.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
+
+        const role = (userDoc.data().role || "").toLowerCase();
+        if (!role || (role !== "admin" && role !== "staff")) {
+          await auth.signOut();
+          showError("❌ No valid role assigned. Contact system admin.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
+
+        // Check if 2FA is still valid
+        if (is2FAValid(user.uid)) {
+          // 2FA still valid, proceed to dashboard
+          saveCredentials(email, password, remember);
+          const userData = userDoc.data();
+          localStorage.setItem("currentUserEmail", email);
+          localStorage.setItem("currentUserRole", role);
+          localStorage.setItem("currentUsername", userData.username || "");
+          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
           window.location.href = "dashboard.html";
+          return;
+        }
+
+        // Need 2FA verification
+        currentUser = user;
+        userEmail = email;
+        
+        // Send verification code
+        await sendCode();
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = "SIGN IN";
+        
+        // Switch to 2FA screen
+        switchTo2FA();
+
+      } catch (error) {
+        let errorMessage = "Login failed: ";
+        
+        switch (error.code) {
+          case 'auth/invalid-email':
+            errorMessage += "Invalid email address.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage += "This account has been disabled.";
+            break;
+          case 'auth/user-not-found':
+            errorMessage += "No account found with this email.";
+            break;
+          case 'auth/wrong-password':
+            errorMessage += "Incorrect password.";
+            break;
+          case 'auth/invalid-credential':
+            errorMessage += "Invalid email or password.";
+            break;
+          default:
+            errorMessage += error.message;
+        }
+        
+        showError(errorMessage);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "SIGN IN";
+      }
+    });
+
+    verifyBtn.addEventListener("click", async () => {
+      const enteredCode = codeInputs.map(input => input.value).join("");
+      
+      if (enteredCode.length !== 6) {
+        showError("Please enter all 6 digits.");
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = "VERIFYING...";
+
+      try {
+        // Verify code from Firestore
+        const codeDoc = await getDoc(doc(db, "verificationCodes", userEmail));
+        
+        if (!codeDoc.exists()) {
+          showError("Verification code expired. Please request a new one.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          return;
+        }
+
+        const codeData = codeDoc.data();
+        const now = Date.now();
+        
+        if (now > codeData.expiresAt) {
+          showError("Verification code expired. Please request a new one.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          return;
+        }
+
+        if (enteredCode === codeData.code) {
+          // Code is correct
+          showSuccess("✅ Verification successful! Redirecting...");
+          
+          // Mark 2FA as validated for 12 hours
+          mark2FAValidated(currentUser.uid);
+          
+          // Get user role and save credentials
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          const role = (userDoc.data().role || "").toLowerCase();
+          
+          saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
+            const userData = userDoc.data();
+            localStorage.setItem("currentUserEmail", userEmail);
+            localStorage.setItem("currentUserRole", role);
+            localStorage.setItem("currentUsername", userData.username || "");
+            localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
+          
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1500);
         } else {
-          errorMsg.textContent = "No role assigned. Contact system admin.";
-          errorMsg.classList.remove("hidden");
+          showError("❌ Invalid verification code. Please try again.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          codeInputs.forEach(input => input.value = "");
+          codeInputs[0].focus();
         }
       } catch (error) {
-        errorMsg.textContent = "Login failed: " + error.message;
-        errorMsg.classList.remove("hidden");
+        showError("Verification failed: " + error.message);
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = "VERIFY CODE";
       }
     });
   </script>

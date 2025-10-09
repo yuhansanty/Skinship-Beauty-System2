@@ -34,7 +34,22 @@ body {
   background:#da5c73;
   color:white;
 }
+/* Hide all sidebar buttons by default */
+.sidebar-btn {
+  display: none !important;
+}
 
+html.staff-loaded .sidebar-btn[title="Dashboard"],
+html.staff-loaded .sidebar-btn[title="Reports"],
+html.staff-loaded .sidebar-btn[title="Cashier"],
+html.staff-loaded .sidebar-btn[title="Staff"] {
+  display: flex !important;
+}
+
+/* Show all buttons when NOT staff (admin) */
+html:not(.staff-loaded) .sidebar-btn {
+  display: flex !important;
+}
 .glass-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -164,13 +179,6 @@ body {
   margin-bottom: 1rem;
 }
 
-/* Menu Buttons Container */
-.menu-buttons-container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-bottom: 1rem;
-}
 
 .menu-buttons-container {
   display: grid;
@@ -246,6 +254,48 @@ body {
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.max-w-7xl.mx-auto.mb-6 {
+  position: relative;
+  z-index: 100;
+}
+
+/* Ensure notification button container is properly positioned */
+.flex.items-center.gap-4 {
+  position: relative;
+  z-index: 100;
+}
+
+/* Update notification dropdown z-index */
+.notification-dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  width: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+  z-index: 9999 !important; /* Add !important to override */
+  display: none;
+}
+
+/* Ensure main content doesn't overlap */
+main {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ensure cart card doesn't overlap notification */
+.glass-card.rounded-2xl.p-6.flex.flex-col.h-fit.sticky {
+  z-index: 10; /* Lower than notification dropdown */
+}
+
+/* Ensure notification modal is on top */
+.notification-modal {
+  z-index: 10000 !important;
 }
 
 .category-dropdown.open {
@@ -339,8 +389,198 @@ body {
   }
 }
 
+.cart-item.removing {
+  animation: fadeOut 0.3s ease forwards;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+/* Logout Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.logout-modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .logout-modal {
+  transform: scale(1);
+}
+
+.logout-modal-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.logout-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.logout-icon i {
+  font-size: 2.5rem;
+  color: white;
+}
+
+.logout-modal-header h2 {
+  color: #1f2937;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.logout-modal-header p {
+  color: #6b7280;
+  font-size: 1rem;
+}
+
+.logout-modal-body {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.logout-info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: white;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.logout-info-item:last-child {
+  margin-bottom: 0;
+}
+
+.logout-info-item i {
+  color: #8b5cf6;
+  font-size: 1.25rem;
+  width: 24px;
+  text-align: center;
+}
+
+.logout-info-item span {
+  color: #1f2937;
+  font-size: 0.95rem;
+}
+
+.logout-modal-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.logout-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.logout-btn-cancel {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.logout-btn-cancel:hover {
+  background: #d1d5db;
+}
+
+.logout-btn-confirm {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+}
+
+.logout-btn-confirm.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.logout-btn-confirm.loading i {
+  animation: spinLogout 1s linear infinite;
+}
+
+@keyframes spinLogout {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 768px) {
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .logout-modal {
+    padding: 1.5rem;
+  }
+
+  .logout-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .logout-btn {
+    width: 100%;
   }
 }

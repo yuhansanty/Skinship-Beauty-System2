@@ -5,58 +5,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Inventory | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+ 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="inventory.css">
   <style>
-    .sidebar-btn { 
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      color: #da5c73;
-      font-size: 20px;
-      cursor: pointer;
+    /* Logout Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: .3s;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
     }
-    .sidebar-btn:hover { 
-      background: #da5c73;
-      color: white;
-      transform: scale(1.1);
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
     }
-    .sidebar-btn.active { 
-      background: #da5c73;
-      color: white;
-    }
-    .filter-btn {
-      padding: 8px 16px;
-      border-radius: 8px;
-      border: 2px solid #da5c73;
+
+    .logout-modal {
       background: white;
-      color: #da5c73;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
     }
-    .filter-btn:hover {
-      background: #da5c73;
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
     }
-    .filter-btn.active {
-      background: #da5c73;
-      color: white;
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
     }
-    .stat-card {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      transition: transform 0.3s;
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
     }
-    .stat-card:hover {
-      transform: translateY(-4px);
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @media (max-width: 768px) {
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
     }
   </style>
 </head>
@@ -89,16 +220,38 @@
           <button class="filter-btn" onclick="addNewItem()">
             <i class="fa-solid fa-plus mr-2"></i>Add Item
           </button>
+          <button class="filter-btn" onclick="enableEditMode()" id="editModeBtn">
+            <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item
+          </button>
         </div>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
-          <span class="font-semibold text-lg text-white">Username</span>
+          <!-- Notification Bell -->
+          <div class="relative">
+            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
+              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            
+            <!-- Notification Dropdown -->
+            <div id="notificationDropdown" class="notification-dropdown">
+              <div class="notification-header">
+                <h3 class="font-bold text-gray-800">Notifications</h3>
+                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
+                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+              </div>
+              <div id="notificationList"></div>
+            </div>
+          </div>
+          
+          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
               <i class="fa-solid fa-user-circle text-2xl text-white"></i>
             </button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
@@ -112,7 +265,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Items</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">6</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
             </div>
             <i class="fa-solid fa-boxes-stacked text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -121,7 +274,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Value</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 22,925</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
             </div>
             <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -130,7 +283,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Low Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">1</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">0</p>
             </div>
             <i class="fa-solid fa-triangle-exclamation text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -139,7 +292,7 @@
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Out of Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">1</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">0</p>
             </div>
             <i class="fa-solid fa-circle-xmark text-3xl text-[#da5c73] opacity-50"></i>
           </div>
@@ -154,11 +307,6 @@
         <button class="filter-btn" onclick="filterByStatus('out-of-stock')">Out of Stock</button>
         <select id="categoryFilter" class="filter-btn" onchange="filterByCategory()">
           <option value="all">All Categories</option>
-          <option value="Hair Products">Hair Products</option>
-          <option value="Nail Products">Nail Products</option>
-          <option value="Skincare">Skincare</option>
-          <option value="Lash Products">Lash Products</option>
-          <option value="Tools">Tools</option>
         </select>
         <button class="filter-btn" onclick="exportToCSV()">
           <i class="fa-solid fa-download mr-2"></i>Export
@@ -182,78 +330,6 @@
               </tr>
             </thead>
             <tbody id="inventoryTableBody">
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Hair Products">
-                <td class="py-4 px-4 font-semibold">INV-001</td>
-                <td class="py-4 px-4">Hair Dye - Blonde</td>
-                <td class="py-4 px-4">Hair Products</td>
-                <td class="py-4 px-4 text-center">25</td>
-                <td class="py-4 px-4 text-right">₱ 299</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 7,475</td>
-                <td class="py-4 px-4 text-center text-sm">May 15, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Nail Products">
-                <td class="py-4 px-4 font-semibold">INV-002</td>
-                <td class="py-4 px-4">Nail Polish - Red</td>
-                <td class="py-4 px-4">Nail Products</td>
-                <td class="py-4 px-4 text-center">15</td>
-                <td class="py-4 px-4 text-right">₱ 150</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 2,250</td>
-                <td class="py-4 px-4 text-center text-sm">May 14, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="low-stock" data-category="Skincare">
-                <td class="py-4 px-4 font-semibold">INV-003</td>
-                <td class="py-4 px-4">Facial Cleanser</td>
-                <td class="py-4 px-4">Skincare</td>
-                <td class="py-4 px-4 text-center">8</td>
-                <td class="py-4 px-4 text-right">₱ 450</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 3,600</td>
-                <td class="py-4 px-4 text-center text-sm">May 13, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Lash Products">
-                <td class="py-4 px-4 font-semibold">INV-004</td>
-                <td class="py-4 px-4">Eyelash Glue</td>
-                <td class="py-4 px-4">Lash Products</td>
-                <td class="py-4 px-4 text-center">30</td>
-                <td class="py-4 px-4 text-right">₱ 180</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 5,400</td>
-                <td class="py-4 px-4 text-center text-sm">May 12, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="border-b hover:bg-gray-50 transition" data-status="in-stock" data-category="Tools">
-                <td class="py-4 px-4 font-semibold">INV-005</td>
-                <td class="py-4 px-4">Hair Brush</td>
-                <td class="py-4 px-4">Tools</td>
-                <td class="py-4 px-4 text-center">12</td>
-                <td class="py-4 px-4 text-right">₱ 350</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 4,200</td>
-                <td class="py-4 px-4 text-center text-sm">May 11, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>
-                </td>
-              </tr>
-              <tr class="hover:bg-gray-50 transition" data-status="out-of-stock" data-category="Hair Products">
-                <td class="py-4 px-4 font-semibold">INV-006</td>
-                <td class="py-4 px-4">Shampoo</td>
-                <td class="py-4 px-4">Hair Products</td>
-                <td class="py-4 px-4 text-center">0</td>
-                <td class="py-4 px-4 text-right">₱ 280</td>
-                <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ 0</td>
-                <td class="py-4 px-4 text-center text-sm">May 10, 2025</td>
-                <td class="py-4 px-4 text-center">
-                  <span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Out of Stock</span>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
@@ -261,95 +337,250 @@
     </div>
   </main>
 
-  <script>
-    // Sample data for functionality
-    const inventoryData = [
-      {id: 'INV-001', name: 'Hair Dye - Blonde', category: 'Hair Products', qty: 25, price: 299, total: 7475, date: '2025-05-15', status: 'in-stock'},
-      {id: 'INV-002', name: 'Nail Polish - Red', category: 'Nail Products', qty: 15, price: 150, total: 2250, date: '2025-05-14', status: 'in-stock'},
-      {id: 'INV-003', name: 'Facial Cleanser', category: 'Skincare', qty: 8, price: 450, total: 3600, date: '2025-05-13', status: 'low-stock'},
-      {id: 'INV-004', name: 'Eyelash Glue', category: 'Lash Products', qty: 30, price: 180, total: 5400, date: '2025-05-12', status: 'in-stock'},
-      {id: 'INV-005', name: 'Hair Brush', category: 'Tools', qty: 12, price: 350, total: 4200, date: '2025-05-11', status: 'in-stock'},
-      {id: 'INV-006', name: 'Shampoo', category: 'Hair Products', qty: 0, price: 280, total: 0, date: '2025-05-10', status: 'out-of-stock'}
-    ];
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
-    // Search functionality
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
+  <!-- Add Product Modal -->
+  <div id="addProductModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 700px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-plus-circle mr-2"></i>Add New Product
+        </h2>
+        <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
+      </div>
+      <form id="addProductForm" onsubmit="handleAddProduct(event)">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Item Name <span class="text-red-500">*</span></label>
+            <input type="text" id="itemName" class="form-input" placeholder="e.g., Hair Dye - Blonde" required />
+          </div>
 
-    // Filter by status
-    function filterByStatus(status) {
-      const buttons = document.querySelectorAll('.filter-btn');
-      buttons.forEach(btn => {
-        if(btn.textContent.includes('All Items') || btn.textContent.includes('In Stock') || 
-           btn.textContent.includes('Low Stock') || btn.textContent.includes('Out of Stock')) {
-          btn.classList.remove('active');
-        }
-      });
-      event.target.classList.add('active');
-      
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      rows.forEach(row => {
-        if(status === 'all') {
-          row.style.display = '';
-        } else {
-          const rowStatus = row.getAttribute('data-status');
-          row.style.display = rowStatus === status ? '' : 'none';
-        }
-      });
-    }
+          <div class="form-group">
+            <label class="form-label">Category <span class="text-red-500">*</span></label>
+            <select id="itemCategory" class="form-select" required>
+              <option value="">Select Category</option>
+            </select>
+          </div>
 
-    // Filter by category
-    function filterByCategory() {
-      const category = document.getElementById('categoryFilter').value;
-      const rows = document.querySelectorAll('#inventoryTableBody tr');
-      
-      rows.forEach(row => {
-        if(category === 'all') {
-          row.style.display = '';
-        } else {
-          const rowCategory = row.getAttribute('data-category');
-          row.style.display = rowCategory === category ? '' : 'none';
-        }
-      });
-    }
+          <div class="form-group">
+            <label class="form-label">Quantity (per piece) <span class="text-red-500">*</span></label>
+            <input type="number" id="itemQuantity" class="form-input" placeholder="0" min="0" required />
+          </div>
 
-    // Add new item
-    function addNewItem() {
-      alert('Add Item functionality - Connect to your form/modal');
-    }
+          <div class="form-group">
+            <label class="form-label">Unit Price (₱) <span class="text-red-500">*</span></label>
+            <input type="number" id="itemPrice" class="form-input" placeholder="0.00" min="0" step="0.01" required />
+          </div>
 
-    // Export to CSV
-    function exportToCSV() {
-      let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status\n';
-      
-      inventoryData.forEach(row => {
-        csv += `${row.id},${row.name},${row.category},${row.qty},${row.price},${row.total},${row.date},${row.status}\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory_report.csv';
-      a.click();
-    }
+          <div class="form-group">
+            <label class="form-label">Minimum Stock Level <span class="text-red-500">*</span></label>
+            <input type="number" id="minStock" class="form-input" placeholder="10" min="0" value="10" required />
+          </div>
 
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-      const userMenu = document.getElementById('userMenu');
-      const userMenuButton = document.getElementById('userMenuButton');
+          <div class="form-group">
+            <label class="form-label">Supplier (Optional)</label>
+            <input type="text" id="itemSupplier" class="form-input" placeholder="e.g., Beauty Co." />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description (Optional)</label>
+          <textarea id="itemDescription" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Product
+          </button>
+          <button type="button" onclick="closeAddProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Product Modal -->
+  <div id="editProductModal" class="add-product-modal">
+    <div class="modal-content" style="max-width:700px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
+        </h2>
+        <span class="modal-close" onclick="closeEditProductModal()">&times;</span>
+      </div>
+
+      <form id="editProductForm" onsubmit="handleEditProduct(event)">
+        <input type="hidden" id="editFirebaseId" />
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="form-group">
+            <label class="form-label">Item Name</label>
+            <input type="text" id="editItemName" class="form-input" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="editItemCategory" class="form-select" required>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity</label>
+            <input type="number" id="editItemQuantity" class="form-input" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit Price (₱)</label>
+            <input type="number" id="editItemPrice" class="form-input" min="0" step="0.01" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Minimum Stock</label>
+            <input type="number" id="editMinStock" class="form-input" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Supplier</label>
+            <input type="text" id="editItemSupplier" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-save mr-2"></i>Save Changes
+          </button>
+          <button type="button" onclick="deleteProduct()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
+            <i class="fa-solid fa-trash mr-2"></i>Remove Item
+          </button>
+          <button type="button" onclick="closeEditProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-xmark mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Category Modal -->
+  <div id="addCategoryModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-tag mr-2"></i>Add New Category
+        </h2>
+        <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
+      </div>
+      <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
+        <div class="form-group">
+          <label class="form-label">Category Name <span class="text-red-500">*</span></label>
+          <input type="text" id="newCategoryName" class="form-input" placeholder="e.g., Facial Products" required />
+        </div>
+
+        <div class="flex gap-3 mt-6">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-check mr-2"></i>Add Category
+          </button>
+          <button type="button" onclick="closeAddCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Categories Modal -->
+  <div id="manageCategoriesModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-layer-group mr-2"></i>Manage Categories
+        </h2>
+        <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
+      </div>
       
-      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-        userMenu.classList.add('hidden');
-      }
-    });
-  </script>
+      <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <div class="flex items-start gap-2">
+          <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-1"></i>
+          <div class="text-sm text-yellow-800">
+            <strong>Warning:</strong> Deleting a category will also delete all inventory items associated with it. This action cannot be undone.
+          </div>
+        </div>
+      </div>
+
+      <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
+        <!-- Categories will be loaded here -->
+      </div>
+
+      <div class="mt-6">
+        <button onclick="closeManageCategoriesModal()" class="w-full bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit History Modal -->
+  <div id="editHistoryModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeEditHistoryModal()">&times;</span>
+      <div id="editHistoryBody"></div>
+    </div>
+  </div>
+
+  <!-- Last Updated Item Modal -->
+  <div id="lastUpdatedModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 500px;">
+      <span class="modal-close" onclick="closeLastUpdatedModal()">&times;</span>
+      <div id="lastUpdatedBody"></div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="role-check.js"></script>
+  <script src="inventory.js"></script>
 </body>
 </html>

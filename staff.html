@@ -3,36 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Staff List | Skinship Beauty</title>
+  <title>Staff Management | Skinship Beauty</title>
+  <script>
+    const storedRole = localStorage.getItem('currentUserRole');
+    if (storedRole === 'staff') {
+      document.documentElement.classList.add('staff-loaded');
+    }
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    .sidebar-btn { 
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      border: none;
-      background: transparent;
-      color: #da5c73;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: .3s;
-    }
-    .sidebar-btn:hover { 
-      background: #da5c73;
-      color: white;
-      transform: scale(1.1);
-    }
-    .sidebar-btn.active { 
-      background: #da5c73;
-      color: white;
-    }
-  </style>
+  <link rel="stylesheet" href="staff.css">
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
@@ -52,245 +35,167 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
-    <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
-      <!-- Top bar -->
+  <main class="flex-1 p-6 w-full ml-20">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
+      
+      <!-- Header Bar -->
       <div class="flex justify-between items-center mb-6">
-        <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
+        <div class="flex items-center gap-2">
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search by name, gender, or mobile..." 
+            class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80"
+          />
+        </div>
+        
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
+          <!-- Notification Bell -->
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" id="logoutBtn">Logout</button>
+            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
+              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            
+            <!-- Notification Dropdown -->
+            <div id="notificationDropdown" class="notification-dropdown">
+              <div class="notification-header">
+                <h3 class="font-bold text-gray-800">Notifications</h3>
+                <div class="flex gap-2">
+                  <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+                  <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
+                </div>
+              </div>
+              <div id="notificationList"></div>
+            </div>
+          </div>
+
+          <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
+          
+          <div class="relative">
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
+              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" id="logoutBtn">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
       </div>
 
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-[#b97b8b]">STAFF</h1>
+      <!-- Page Title -->
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">
+        <i class="fa-solid fa-user-tie mr-2"></i>STAFF MANAGEMENT
+      </h1>
+      <p class="text-center text-white text-lg mb-6 drop-shadow">Monitor staff availability and attendance</p>
 
-      <!-- Staff Table -->
-      <div class="overflow-x-auto rounded-lg mt-4 flex-1">
-        <table class="min-w-full text-center text-sm bg-white">
-          <thead class="bg-gray-100">
-            <tr>
-              <th class="px-4 py-2">Full Name</th>
-              <th class="px-4 py-2">Gender</th>
-              <th class="px-4 py-2">Mobile No.</th>
-              <th class="px-4 py-2">Availability</th>
-              <th class="px-4 py-2">Clock In</th>
-              <th class="px-4 py-2">Clock Out</th>
-              <th class="px-4 py-2">History</th>
-            </tr>
-          </thead>
-          <tbody id="staffTable"></tbody>
-        </table>
+      <!-- Staff Cards Grid -->
+      <div class="flex-1 overflow-auto">
+        <div class="staff-grid" id="staffGrid">
+          <!-- Staff cards will be inserted here -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+          <i class="fa-solid fa-users-slash"></i>
+          <h3>No Staff Members Found</h3>
+          <p>No staff members match your search criteria</p>
+        </div>
       </div>
+
     </div>
   </main>
 
-  <!-- History Popup -->
-  <div id="historyModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg w-[600px] p-6 relative">
-      <button class="absolute top-2 right-2 text-gray-600" onclick="closeHistory()">✖</button>
-      <h2 class="text-2xl font-bold mb-4 text-[#b97b8b]">Clock In/Out History</h2>
-      <div class="overflow-x-auto">
-        <table class="min-w-full border text-sm">
-          <thead class="bg-gray-100">
+  <!-- History Modal -->
+  <div id="historyModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Clock In/Out History</h2>
+          <p class="modal-subtitle" id="historyStaffName"></p>
+        </div>
+        <button class="modal-close" onclick="closeHistory()">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="modal-info">
+        <span id="historyCount">Total entries: 0</span>
+        <span id="pageInfo">Page 1 of 1</span>
+      </div>
+      
+      <div class="modal-body">
+        <table class="history-table">
+          <thead>
             <tr>
-              <th class="px-4 py-2 text-left">Clock In</th>
-              <th class="px-4 py-2 text-left">Clock Out</th>
+              <th>Clock In</th>
+              <th>Clock Out</th>
+              <th>Duration</th>
             </tr>
           </thead>
           <tbody id="historyList"></tbody>
         </table>
       </div>
-      <div class="mt-4 flex justify-start">
-        <button onclick="closeHistory()" class="bg-[#da5c73] text-white px-4 py-2 rounded-full hover:bg-[#b97b8b] transition-colors">Close</button>
+      
+      <div class="modal-footer">
+        <div id="paginationControls" class="pagination-controls"></div>
       </div>
     </div>
   </div>
 
-  <!-- Firebase Script -->
-  <script type="module" defer>
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { 
-      getFirestore, doc, setDoc, collection, addDoc, query, where, orderBy, getDocs, onSnapshot, updateDoc, serverTimestamp, limit 
-    } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+  <!-- Logout Confirmation Modal -->
+<div class="modal-overlay" id="logoutModal">
+  <div class="logout-modal">
+    <div class="logout-modal-header">
+      <div class="logout-icon">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </div>
+      <h2>Confirm Logout</h2>
+      <p>Are you sure you want to sign out?</p>
+    </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
-      authDomain: "skinship-1ff4b.firebaseapp.com",
-      projectId: "skinship-1ff4b",
-      storageBucket: "skinship-1ff4b.appspot.com",
-      messagingSenderId: "963752770497",
-      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-    };
+    <div class="logout-modal-body">
+      <div class="logout-info-item">
+        <i class="fa-solid fa-user"></i>
+        <span id="logoutUsername">Loading...</span>
+      </div>
+      <div class="logout-info-item">
+        <i class="fa-solid fa-clock"></i>
+        <span>Your session will be ended</span>
+      </div>
+      <div class="logout-info-item">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>You will be clocked out automatically</span>
+      </div>
+    </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    <div class="logout-modal-actions">
+      <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+        <i class="fa-solid fa-xmark"></i>
+        Cancel
+      </button>
+      <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+        <i class="fa-solid fa-right-from-bracket"></i>
+        Logout
+      </button>
+    </div>
+  </div>
+</div>
 
-    const usernameSpan = document.getElementById("usernameDisplay");
-    const staffTable = document.getElementById("staffTable");
-    const logoutBtn = document.getElementById("logoutBtn");
+  <!-- Notification Detail Modal -->
+  <div id="notificationModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeNotificationModal()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
-    // HISTORY POPUP
-    async function openHistory(staffId) {
-      const historyList = document.getElementById("historyList");
-      historyList.innerHTML = `<tr><td colspan="2" class="px-4 py-2">Loading...</td></tr>`;
-      document.getElementById("historyModal").classList.remove("hidden");
+  <script type="module" src="staff.js"></script>
+  <script type="module" src="role-check.js"></script>
 
-      const q = query(collection(db, "staffLogs", staffId, "history"), orderBy("timestamp", "desc"));
-      const snap = await getDocs(q);
-      historyList.innerHTML = snap.size
-        ? snap.docs.map(docSnap => {
-            const log = docSnap.data();
-            return `
-              <tr class="border-b">
-                <td class="px-4 py-2">${log.clockIn || "N/A"}</td>
-                <td class="px-4 py-2">${log.clockOut || "<span class='text-green-600'>Still logged in</span>"}</td>
-              </tr>`;
-          }).join("")
-        : `<tr><td colspan="2" class="px-4 py-2">No history available.</td></tr>`;
-    }
-    function closeHistory() {
-      document.getElementById("historyModal").classList.add("hidden");
-    }
-    window.openHistory = openHistory;
-    window.closeHistory = closeHistory;
-
-    // MAIN
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        window.location.href = "Login.html";
-        return;
-      }
-      usernameSpan.textContent = user.email;
-
-      // Ensure today's log exists and set availability to true on login
-      const today = new Date().toLocaleDateString();
-      const logsRef = collection(db, "staffLogs", user.uid, "history");
-      
-      // Get all logs for today
-      const todayQuery = query(logsRef, where("date", "==", today));
-      const todaySnap = await getDocs(todayQuery);
-      
-      // Check if we need a new log entry
-      let needsNewLog = true;
-      if (!todaySnap.empty) {
-        // Check if any log doesn't have a clockOut (still active session)
-        const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
-        if (activeSession) {
-          needsNewLog = false;
-        }
-      }
-      
-      if (needsNewLog) {
-        await addDoc(logsRef, {
-          date: today,
-          clockIn: new Date().toLocaleString(),
-          clockOut: null,
-          timestamp: serverTimestamp()
-        });
-      }
-
-      // Set availability to true when logging in (clocking in)
-      const staffRef = doc(db, "users", user.uid);
-      await updateDoc(staffRef, { 
-        availability: true
-      });
-
-      // Realtime staff list
-      onSnapshot(collection(db, "users"), async (snapshot) => {
-        let rows = [];
-        const promises = snapshot.docs.map(async (docSnap) => {
-          const staff = docSnap.data();
-          const logsQuery = query(
-            collection(db, "staffLogs", docSnap.id, "history"),
-            orderBy("timestamp", "desc"),
-            limit(1)
-          );
-          const logsSnap = await getDocs(logsQuery);
-          const latest = logsSnap.docs[0]?.data() || {};
-          
-          // Determine availability based on clock in/out status
-          const isClockedIn = latest.clockIn && !latest.clockOut;
-          const isAvailable = isClockedIn;
-
-          rows.push(`
-            <tr class="border-b">
-              <td class="px-4 py-2">${staff.fullName || "N/A"}</td>
-              <td class="px-4 py-2">${staff.gender || "N/A"}</td>
-              <td class="px-4 py-2">${staff.mobile || "N/A"}</td>
-              <td class="px-4 py-2">
-                <span class="px-3 py-1 rounded ${isAvailable ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}">
-                  ${isAvailable ? "Available" : "Not Available"}
-                </span>
-              </td>
-              <td class="px-4 py-2">${latest.clockIn || "N/A"}</td>
-              <td class="px-4 py-2">${latest.clockOut || "N/A"}</td>
-              <td class="px-4 py-2">
-                <button class="text-blue-600 underline" onclick="openHistory('${docSnap.id}')">View</button>
-              </td>
-            </tr>
-          `);
-        });
-
-        await Promise.all(promises);
-        staffTable.innerHTML = rows.join("");
-      });
-    });
-
-    // Function to handle clock out
-    async function handleClockOut() {
-      const user = auth.currentUser;
-      if (user) {
-        const today = new Date().toLocaleDateString();
-        const logsRef = collection(db, "staffLogs", user.uid, "history");
-        
-        // Get all logs for today
-        const todayQuery = query(logsRef, where("date", "==", today));
-        const todaySnap = await getDocs(todayQuery);
-        
-        if (!todaySnap.empty) {
-          // Find the log without a clockOut (active session)
-          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-          if (activeLog) {
-            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
-              clockOut: new Date().toLocaleString()
-            }, { merge: true });
-          }
-        }
-
-        // Set availability to false when logging out (clocking out)
-        const staffRef = doc(db, "users", user.uid);
-        await updateDoc(staffRef, { 
-          availability: false
-        });
-      }
-    }
-
-    // LOGOUT BUTTON - Clock out and sign out
-    logoutBtn.addEventListener("click", async () => {
-      await handleClockOut();
-      await signOut(auth);
-    });
-
-    // AUTO CLOCK OUT - When closing tab/window or navigating away
-    window.addEventListener("beforeunload", async (e) => {
-      await handleClockOut();
-    });
-
-    // AUTO CLOCK OUT - When page visibility changes (tab switching/minimizing)
-    document.addEventListener("visibilitychange", async () => {
-      if (document.visibilityState === "hidden") {
-        await handleClockOut();
-      }
-    });
-  </script>
 </body>
 </html>

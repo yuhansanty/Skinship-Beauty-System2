@@ -1,27 +1,18 @@
-let notifications = [];
-let lastCustomerCheck = null;
 let isCategoryMenuOpen = false;
 let isProductsMenuOpen = false;
 let selectedPaymentMethod = 'cash';
-
-function toggleNotifications() {
-  const popup = document.getElementById('notificationPopup');
-  popup.style.display = popup.style.display === 'none' || popup.style.display === '' ? 'block' : 'none';
-}
+let currentUserData = null;
+let inventoryProducts = [];
+let servicesData = [];
 
 function validatePhoneNumber(input) {
-  // Remove any non-digit characters
   let value = input.value.replace(/\D/g, '');
-  
-  // Limit to 11 digits
   if (value.length > 11) {
     value = value.slice(0, 11);
   }
-  
   input.value = value;
   
   const errorMsg = document.getElementById('phoneError');
-  
   if (value.length > 0) {
     if (!value.startsWith('09')) {
       errorMsg.classList.remove('hidden');
@@ -45,22 +36,17 @@ function validatePhoneNumber(input) {
 
 function selectPaymentMethod(method) {
   selectedPaymentMethod = method;
-  
-  // Update button states
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
   });
   document.querySelector(`[data-method="${method}"]`).classList.add('active');
   
-  // Show/hide reference number field
   const referenceContainer = document.getElementById('referenceNumberContainer');
   if (method === 'check') {
     referenceContainer.classList.remove('hidden');
   } else {
     referenceContainer.classList.add('hidden');
   }
-  
-  // Recalculate change (check/bank doesn't show change)
   calculateChange();
 }
 
@@ -69,382 +55,128 @@ function toggleUserMenu() {
 }
 
 window.onclick = function(event) {
-  if (!event.target.closest('#notificationPopup') && !event.target.closest('button[onclick="toggleNotifications()"]')) {
-    document.getElementById('notificationPopup').style.display = 'none';
-  }
   if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
-    document.getElementById('userMenu').classList.add('hidden');
+    const menu = document.getElementById('userMenu');
+    if (menu && !menu.classList.contains('hidden')) {
+      menu.classList.add('hidden');
+    }
+  }
+  
+  const logoutModal = document.getElementById('logoutModal');
+  if (logoutModal && event.target === logoutModal) {
+    hideLogoutModal();
   }
 }
 
-function getTimeAgo(date) {
-  const seconds = Math.floor((new Date() - date) / 1000);
-  if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return Math.floor(seconds / 60) + ' minutes ago';
-  if (seconds < 86400) return Math.floor(seconds / 3600) + ' hours ago';
-  return Math.floor(seconds / 86400) + ' days ago';
-}
-
-function updateNotificationUI() {
-  const badge = document.getElementById('notificationBadge');
-  const list = document.getElementById('notificationList');
-  
-  if (notifications.length > 0) {
-    badge.textContent = notifications.length;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
+function showLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.add('show');
   }
-  
-  if (notifications.length === 0) {
-    list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: #999; font-size: 14px;">No new notifications</div>';
-    return;
+}
+
+function hideLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.remove('show');
   }
-  
-  list.innerHTML = notifications.map(notif => {
-    const timeAgo = getTimeAgo(notif.timestamp);
-    return `
-      <div onclick="handleNotificationClick('${notif.link}', '${notif.id}')" style="padding: 14px 16px; border-bottom: 1px solid #f9fafb; cursor: pointer; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; transition: background 0.2s ease;">
-        <div style="flex: 1;">
-          <div style="color: #333; font-size: 13px; line-height: 1.4; margin-bottom: 4px;">${notif.text}</div>
-          <div style="color: #999; font-size: 11px;">${timeAgo}</div>
-        </div>
-        <button onclick="event.stopPropagation(); removeNotification('${notif.id}')" style="background: none; border: none; color: #999; cursor: pointer; font-size: 16px; padding: 0; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s ease;">
-          <i class="fa-solid fa-times"></i>
-        </button>
-      </div>
-    `;
-  }).join('');
 }
 
-function addNotification(notification) {
-  notifications.unshift({
-    ...notification,
-    id: Date.now() + Math.random()
-  });
-  
-  if (notifications.length > 20) {
-    notifications = notifications.slice(0, 20);
-  }
-  
-  updateNotificationUI();
-}
-
-function handleNotificationClick(link, notifId) {
-  removeNotification(notifId);
-  window.location.href = link;
-}
-
-function removeNotification(notifId) {
-  notifications = notifications.filter(n => n.id != notifId);
-  updateNotificationUI();
-}
-
-function clearAllNotifications() {
-  notifications = [];
-  updateNotificationUI();
-}
-
-async function checkForNewCustomers() {
+async function handleClockOut() {
   try {
-    const snapshot = await db.collection("customers")
-      .orderBy("createdAt", "desc")
-      .limit(10)
-      .get();
+    const currentUserEmail = localStorage.getItem('currentUserEmail');
+    if (!currentUserEmail) return;
+
+    const userSnapshot = await db.collection("users").get();
+    let userId = null;
+
+    userSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.email && data.email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
+        userId = doc.id;
+      }
+    });
+
+    if (!userId) {
+      console.warn("User not found for clock out");
+      return;
+    }
+
+    const today = new Date().toLocaleDateString();
+    const logsRef = db.collection("users").doc(userId).collection("staffLogs").doc("history").collection("entries");
     
-    const latestCustomer = snapshot.docs[0];
-    if (latestCustomer && lastCustomerCheck) {
-      const customerTime = latestCustomer.data().createdAt?.toMillis();
-      if (customerTime && customerTime > lastCustomerCheck) {
-        const customerData = latestCustomer.data();
-        addNotification({
-          type: 'customer',
-          text: `New customer added: ${customerData.name}`,
-          link: 'customer.html',
-          timestamp: new Date()
+    const todayQuery = logsRef.where("date", "==", today);
+    const todaySnap = await todayQuery.get();
+    
+    if (!todaySnap.empty) {
+      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+      if (activeLog) {
+        await activeLog.ref.update({
+          clockOut: new Date().toLocaleString()
         });
+        console.log("Clock out successful");
       }
     }
+
+    await db.collection("users").doc(userId).update({ 
+      availability: false,
+      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+    });
     
-    if (latestCustomer) {
-      lastCustomerCheck = latestCustomer.data().createdAt?.toMillis() || Date.now();
-    }
+    console.log("User set to unavailable");
   } catch (error) {
-    console.error("Error checking customers:", error);
+    console.error("Error during clock out:", error);
   }
 }
 
-async function initializeNotifications() {
+async function confirmLogout() {
+  const confirmBtn = document.getElementById('confirmLogoutBtn');
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
   try {
-    const customerSnapshot = await db.collection("customers")
-      .orderBy("createdAt", "desc")
-      .limit(1)
-      .get();
+    await handleClockOut();
     
-    if (!customerSnapshot.empty) {
-      lastCustomerCheck = customerSnapshot.docs[0].data().createdAt?.toMillis() || Date.now();
-    } else {
-      lastCustomerCheck = Date.now();
-    }
+    localStorage.removeItem('currentUserEmail');
+    localStorage.removeItem('currentUserRole');
+    localStorage.removeItem('currentUsername');
+    localStorage.removeItem('currentUserFullName');
+    
+    window.location.href = "Login.html";
   } catch (error) {
-    console.error("Error initializing notifications:", error);
-    lastCustomerCheck = Date.now();
+    console.error("Logout error:", error);
+    
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+    
+    alert("An error occurred during logout. Please try again.");
+    
+    window.location.href = "Login.html";
   }
-  setInterval(checkForNewCustomers, 30000);
 }
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('logoutModal');
+    if (modal && modal.classList.contains('show')) {
+      hideLogoutModal();
+    }
+  }
+});
 
 function logout() {
-  window.location.href = 'Login.html';
+  showLogoutModal();
 }
 
-const categories = [
-  { name: "Fleek Eyelash", value: "FLEEK EYELASH" },
-  { name: "Browmazing", value: "BROWMAZING" },
-  { name: "Woke Up Like This", value: "WOKE UP LIKE THIS" },
-  { name: "Express Offer", value: "EXPRESS OFFER" },
-  { name: "Happy Nails", value: "HAPPY NAILS" },
-  { name: "Promo", value: "PROMO PACKAGES" },
-  { name: "Therapeutic Heat", value: "THERAPEUTIC HEAT" },
-  { name: "Wax Out", value: "WAX – OUT" },
-  { name: "Es-Facial For You", value: "ES-FACIALY FOR YOU" },
-  { name: "Face And Body Contour", value: "FACE AND BODY CONTOURING" },
-  { name: "Laser Hair Removal", value: "LASER HAIR REMOVAL" },
-  { name: "Picosure Laser", value: "PICOSURE LASER" },
-  { name: "Warts Removal", value: "WARTS REMOVAL" },
-  { name: "CO2 Fractional", value: "CO2 FRACTIONAL" }
-];
+window.addEventListener("beforeunload", async (e) => {
+  await handleClockOut();
+});
 
-const services = [
-  // FLEEK EYELASH
-  { name: "Eyelash Natural (1 Size)", price: 499, category: "FLEEK EYELASH" },
-  { name: "Eyelash Natural Volume", price: 599, category: "FLEEK EYELASH" },
-  { name: "Eyelash Doll Eye (2 Size)", price: 599, category: "FLEEK EYELASH" },
-  { name: "Eyelash Cat Eye (3 Size)", price: 699, category: "FLEEK EYELASH" },
-  { name: "Wispy Natural", price: 699, category: "FLEEK EYELASH" },
-  { name: "Wispy Volume", price: 799, category: "FLEEK EYELASH" },
-  { name: "Eyelash Removal (In)", price: 100, category: "FLEEK EYELASH" },
-  { name: "Eyelash Removal (Out)", price: 200, category: "FLEEK EYELASH" },
-  { name: "Lash Lift", price: 499, category: "FLEEK EYELASH" },
-  { name: "Lash Lift with Tint", price: 599, category: "FLEEK EYELASH" },
-  
-  // BROWMAZING
-  { name: "Threading", price: 200, category: "BROWMAZING" },
-  { name: "Shaving", price: 150, category: "BROWMAZING" },
-  { name: "Brow Lamination", price: 499, category: "BROWMAZING" },
-  { name: "Brow Lamination with Tint", price: 699, category: "BROWMAZING" },
-  { name: "Brow Waxing", price: 249, category: "BROWMAZING" },
-  
-  // WOKE UP LIKE THIS
-  { name: "Microblading (2 Sessions)", price: 1499, category: "WOKE UP LIKE THIS" },
-  { name: "Combi/Ombre/Combibrows (2 Sessions)", price: 2499, category: "WOKE UP LIKE THIS" },
-  { name: "Top/Lower Eyeliner (2 Sessions)", price: 1999, category: "WOKE UP LIKE THIS" },
-  { name: "Korean BB Glow (Per Session)", price: 1499, category: "WOKE UP LIKE THIS" },
-  { name: "Lip Tattoo/Pigmentation (2 Sessions)", price: 2999, category: "WOKE UP LIKE THIS" },
-  
-  // EXPRESS OFFER
-  { name: "Back Massage", price: 399, category: "EXPRESS OFFER" },
-  { name: "Head Massage", price: 399, category: "EXPRESS OFFER" },
-  { name: "Foot Massage", price: 399, category: "EXPRESS OFFER" },
-  { name: "Hand Massage", price: 399, category: "EXPRESS OFFER" },
-  { name: "Foot Reflex", price: 499, category: "EXPRESS OFFER" },
-  { name: "Hand Reflex", price: 499, category: "EXPRESS OFFER" },
-  { name: "Head Massage + Ear Candling", price: 499, category: "EXPRESS OFFER" },
-  { name: "Ear Candling", price: 199, category: "EXPRESS OFFER" },
-  
-  //HAPPY NAILS
-  { name: "Basic Manicure", price: 120, category: "HAPPY NAILS" },
-  { name: "Basic Pedicure", price: 170, category: "HAPPY NAILS" },
-  { name: "Foot Spa", price: 300, category: "HAPPY NAILS" },
-  { name: "Hand Spa", price: 300, category: "HAPPY NAILS" },
-  { name: "Gel Removal (In)", price: 100, category: "HAPPY NAILS" },
-  { name: "Gel Removal (Out)", price: 200, category: "HAPPY NAILS" },
-  { name: "Soft Gel Removal (In)", price: 200, category: "HAPPY NAILS" },
-  { name: "Soft Gel Removal (Out)", price: 300, category: "HAPPY NAILS" },
-  { name: "Soft Gel Nail Extensions", price: 1700, category: "HAPPY NAILS" },
-  { name: "Gel Manicure", price: 550, category: "HAPPY NAILS" },
-  { name: "Gel Pedicure", price: 650, category: "HAPPY NAILS" },
-  { name: "Footspa Or Handspa With Whitening Scrub", price: 400, category: "HAPPY NAILS" },
-  { name: "Footspa Or Handspa With Whitening Scrub With Callus Removal", price: 450, category: "HAPPY NAILS" },
-
-  // PROMO PACKAGES
-  { name: "Package 1 - Uv Gel Manicure + Basic pedicure + Classic Footspa", price: 850, category: "PROMO PACKAGES" },
-  { name: "Package 2 - Uv Gel Manicure + Basic Pedicure + Deluxe Footspa", price: 900, category: "PROMO PACKAGES" },
-  { name: "Package 3 - Uv Gel Manicure + Uv Gel Pedicure + Classic Footspa", price: 1300, category: "PROMO PACKAGES" },
-  { name: "Package 4 - UV Gel Manicure + UV Gel Pedicure + Deluxe Footspa With Whitening Scrub", price: 1400, category: "PROMO PACKAGES" },
-  { name: "Package 5 - Classic Footspa + Basic Pedicure + 30 Mins. Foot Massage", price: 750, category: "PROMO PACKAGES" },
-  { name: "Package 6 - Deluxe Footspa With Whitening Scrub + Basic Pedicure + 30 Mins. Foot Massage", price: 800, category: "PROMO PACKAGES" },
-  { name: "Package 7 - Natural Eyelash Or Lash Lift (Add 100 For Tint) + UV Gel Manicure", price: 950, category: "PROMO PACKAGES" },
-  { name: "Package 8 - Footspa + UV Gel Pedicure", price: 850, category: "PROMO PACKAGES" },
-  { name: "Package 9 - Footspa + Basic Pedicure + Foot Reflex", price: 850, category: "PROMO PACKAGES" },
-  { name: "Package 10 - Footspa + UV Gel Pedicure + Foot Massage", price: 1150, category: "PROMO PACKAGES" },
-  
-  // THERAPEUTIC HEAT
-  { name: "Hand Paraffin", price: 250, category: "THERAPEUTIC HEAT" },
-  { name: "Foot Paraffin", price: 300, category: "THERAPEUTIC HEAT" },
-  { name: "Hand Paraffin + Handspa", price: 550, category: "THERAPEUTIC HEAT" },
-  { name: "Foot Paraffin + Footspa", price: 600, category: "THERAPEUTIC HEAT" },
-  { name: "Hand Paraffin + Hand Massage", price: 550, category: "THERAPEUTIC HEAT" },
-  { name: "Foot Paraffin + Foot Massage", price: 600, category: "THERAPEUTIC HEAT" },
-  
-  // WAX – OUT
-  { name: "Underarm Waxing (Female)", price: 399, category: "WAX – OUT" },
-  { name: "Underarm Waxing (Male)", price: 499, category: "WAX – OUT" },
-  { name: "Half Leg Waxing (Female)", price: 499, category: "WAX – OUT" },
-  { name: "Half Leg Waxing (Male)", price: 599, category: "WAX – OUT" },
-  { name: "Full Leg Waxing (Female)", price: 699, category: "WAX – OUT" },
-  { name: "Full Leg Waxing (Male)", price: 799, category: "WAX – OUT" },
-  { name: "Brazilian Waxing (Female)", price: 999, category: "WAX – OUT" },
-  { name: "Brazilian Waxing (Male)", price: 1099, category: "WAX – OUT" },
-  { name: "Upper/Lower Lip Waxing (Female)", price: 299, category: "WAX – OUT" },
-  { name: "Upper/Lower Lip Waxing (Male)", price: 399, category: "WAX – OUT" },
-  { name: "Full Face Waxing (Female)", price: 899, category: "WAX – OUT" },
-  { name: "Full Face Waxing (Male)", price: 999, category: "WAX – OUT" },
-  { name: "Full Arms Waxing (Female)", price: 599, category: "WAX – OUT" },
-  { name: "Full Arms Waxing (Male)", price: 699, category: "WAX – OUT" },
-
-  // ES-FACIALY FOR YOU
-  { name: "HydraFacial with Collagen Mask", price: 899, category: "ES-FACIALY FOR YOU" },
-  { name: "Black Doll Carbon Laser (2 Sessions)", price: 1999, category: "ES-FACIALY FOR YOU" },
-  { name: "Black Doll Carbon Laser Lay-away 4+1", price: 4500, category: "ES-FACIALY FOR YOU" },
-  { name: "Black Doll Carbon Laser Lay-away 9+1", price: 9000, category: "ES-FACIALY FOR YOU" },
-  { name: "HydraFacial + Black Doll + Exillis/HIFU", price: 3399, category: "ES-FACIALY FOR YOU" },
-  { name: "HydraFacial + BBGlow + Collagen PDT", price: 1899, category: "ES-FACIALY FOR YOU" },
-  { name: "Black Doll + Exillis/HIFU + PDT", price: 2499, category: "ES-FACIALY FOR YOU" },
-  { name: "HydraFacial + BBGlowBlush + PDT", price: 2199, category: "ES-FACIALY FOR YOU" },
-
-  // FACE AND BODY CONTOURING
-  { name: "HIFU (Per Session)", price: 1499, category: "FACE AND BODY CONTOURING" },
-  { name: "Exillis (30 mins)", price: 1499, category: "FACE AND BODY CONTOURING" },
-  { name: "EMSlim (30 mins)", price: 2000, category: "FACE AND BODY CONTOURING" },
-  { name: "Cryolipolysis (Body Area)", price: 1499, category: "FACE AND BODY CONTOURING" },
-  { name: "Cryolipolysis (Chin)", price: 999, category: "FACE AND BODY CONTOURING" },
-  { name: "Super Trio Combo (Cryolipolysis + Exillis + EMSlim)", price: 3499, category: "FACE AND BODY CONTOURING" },
-  { name: "Exillis 6+1 Sessions", price: 7499, category: "FACE AND BODY CONTOURING" },
-  { name: "EMSlim 5+1 Sessions", price: 7499, category: "FACE AND BODY CONTOURING" },
-  { name: "PowerCombo Exillis 3+3 Sessions", price: 7499, category: "FACE AND BODY CONTOURING" },
-
-  // LASER HAIR REMOVAL / WHITENING
-  { name: "Diode Laser - Underarm (1 Session)", price: 899, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Underarm (2 Sessions)", price: 1499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Underarm (10 Sessions)", price: 4999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Brazilian (1 Session)", price: 1999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Brazilian (2 Sessions)", price: 3499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Brazilian (10 Sessions)", price: 10499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Arms (1 Session)", price: 1499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Arms (2 Sessions)", price: 2499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Arms (10 Sessions)", price: 8499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower/Upper Legs (1 Session)", price: 1999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower/Upper Legs (2 Sessions)", price: 3499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower/Upper Legs (10 Sessions)", price: 10499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Upper Lip (1 Session)", price: 599, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Upper Lip (2 Sessions)", price: 999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Upper Lip (10 Sessions)", price: 3999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower Lip (1 Session)", price: 899, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower Lip (2 Sessions)", price: 1499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Lower Lip (10 Sessions)", price: 4499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Bikini Line (1 Session)", price: 1099, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Bikini Line (2 Sessions)", price: 1999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Bikini Line (10 Sessions)", price: 8999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Male (1 Session)", price: 2999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Male (2 Sessions)", price: 5499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Male (10 Sessions)", price: 15499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Female (1 Session)", price: 1999, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Female (2 Sessions)", price: 3499, category: "LASER HAIR REMOVAL" },
-  { name: "Diode Laser - Full Face Female (10 Sessions)", price: 10499, category: "LASER HAIR REMOVAL" },
-  { name: "Add-on Whitening Scrub", price: 200, category: "LASER HAIR REMOVAL" },
-
-  // PICOSURE LASER TREATMENT
-  { name: "PicoSure Lip (2 Sessions)", price: 999, category: "PICOSURE LASER" },
-  { name: "PicoSure Knee/Neck/Elbow/Underarm/Face (2 Sessions)", price: 1499, category: "PICOSURE LASER" },
-  { name: "Pico Melasma (2 Sessions)", price: 4000, category: "PICOSURE LASER" },
-  { name: "Pico Tattoo/Birthmark Removal (1-3 inch, 2 Sessions)", price: 3000, category: "PICOSURE LASER" },
-  { name: "Promo: 4+1 Sessions Any Part", price: 4000, category: "PICOSURE LASER" },
-
-  // WARTS REMOVAL FRACTIONAL LASER
-  { name: "Warts Removal Face/Neck (Unlimited)", price: 1999, category: "WARTS REMOVAL" },
-  { name: "Warts Removal Back (Unlimited)", price: 2999, category: "WARTS REMOVAL" },
-  { name: "Warts Removal Face/Neck/Back (Unlimited)", price: 5499, category: "WARTS REMOVAL" },
-  { name: "Skin Tag Removal (Per Area)", price: 1499, category: "WARTS REMOVAL" },
-
-  // CO2 FRACTIONAL LASER
-  { name: "CO2 Fractional Laser 3+2 Sessions", price: 7997, category: "CO2 FRACTIONAL" }
-];
-
-const productCategories = [
-  { name: "Hair Care", value: "HAIR CARE" },
-  { name: "Styling Products", value: "STYLING PRODUCTS" },
-  { name: "Skin Care", value: "SKIN CARE" },
-  { name: "Nail Care", value: "NAIL CARE" },
-  { name: "Tools & Accessories", value: "TOOLS & ACCESSORIES" }
-];
-
-const products = [
-  // HAIR CARE
-  { name: "Professional Shampoo - Hydrating", price: 450, category: "HAIR CARE" },
-  { name: "Professional Shampoo - Color Safe", price: 480, category: "HAIR CARE" },
-  { name: "Deep Conditioner - Repair", price: 520, category: "HAIR CARE" },
-  { name: "Leave-In Conditioner", price: 380, category: "HAIR CARE" },
-  { name: "Hair Oil - Argan", price: 650, category: "HAIR CARE" },
-  { name: "Hair Oil - Coconut", price: 580, category: "HAIR CARE" },
-  { name: "Hair Mask - Keratin Treatment", price: 890, category: "HAIR CARE" },
-  { name: "Hair Serum - Anti-Frizz", price: 420, category: "HAIR CARE" },
-  { name: "Scalp Treatment - Tea Tree", price: 550, category: "HAIR CARE" },
-  { name: "Hair Perfume - Floral", price: 350, category: "HAIR CARE" },
-  
-  // STYLING PRODUCTS
-  { name: "Hair Spray - Strong Hold", price: 380, category: "STYLING PRODUCTS" },
-  { name: "Hair Spray - Flexible Hold", price: 350, category: "STYLING PRODUCTS" },
-  { name: "Hair Clay - Matte Finish", price: 420, category: "STYLING PRODUCTS" },
-  { name: "Hair Wax - Natural Shine", price: 390, category: "STYLING PRODUCTS" },
-  { name: "Hair Gel - Maximum Hold", price: 320, category: "STYLING PRODUCTS" },
-  { name: "Mousse - Volume Boost", price: 380, category: "STYLING PRODUCTS" },
-  { name: "Pomade - High Shine", price: 450, category: "STYLING PRODUCTS" },
-  { name: "Heat Protectant Spray", price: 480, category: "STYLING PRODUCTS" },
-  { name: "Texturizing Spray", price: 420, category: "STYLING PRODUCTS" },
-  { name: "Root Lift Powder", price: 380, category: "STYLING PRODUCTS" },
-  
-  // SKIN CARE
-  { name: "Facial Cleanser - Gentle", price: 380, category: "SKIN CARE" },
-  { name: "Facial Toner - Hydrating", price: 420, category: "SKIN CARE" },
-  { name: "Moisturizer - Day Cream SPF 30", price: 680, category: "SKIN CARE" },
-  { name: "Moisturizer - Night Cream", price: 720, category: "SKIN CARE" },
-  { name: "Sunscreen SPF 50+", price: 620, category: "SKIN CARE" },
-  { name: "Facial Mask - Collagen Sheet", price: 280, category: "SKIN CARE" },
-  { name: "Facial Mask - Charcoal", price: 250, category: "SKIN CARE" },
-  { name: "Eye Cream - Anti-Aging", price: 850, category: "SKIN CARE" },
-  { name: "Vitamin C Serum", price: 980, category: "SKIN CARE" },
-  { name: "Hyaluronic Acid Serum", price: 920, category: "SKIN CARE" },
-  
-  // NAIL CARE
-  { name: "Nail Polish - Regular (Various Colors)", price: 150, category: "NAIL CARE" },
-  { name: "Gel Polish - UV/LED (Various Colors)", price: 280, category: "NAIL CARE" },
-  { name: "Base Coat", price: 180, category: "NAIL CARE" },
-  { name: "Top Coat - Glossy", price: 180, category: "NAIL CARE" },
-  { name: "Top Coat - Matte", price: 200, category: "NAIL CARE" },
-  { name: "Cuticle Oil", price: 220, category: "NAIL CARE" },
-  { name: "Nail Strengthener", price: 280, category: "NAIL CARE" },
-  { name: "Nail Polish Remover - Acetone Free", price: 120, category: "NAIL CARE" },
-  { name: "Hand Cream - Intensive Care", price: 250, category: "NAIL CARE" },
-  { name: "Nail File Set", price: 180, category: "NAIL CARE" },
-  
-  // TOOLS & ACCESSORIES
-  { name: "Professional Hair Brush - Detangling", price: 380, category: "TOOLS & ACCESSORIES" },
-  { name: "Round Brush - Large (Blow Dry)", price: 450, category: "TOOLS & ACCESSORIES" },
-  { name: "Paddle Brush - Smoothing", price: 320, category: "TOOLS & ACCESSORIES" },
-  { name: "Wide Tooth Comb", price: 120, category: "TOOLS & ACCESSORIES" },
-  { name: "Tail Comb - Sectioning", price: 150, category: "TOOLS & ACCESSORIES" },
-  { name: "Hair Clips - Professional Set", price: 180, category: "TOOLS & ACCESSORIES" },
-  { name: "Hair Ties - Damage Free (Pack of 10)", price: 150, category: "TOOLS & ACCESSORIES" },
-  { name: "Microfiber Hair Towel", price: 280, category: "TOOLS & ACCESSORIES" },
-  { name: "Shower Cap - Waterproof", price: 120, category: "TOOLS & ACCESSORIES" },
-  { name: "Travel Size Bottle Set", price: 220, category: "TOOLS & ACCESSORIES" }
-];
-
-let currentView = 'services'; // Track if viewing services or products
+let categories = [];
+let currentView = 'services';
 let cart = [];
 let currentCategory = 'all';
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
   authDomain: "skinship-1ff4b.firebaseapp.com",
@@ -456,22 +188,150 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-async function loadUserInfo() {
-  const currentUserEmail = localStorage.getItem('currentUserEmail');
-  if (currentUserEmail) {
-    try {
-      const userSnapshot = await db.collection("users")
-        .where("email", "==", currentUserEmail)
-        .limit(1)
-        .get();
+async function loadServicesFromFirebase() {
+  try {
+    const snapshot = await db.collection('services').get();
+    servicesData = [];
+    const categorySet = new Set();
+    
+    snapshot.forEach(doc => {
+      const service = doc.data();
+      servicesData.push({
+        name: service.name,
+        price: service.price,
+        category: service.category,
+        id: service.id,
+        firebaseId: doc.id
+      });
       
-      if (!userSnapshot.empty) {
-        const userData = userSnapshot.docs[0].data();
-        document.getElementById('usernameDisplay').textContent = userData.fullName || currentUserEmail;
+      categorySet.add(service.category);
+    });
+    
+    categories = Array.from(categorySet).map(cat => ({
+      name: cat,
+      value: cat
+    }));
+    
+    console.log('Loaded services:', servicesData);
+    console.log('Categories:', categories);
+    
+  } catch (error) {
+    console.error('Error loading services:', error);
+  }
+}
+
+let productCategories = [];
+
+async function loadInventoryProducts() {
+  try {
+    const snapshot = await db.collection('inventory').get();
+    inventoryProducts = [];
+    const categorySet = new Set();
+    
+    snapshot.forEach(doc => {
+      const product = doc.data();
+      
+      inventoryProducts.push({
+        name: product.name,
+        price: product.price,
+        category: product.category,
+        qty: product.qty || 0,
+        id: product.id,
+        firebaseId: doc.id
+      });
+      
+      categorySet.add(product.category);
+    });
+    
+    productCategories = Array.from(categorySet).map(cat => ({
+      name: cat,
+      value: cat
+    }));
+    
+    console.log('Loaded inventory products:', inventoryProducts);
+    console.log('Product categories:', productCategories);
+    
+  } catch (error) {
+    console.error('Error loading inventory:', error);
+  }
+}
+
+async function loadUserInfo() {
+  console.log('=== Loading User Info ===');
+  console.log('All localStorage keys:', Object.keys(localStorage));
+  
+  const currentUserEmail = localStorage.getItem('currentUserEmail') || 
+                          localStorage.getItem('userEmail') ||
+                          localStorage.getItem('email');
+  const currentUsername = localStorage.getItem('currentUsername') || 
+                         localStorage.getItem('username');
+  
+  console.log('Current user email:', currentUserEmail);
+  console.log('Current username:', currentUsername);
+  
+  if (!currentUserEmail && !currentUsername) {
+    console.warn("No user credentials found in localStorage");
+    document.getElementById('usernameDisplay').textContent = 'Not logged in';
+    document.getElementById('cashierName').value = 'Unknown';
+    document.getElementById('logoutUsername').textContent = 'Not logged in';
+    return;
+  }
+  
+  try {
+    const userSnapshot = await db.collection("users").get();
+    console.log('Total users in database:', userSnapshot.size);
+    
+    let foundUser = null;
+    
+    userSnapshot.forEach(doc => {
+      const data = doc.data();
+      console.log('Checking user doc:', {
+        id: doc.id,
+        email: data.email,
+        username: data.username,
+        fullName: data.fullName
+      });
+      
+      if (currentUserEmail && data.email && 
+          data.email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
+        foundUser = data;
+        console.log('✓ Found user by email match');
       }
-    } catch (error) {
-      console.error("Error loading user info:", error);
+      else if (currentUsername && data.username && 
+               data.username.toLowerCase().trim() === currentUsername.toLowerCase().trim()) {
+        foundUser = data;
+        console.log('✓ Found user by username match');
+      }
+    });
+    
+    if (foundUser) {
+      currentUserData = foundUser;
+      console.log('User data loaded:', currentUserData);
+      
+      const fullName = currentUserData.fullName || 
+                      currentUserData.fullname || 
+                      currentUserData.name || 
+                      currentUserData.username || 
+                      'User';
+      
+      console.log('Display name set to:', fullName);
+      
+      document.getElementById('usernameDisplay').textContent = fullName;
+      document.getElementById('cashierName').value = fullName;
+      document.getElementById('logoutUsername').textContent = fullName;
+    } else {
+      console.error('❌ No matching user found');
+      console.error('Searched for email:', currentUserEmail);
+      console.error('Searched for username:', currentUsername);
+      document.getElementById('usernameDisplay').textContent = 'User Not Found';
+      document.getElementById('cashierName').value = 'Unknown User';
+      document.getElementById('logoutUsername').textContent = 'User Not Found';
     }
+  } catch (error) {
+    console.error("Error loading user info:", error);
+    document.getElementById('usernameDisplay').textContent = 'Error Loading User';
+    document.getElementById('cashierName').value = 'Unknown User';
+    document.getElementById('logoutUsername').textContent = 'Error Loading User';
   }
 }
 
@@ -482,7 +342,6 @@ function toggleCategoryMenu() {
   const productsDropdown = document.getElementById('productsDropdown');
   const productsBtn = document.querySelector('.all-products-btn');
   
-  // Close products dropdown if open
   if (isProductsMenuOpen) {
     productsDropdown.classList.remove('open');
     productsBtn.classList.remove('active');
@@ -494,34 +353,31 @@ function toggleCategoryMenu() {
   if (isCategoryMenuOpen) {
     btn.classList.add('active');
     dropdown.classList.add('open');
-    
+    currentView = 'services';
     grid.innerHTML = '';
     
-    // Add "View All Services" button first
     const viewAllBtn = document.createElement('button');
     viewAllBtn.className = 'category-btn';
     viewAllBtn.textContent = 'View All Services';
     viewAllBtn.classList.add('first-row');
-    if (currentCategory === 'all') {
+    if (currentCategory === 'all' && currentView === 'services') {
       viewAllBtn.classList.add('active');
     }
     viewAllBtn.onclick = () => showCategory('all', 'All Services');
     grid.appendChild(viewAllBtn);
     
-    // Render categories with animation classes
     categories.forEach((cat, index) => {
       const button = document.createElement('button');
       button.className = 'category-btn';
       button.textContent = cat.name;
       
-      // Adjust animation classes since we added one button
       if (index < 3) {
         button.classList.add('first-row');
       } else {
         button.classList.add('remaining-rows');
       }
       
-      if (currentCategory === cat.value) {
+      if (currentCategory === cat.value && currentView === 'services') {
         button.classList.add('active');
       }
       
@@ -541,7 +397,6 @@ function toggleProductsMenu() {
   const servicesDropdown = document.getElementById('categoryDropdown');
   const servicesBtn = document.querySelector('.all-services-btn');
   
-  // Close services dropdown if open
   if (isCategoryMenuOpen) {
     servicesDropdown.classList.remove('open');
     servicesBtn.classList.remove('active');
@@ -553,18 +408,19 @@ function toggleProductsMenu() {
   if (isProductsMenuOpen) {
     btn.classList.add('active');
     dropdown.classList.add('open');
-    
+    currentView = 'products';
     grid.innerHTML = '';
     
-     // Add "View All Products" button first
     const viewAllBtn = document.createElement('button');
     viewAllBtn.className = 'category-btn product-btn';
     viewAllBtn.textContent = 'View All Products';
     viewAllBtn.classList.add('first-row');
+    if (currentCategory === 'all' && currentView === 'products') {
+      viewAllBtn.classList.add('active');
+    }
     viewAllBtn.onclick = () => showProductCategory('all', 'All Products');
     grid.appendChild(viewAllBtn);
     
-    // Render product categories
     productCategories.forEach((cat, index) => {
       const button = document.createElement('button');
       button.className = 'category-btn product-btn';
@@ -574,6 +430,10 @@ function toggleProductsMenu() {
         button.classList.add('first-row');
       } else {
         button.classList.add('remaining-rows');
+      }
+      
+      if (currentCategory === cat.value && currentView === 'products') {
+        button.classList.add('active');
       }
       
       button.onclick = () => showProductCategory(cat.value, cat.name);
@@ -603,31 +463,35 @@ function showProductCategory(category, categoryName) {
     }
   });
   
-  // Filter and render products
   if (category === 'all') {
-    renderServices(products);
+    renderServices(inventoryProducts);
   } else {
-    const filtered = products.filter(p => p.category === category);
+    const filtered = inventoryProducts.filter(p => p.category === category);
     renderServices(filtered);
   }
   
   toggleProductsMenu();
 }
 
-function renderServices(filteredServices = services) {
+function renderServices(filteredItems = servicesData) {
   const container = document.getElementById('servicesList');
   container.innerHTML = '';
   
-  filteredServices.forEach(service => {
+  filteredItems.forEach(item => {
     const div = document.createElement('div');
     div.className = 'service-card bg-white p-4 rounded-xl cursor-pointer';
+    
+    const stockInfo = item.qty !== undefined ? 
+      `<p class="text-xs text-gray-500 mb-1">Stock: ${item.qty}</p>` : '';
+    
     div.innerHTML = `
       <div class="flex items-start gap-3">
         <div class="flex-1 min-w-0">
-          <h3 class="font-semibold text-gray-800 text-sm mb-1 truncate">${service.name}</h3>
-          <p class="text-xs text-gray-500 mb-2">${service.category}</p>
+          <h3 class="font-semibold text-gray-800 text-sm mb-1 truncate">${item.name}</h3>
+          <p class="text-xs text-gray-500 mb-2">${item.category}</p>
+          ${stockInfo}
           <div class="flex items-center justify-between">
-            <span class="text-lg font-bold text-[#da5c73]">₱${service.price.toFixed(2)}</span>
+            <span class="text-lg font-bold text-[#da5c73]">₱${item.price.toFixed(2)}</span>
             <button class="bg-pink-100 text-pink-700 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-pink-200 transition">
               <i class="fa-solid fa-plus mr-1"></i>Add
             </button>
@@ -635,7 +499,7 @@ function renderServices(filteredServices = services) {
         </div>
       </div>
     `;
-    div.onclick = () => addToCart(service);
+    div.onclick = () => addToCart(item);
     container.appendChild(div);
   });
 }
@@ -647,7 +511,7 @@ function showCategory(category, categoryName) {
   const allServicesBtn = document.querySelector('.all-services-btn span');
   allServicesBtn.textContent = categoryName || 'All Services';
   
-  const buttons = document.querySelectorAll('.category-btn');
+  const buttons = document.querySelectorAll('#categoryGrid .category-btn');
   buttons.forEach(btn => {
     const cat = categories.find(c => c.name === btn.textContent);
     if (cat && cat.value === category) {
@@ -659,11 +523,10 @@ function showCategory(category, categoryName) {
     }
   });
   
-  // Filter services
   if (category === 'all') {
-    renderServices(services);
+    renderServices(servicesData);
   } else {
-    const filtered = services.filter(s => s.category === category);
+    const filtered = servicesData.filter(s => s.category === category);
     renderServices(filtered);
   }
   
@@ -672,21 +535,50 @@ function showCategory(category, categoryName) {
 
 function filterServices() {
   const search = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = services.filter(s => 
+  const itemsToFilter = currentView === 'products' ? inventoryProducts : servicesData;
+  const filtered = itemsToFilter.filter(s => 
     s.name.toLowerCase().includes(search) || 
     s.category.toLowerCase().includes(search)
   );
   renderServices(filtered);
 }
 
-function addToCart(service) {
-  cart.push({...service, id: Date.now() + Math.random()});
+function addToCart(item) {
+  const existingItem = cart.find(cartItem => 
+    cartItem.name.toLowerCase() === item.name.toLowerCase()
+  );
+  
+  if (existingItem) {
+    alert(`"${item.name}" is already in the cart!`);
+    return;
+  }
+  
+  if (item.qty !== undefined && item.qty <= 0) {
+    alert(`"${item.name}" is out of stock!`);
+    return;
+  }
+  
+  cart.push({
+    ...item, 
+    id: Date.now() + Math.random(),
+    isInventoryProduct: item.qty !== undefined,
+    firebaseId: item.firebaseId
+  });
   updateCart();
 }
 
 function removeFromCart(id) {
-  cart = cart.filter(item => item.id !== id);
-  updateCart();
+  const cartItemElement = event.target.closest('.cart-item');
+  if (cartItemElement) {
+    cartItemElement.classList.add('removing');
+    setTimeout(() => {
+      cart = cart.filter(item => item.id !== id);
+      updateCart();
+    }, 300);
+  } else {
+    cart = cart.filter(item => item.id !== id);
+    updateCart();
+  }
 }
 
 function updateCart() {
@@ -732,7 +624,6 @@ function calculateChange() {
   
   const changeDisplay = document.getElementById('changeDisplay');
   
-  // Only show change for cash payments
   if (selectedPaymentMethod === 'cash' && payment > 0 && change >= 0) {
     changeDisplay.classList.remove('hidden');
     document.getElementById('changeAmount').textContent = change.toFixed(2);
@@ -740,8 +631,6 @@ function calculateChange() {
     changeDisplay.classList.add('hidden');
   }
 }
-
-document.getElementById('paymentInput').addEventListener('input', calculateChange);
 
 function clearCart() {
   cart = [];
@@ -755,7 +644,6 @@ function clearCart() {
   document.getElementById('changeDisplay').classList.add('hidden');
   document.getElementById('phoneError').classList.add('hidden');
   
-  // Reset payment method to cash
   selectedPaymentMethod = 'cash';
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
@@ -773,17 +661,16 @@ function checkout() {
   const referenceNumber = document.getElementById('referenceNumber').value.trim();
   
   if (!customerName) {
-    alert('Please enter customer name');
+    alert('Customer name is required');
+    document.getElementById('customerName').focus();
     return;
   }
   
-  // Validate email if provided
   if (customerEmail && !customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
     alert('Please enter a valid email address');
     return;
   }
   
-  // Validate phone number
   if (customerPhone) {
     if (!customerPhone.startsWith('09') || customerPhone.length !== 11) {
       alert('Mobile number must start with 09 and be exactly 11 digits');
@@ -796,7 +683,6 @@ function checkout() {
     return;
   }
   
-  // Validate reference number for check/bank payments
   if (selectedPaymentMethod === 'check' && !referenceNumber) {
     alert('Please enter reference or check number');
     return;
@@ -805,13 +691,52 @@ function checkout() {
   generateReceipt();
 }
 
+async function sendEmailWithPDF(email, pdfBlob, receiptData) {
+  try {
+    const reader = new FileReader();
+    const base64PDF = await new Promise((resolve, reject) => {
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(pdfBlob);
+    });
+
+    const itemsList = receiptData.items.map(item => 
+      `${item.name} - ₱${item.price.toFixed(2)}`
+    ).join('\n');
+
+    const response = await emailjs.send(
+      'service_s0oyzpd',
+      'template_mqrbj1n',
+      {
+        to_email: email,
+        customer_name: receiptData.customerName,
+        receipt_number: receiptData.receiptNumber,
+        date: receiptData.date,
+        time: receiptData.time,
+        items: itemsList,
+        total: `₱${receiptData.subtotal.toFixed(2)}`,
+        payment: `₱${receiptData.payment.toFixed(2)}`,
+        change: `₱${receiptData.change.toFixed(2)}`,
+        payment_method: receiptData.paymentMethod,
+        cashier: receiptData.cashierName
+      }
+    );
+
+    console.log('Email sent successfully:', response);
+    return true;
+  } catch (error) {
+    console.error('Email sending failed:', error);
+    throw error;
+  }
+}
+
 async function generateReceipt() {
   document.getElementById('loadingModal').classList.remove('hidden');
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  const customerName = document.getElementById('customerName').value.trim();
+  const customerName = document.getElementById('customerName').value.trim() || 'Walk-in Customer';
   const customerEmail = document.getElementById('customerEmail').value.trim();
   const customerAddress = document.getElementById('customerAddress').value.trim();
   const customerPhone = document.getElementById('customerPhone').value.trim();
@@ -823,10 +748,10 @@ async function generateReceipt() {
   const time = new Date().toLocaleTimeString('en-PH');
   const receiptNumber = 'RCP-' + Date.now();
   const paymentMethodText = selectedPaymentMethod === 'cash' ? 'Cash' : 'Check/Bank Transfer';
+  const cashierName = currentUserData ? currentUserData.fullName : 'Unknown';
   
   let y = 20;
   
-  // Header
   doc.setFontSize(18);
   doc.setFont(undefined, 'bold');
   doc.text('Skinship Beauty', 105, y, { align: 'center' });
@@ -841,7 +766,6 @@ async function generateReceipt() {
   doc.text('0917-5880889 / 0915-9123020', 105, y, { align: 'center' });
   y += 10;
   
-  // Title
   doc.setFontSize(14);
   doc.setFont(undefined, 'bold');
   doc.text('ACKNOWLEDGEMENT RECEIPT', 105, y, { align: 'center' });
@@ -850,12 +774,12 @@ async function generateReceipt() {
   doc.text(`Receipt No: ${receiptNumber}`, 105, y, { align: 'center' });
   y += 10;
   
-  // Customer Info
   doc.setFontSize(10);
   doc.setFont(undefined, 'normal');
   doc.text(`SOLD TO: ${customerName}`, 20, y);
   doc.text(`DATE: ${date}`, 150, y);
   y += 6;
+  
   if (customerEmail) {
     doc.text(`EMAIL: ${customerEmail}`, 20, y);
     y += 6;
@@ -869,9 +793,9 @@ async function generateReceipt() {
     y += 6;
   }
   doc.text(`TIME: ${time}`, 20, y);
+  doc.text(`CASHIER: ${cashierName}`, 150, y);
   y += 8;
   
-  // Table Header
   doc.setFont(undefined, 'bold');
   doc.line(20, y, 190, y);
   y += 6;
@@ -883,7 +807,6 @@ async function generateReceipt() {
   doc.line(20, y, 190, y);
   y += 6;
   
-  // Items
   doc.setFont(undefined, 'normal');
   cart.forEach(item => {
     if (y > 250) {
@@ -893,34 +816,32 @@ async function generateReceipt() {
     doc.text('1', 25, y);
     const lines = doc.splitTextToSize(item.name, 90);
     doc.text(lines, 50, y);
-    doc.text(`₱${item.price.toFixed(2)}`, 150, y);
-    doc.text(`₱${item.price.toFixed(2)}`, 175, y);
+    doc.text(`PHP ${item.price.toFixed(2)}`, 150, y);
+    doc.text(`PHP ${item.price.toFixed(2)}`, 175, y);
     y += Math.max(6, lines.length * 5);
   });
   
-  // Total Section
   y += 4;
   doc.line(20, y, 190, y);
   y += 6;
   doc.setFont(undefined, 'bold');
   doc.text('TOTAL:', 150, y);
-  doc.text(`₱${total.toFixed(2)}`, 175, y);
+  doc.text(`PHP ${total.toFixed(2)}`, 175, y);
   y += 6;
   doc.setFont(undefined, 'normal');
   doc.text('PAYMENT:', 150, y);
-  doc.text(`₱${payment.toFixed(2)}`, 175, y);
+  doc.text(`PHP ${payment.toFixed(2)}`, 175, y);
   y += 6;
   
   if (selectedPaymentMethod === 'cash') {
     doc.setFont(undefined, 'bold');
     doc.text('CHANGE:', 150, y);
-    doc.text(`₱${change.toFixed(2)}`, 175, y);
+    doc.text(`PHP ${change.toFixed(2)}`, 175, y);
     y += 10;
   } else {
     y += 4;
   }
   
-  // Payment Info
   doc.setFont(undefined, 'normal');
   doc.text(`Mode of Payment: ${paymentMethodText}`, 20, y);
   y += 6;
@@ -932,19 +853,18 @@ async function generateReceipt() {
     y += 4;
   }
   
-  // Footer
   doc.line(140, y, 190, y);
   y += 5;
   doc.setFontSize(9);
   doc.text('AUTHORIZED SIGNATURE', 165, y, { align: 'center' });
   
-  // Prepare receipt data for Firebase
   const receiptData = {
     receiptNumber: receiptNumber,
     customerName: customerName,
     customerEmail: customerEmail || '',
     customerAddress: customerAddress || '',
     customerPhone: customerPhone || '',
+    cashierName: cashierName,
     items: cart.map(item => ({
       name: item.name,
       category: item.category,
@@ -962,11 +882,34 @@ async function generateReceipt() {
   };
   
   try {
-    // Save to Firebase
-    await db.collection("cashier_receipt").add(receiptData);
+    const inventoryUpdates = [];
+    for (const item of cart) {
+      if (item.isInventoryProduct && item.firebaseId) {
+        inventoryUpdates.push(
+          db.collection('inventory').doc(item.firebaseId).update({
+            qty: firebase.firestore.FieldValue.increment(-1)
+          })
+        );
+      }
+    }
     
-    // Save PDF
+    await Promise.all(inventoryUpdates);
+    await db.collection("cashier_receipt").add(receiptData);
+    await loadInventoryProducts();
+    
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
+    
+    let emailSent = false;
+    if (customerEmail) {
+      try {
+        const pdfBlob = doc.output('blob');
+        await sendEmailWithPDF(customerEmail, pdfBlob, receiptData);
+        emailSent = true;
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+      }
+    }
+    
     doc.save(fileName);
     
     document.getElementById('loadingModal').classList.add('hidden');
@@ -976,15 +919,30 @@ async function generateReceipt() {
       if (selectedPaymentMethod === 'cash') {
         alertMessage += `\nChange: ₱${change.toFixed(2)}`;
       }
+      if (customerEmail) {
+        if (emailSent) {
+          alertMessage += `\n\n✓ Receipt sent to ${customerEmail}`;
+        } else {
+          alertMessage += `\n\n✗ Failed to send email. Please check the email address.`;
+        }
+      }
       alert(alertMessage);
       clearCart();
+      
+      if (currentView === 'products') {
+        if (currentCategory === 'all') {
+          renderServices(inventoryProducts);
+        } else {
+          const filtered = inventoryProducts.filter(p => p.category === currentCategory);
+          renderServices(filtered);
+        }
+      }
     }, 100);
   } catch (error) {
     console.error("Error saving receipt:", error);
     document.getElementById('loadingModal').classList.add('hidden');
     alert('Receipt printed but failed to save to database. Please check your connection.');
     
-    // Still save PDF even if Firebase fails
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
     doc.save(fileName);
     
@@ -994,8 +952,12 @@ async function generateReceipt() {
   }
 }
 
-// Initialize
-loadUserInfo();
-renderServices();
-updateNotificationUI();
-initializeNotifications();
+(async function init() {
+  await loadUserInfo();
+  await loadServicesFromFirebase();
+  await loadInventoryProducts();
+  currentView = 'services';
+  currentCategory = 'all';
+  renderServices(servicesData);
+  document.getElementById('paymentInput').addEventListener('input', calculateChange);
+})();
