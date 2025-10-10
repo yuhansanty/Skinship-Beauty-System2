@@ -11,6 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="inventory.css">
   <script src="shared-inventory.js"></script>
   <style>
     /* Logout Modal Styles */
@@ -213,18 +214,21 @@
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
-      <!-- Top bar -->
+      <!-- Header Section -->
       <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-2">
+        <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVENTORY</h1>
+        <div class="flex items-center gap-4">
+          <!-- Search Bar -->
           <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          
+          <!-- Action Buttons -->
           <button class="filter-btn" onclick="addNewItem()">
             <i class="fa-solid fa-plus mr-2"></i>Add Item
           </button>
           <button class="filter-btn" onclick="enableEditMode()" id="editModeBtn">
             <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item
           </button>
-        </div>
-        <div class="flex items-center gap-4">
+          
           <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
@@ -243,6 +247,7 @@
             </div>
           </div>
           
+          <!-- User Menu -->
           <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
@@ -256,8 +261,6 @@
           </div>
         </div>
       </div>
-
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">INVENTORY</h1>
 
       <!-- Stats Summary -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -337,95 +340,13 @@
     </div>
   </main>
 
-  <script>
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
-      updateStats();
-      renderTable();
-      
-      // Listen for inventory updates
-      window.addEventListener('inventoryUpdated', function(event) {
-        updateStats();
-        renderTable();
-      });
-    });
-
-    // Update statistics
-    function updateStats() {
-      const stats = window.inventoryManager.getInventoryStats();
-
-      document.getElementById('totalItems').textContent = stats.totalItems;
-      document.getElementById('totalValue').textContent = `₱ ${stats.totalValue.toLocaleString()}`;
-      document.getElementById('lowStock').textContent = stats.lowStock;
-      document.getElementById('outOfStock').textContent = stats.outOfStock;
-    }
-
-    // Render table
-    function renderTable() {
-      const tbody = document.getElementById('inventoryTableBody');
-      tbody.innerHTML = '';
-
-      window.inventoryManager.inventoryData.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.className = 'border-b hover:bg-gray-50 transition';
-        row.setAttribute('data-status', item.status);
-        row.setAttribute('data-category', item.category);
-        
-        const statusClass = item.status === 'in-stock' ? 'bg-green-100 text-green-600' : 
-                           item.status === 'low-stock' ? 'bg-yellow-100 text-yellow-600' : 
-                           'bg-red-100 text-red-600';
-        
-        row.innerHTML = `
-          <td class="py-4 px-4 font-semibold">${item.id}</td>
-          <td class="py-4 px-4">${item.name}</td>
-          <td class="py-4 px-4">${item.category}</td>
-          <td class="py-4 px-4 text-center">${item.qty}</td>
-          <td class="py-4 px-4 text-right">₱ ${item.price.toLocaleString()}</td>
-          <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${item.total.toLocaleString()}</td>
-          <td class="py-4 px-4 text-center text-sm">${formatDate(item.date)}</td>
-          <td class="py-4 px-4 text-center">
-            <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('-', ' ')}</span>
-          </td>
-        `;
-        
-        tbody.appendChild(row);
-      });
-    }
-
-    // Format date for display
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
-
-    // Export to CSV
-    function exportToCSV() {
-      let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status\n';
-      
-      window.inventoryManager.inventoryData.forEach(row => {
-        csv += `${row.id},${row.name},${row.category},${row.qty},${row.price},${row.total},${row.date},${row.status}\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'inventory_report.csv';
-      a.click();
-    }
-
-    </script>
 
   <!-- Add Product Modal -->
   <div id="addProductModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 700px;">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-plus-circle mr-2"></i>Add New Product
+          <i class="fa-solid fa-plus-circle mr-2"></i>+ Add New Product
         </h2>
         <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
       </div>
@@ -483,7 +404,7 @@
 
   <!-- Edit Product Modal -->
   <div id="editProductModal" class="add-product-modal">
-    <div class="modal-content" style="max-width:700px;">
+    <div class="modal-content" style="max-width: 700px;">
       <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-[#da5c73]">
           <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
