@@ -11,7 +11,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="inventory.css">
+  <script src="shared-inventory.js"></script>
   <style>
     /* Logout Modal Styles */
     .modal-overlay {
@@ -337,13 +337,86 @@
     </div>
   </main>
 
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
-    </div>
-  </div>
+  <script>
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      updateStats();
+      renderTable();
+      
+      // Listen for inventory updates
+      window.addEventListener('inventoryUpdated', function(event) {
+        updateStats();
+        renderTable();
+      });
+    });
+
+    // Update statistics
+    function updateStats() {
+      const stats = window.inventoryManager.getInventoryStats();
+
+      document.getElementById('totalItems').textContent = stats.totalItems;
+      document.getElementById('totalValue').textContent = `₱ ${stats.totalValue.toLocaleString()}`;
+      document.getElementById('lowStock').textContent = stats.lowStock;
+      document.getElementById('outOfStock').textContent = stats.outOfStock;
+    }
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      tbody.innerHTML = '';
+
+      window.inventoryManager.inventoryData.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50 transition';
+        row.setAttribute('data-status', item.status);
+        row.setAttribute('data-category', item.category);
+        
+        const statusClass = item.status === 'in-stock' ? 'bg-green-100 text-green-600' : 
+                           item.status === 'low-stock' ? 'bg-yellow-100 text-yellow-600' : 
+                           'bg-red-100 text-red-600';
+        
+        row.innerHTML = `
+          <td class="py-4 px-4 font-semibold">${item.id}</td>
+          <td class="py-4 px-4">${item.name}</td>
+          <td class="py-4 px-4">${item.category}</td>
+          <td class="py-4 px-4 text-center">${item.qty}</td>
+          <td class="py-4 px-4 text-right">₱ ${item.price.toLocaleString()}</td>
+          <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${item.total.toLocaleString()}</td>
+          <td class="py-4 px-4 text-center text-sm">${formatDate(item.date)}</td>
+          <td class="py-4 px-4 text-center">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${item.status.charAt(0).toUpperCase() + item.status.slice(1).replace('-', ' ')}</span>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // Format date for display
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+      let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status\n';
+      
+      window.inventoryManager.inventoryData.forEach(row => {
+        csv += `${row.id},${row.name},${row.category},${row.qty},${row.price},${row.total},${row.date},${row.status}\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'inventory_report.csv';
+      a.click();
+    }
 
   <!-- Add Product Modal -->
   <div id="addProductModal" class="add-product-modal">

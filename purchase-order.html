@@ -6,6 +6,7 @@
   <title>Purchase Order | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="shared-inventory.js"></script>
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -30,6 +31,57 @@
       background: #da5c73;
       color: white;
     }
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .filter-btn:hover {
+      background: #da5c73;
+      color: white;
+    }
+    .filter-btn.active {
+      background: #da5c73;
+      color: white;
+    }
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 20px;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .status-pending { background-color: #fef3c7; color: #92400e; }
+    .status-received { background-color: #d1fae5; color: #065f46; }
+    .status-cancelled { background-color: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -50,92 +102,489 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn active" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
-  <main class="flex-1 p-0 w-full flex flex-col items-stretch justify-stretch ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-4 shadow-lg w-full h-full flex flex-col min-h-screen">
+  <main class="flex-1 p-6 w-full ml-20">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Top bar -->
-      <div class="flex justify-between items-center mb-4">
+      <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
-          <button class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">New Purchase Order</button>
+          <input type="text" id="searchInput" placeholder="Search purchase orders..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          <button class="filter-btn" onclick="openNewPOModal()">
+            <i class="fa-solid fa-plus mr-2"></i>New Purchase Order
+          </button>
         </div>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-          <span class="font-semibold text-lg">Username</span>
+          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+          <span class="font-semibold text-lg text-white">Username</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
               <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
             </div>
           </div>
         </div>
       </div>
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-4 text-white drop-shadow">PURCHASE ORDER</h1>
-      <!-- Purchase Order Content -->
-      <div class="flex-1 flex justify-center items-stretch min-h-0">
-        <div class="w-full h-full bg-white rounded-2xl shadow p-6 overflow-auto flex flex-col gap-4">
-          <!-- Header Info -->
-          <div class="grid grid-cols-2 gap-4">
+
+      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">PURCHASE ORDER</h1>
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold text-lg">Skinship Beauty</div>
-              <div>123 Beauty Ave, City</div>
-              <div>Phone: 0123 456 7890</div>
+              <p class="text-gray-600 text-sm font-semibold">Total POs</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalPOs">0</p>
             </div>
-            <div class="text-right">
-              <div class="font-bold">PO #: PO-2025-001</div>
-              <div>Date: May 15, 2025</div>
-              <div>Expected: May 22, 2025</div>
-            </div>
+            <i class="fa-solid fa-receipt text-3xl text-[#da5c73] opacity-50"></i>
           </div>
-          <!-- Vendor -->
-          <div class="grid grid-cols-2 gap-4">
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold">Vendor:</div>
-              <div>Beauty Supplies Inc.</div>
-              <div>vendor@email.com</div>
+              <p class="text-gray-600 text-sm font-semibold">Pending</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="pendingPOs">0</p>
             </div>
-            <div class="text-right">
-              <button class="px-4 py-2 bg-[#f7d4d0] rounded font-semibold">Print PO</button>
-            </div>
+            <i class="fa-solid fa-clock text-3xl text-[#da5c73] opacity-50"></i>
           </div>
-          <!-- Items Table -->
-          <table class="w-full text-left">
-            <thead class="bg-[#f7d4d0] sticky top-0">
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Received</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="receivedPOs">0</p>
+            </div>
+            <i class="fa-solid fa-check-circle text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Total Items</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
+            </div>
+            <i class="fa-solid fa-boxes-stacked text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button class="filter-btn active" onclick="filterByStatus('all')">All Orders</button>
+        <button class="filter-btn" onclick="filterByStatus('pending')">Pending</button>
+        <button class="filter-btn" onclick="filterByStatus('received')">Received</button>
+        <button class="filter-btn" onclick="filterByStatus('cancelled')">Cancelled</button>
+        <input type="date" id="dateFrom" class="filter-btn" placeholder="From Date" onchange="filterByDate()" />
+        <input type="date" id="dateTo" class="filter-btn" placeholder="To Date" onchange="filterByDate()" />
+        <button class="filter-btn" onclick="exportToCSV()">
+          <i class="fa-solid fa-download mr-2"></i>Export
+        </button>
+      </div>
+
+      <!-- Purchase Orders Table -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm" id="poTable">
+            <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
               <tr>
-                <th class="p-3 font-bold">Item</th>
-                <th class="p-3 font-bold">Qty</th>
-                <th class="p-3 font-bold">Unit Cost</th>
-                <th class="p-3 font-bold">Total</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">PO #</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Date</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Supplier</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Product Name</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Product ID</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Quantity</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr class="border-b">
-                <td class="p-3">Hair Dye - Blonde</td>
-                <td class="p-3">20</td>
-                <td class="p-3">₱ 250</td>
-                <td class="p-3">₱ 5,000</td>
-              </tr>
-              <tr class="border-b">
-                <td class="p-3">Eyelash Glue</td>
-                <td class="p-3">30</td>
-                <td class="p-3">₱ 120</td>
-                <td class="p-3">₱ 3,600</td>
-              </tr>
+            <tbody id="poTableBody">
+              <!-- Dynamic content will be inserted here -->
             </tbody>
           </table>
-          <!-- Summary -->
-          <div class="flex justify-end">
-            <div class="w-full max-w-sm">
-              <div class="flex justify-between"><span>Subtotal</span><span>₱ 8,600</span></div>
-              <div class="flex justify-between"><span>Tax (12%)</span><span>₱ 1,032</span></div>
-              <div class="flex justify-between font-bold text-lg"><span>Total</span><span>₱ 9,632</span></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </main>
-  <script type="module" src="role-check.js"></script>
 
+  <!-- New/Edit PO Modal -->
+  <div id="poModal" class="modal">
+    <div class="modal-content">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-bold text-[#da5c73]" id="modalTitle">New Purchase Order</h2>
+        <button onclick="closePOModal()" class="text-gray-500 hover:text-gray-700">
+          <i class="fa-solid fa-times text-xl"></i>
+        </button>
+      </div>
+      
+      <form id="poForm" class="space-y-4">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+            <input type="date" id="poDate" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">PO Number</label>
+            <input type="text" id="poNumber" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" readonly />
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+          <select id="supplier" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
+            <option value="">Select Supplier</option>
+            <option value="Beauty Supplies Inc.">Beauty Supplies Inc.</option>
+            <option value="Cosmetic World">Cosmetic World</option>
+            <option value="Hair Care Solutions">Hair Care Solutions</option>
+            <option value="Nail Art Supplies">Nail Art Supplies</option>
+            <option value="Skincare Essentials">Skincare Essentials</option>
+          </select>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+            <input type="text" id="productName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required oninput="generateProductId()" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Product ID <span class="text-xs text-gray-500" id="productIdLabel">(Auto-generated)</span></label>
+            <input type="text" id="productId" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly placeholder="Enter product name to generate ID" />
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+          <input type="number" id="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="1" required />
+        </div>
+        
+        <div class="flex justify-end gap-3 pt-4">
+          <button type="button" onclick="closePOModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" class="px-4 py-2 bg-[#da5c73] text-white rounded-lg hover:bg-[#c54a5f]">
+            Save Purchase Order
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let editingIndex = -1;
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', function() {
+      updateStats();
+      renderTable();
+      generatePONumber();
+      
+      // Set today's date as default
+      document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
+      
+      // Listen for inventory updates
+      window.addEventListener('inventoryUpdated', function(event) {
+        console.log('Inventory updated:', event.detail);
+      });
+    });
+
+    // Generate PO Number
+    function generatePONumber() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const poCount = window.inventoryManager.purchaseOrders.length + 1;
+      document.getElementById('poNumber').value = `PO-${year}-${String(poCount).padStart(3, '0')}`;
+    }
+
+    // Generate Product ID based on product name
+    function generateProductId() {
+      const productName = document.getElementById('productName').value;
+      const productIdField = document.getElementById('productId');
+      const productIdLabel = document.getElementById('productIdLabel');
+      
+      if (productName.trim() === '') {
+        productIdField.value = '';
+        productIdLabel.textContent = '(Auto-generated)';
+        productIdLabel.className = 'text-xs text-gray-500';
+        productIdField.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100';
+        return;
+      }
+
+      // First, check if a product with this name already exists in inventory
+      const existingItem = window.inventoryManager.inventoryData.find(item => 
+        item.name.toLowerCase() === productName.toLowerCase()
+      );
+
+      if (existingItem) {
+        // Use the existing inventory item's ID
+        productIdField.value = existingItem.id;
+        productIdLabel.textContent = '(Existing product)';
+        productIdLabel.className = 'text-xs text-green-600';
+        productIdField.className = 'w-full px-3 py-2 border border-green-300 rounded-lg bg-green-50';
+        return;
+      }
+
+      // If no existing item found, generate a new ID
+      const existingIds = window.inventoryManager.inventoryData.map(item => item.id);
+      const existingPOIds = window.inventoryManager.purchaseOrders.map(po => po.productId);
+      const allIds = [...existingIds, ...existingPOIds];
+      
+      // Find the highest number in existing IDs
+      let maxNumber = 0;
+      allIds.forEach(id => {
+        const match = id.match(/INV-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNumber) {
+            maxNumber = num;
+          }
+        }
+      });
+
+      // Generate new ID
+      const newId = `INV-${String(maxNumber + 1).padStart(3, '0')}`;
+      productIdField.value = newId;
+      productIdLabel.textContent = '(New product)';
+      productIdLabel.className = 'text-xs text-blue-600';
+      productIdField.className = 'w-full px-3 py-2 border border-blue-300 rounded-lg bg-blue-50';
+    }
+
+    // Open new PO modal
+    function openNewPOModal() {
+      editingIndex = -1;
+      document.getElementById('modalTitle').textContent = 'New Purchase Order';
+      document.getElementById('poForm').reset();
+      generatePONumber();
+      document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
+      
+      // Reset product ID field styling
+      const productIdField = document.getElementById('productId');
+      const productIdLabel = document.getElementById('productIdLabel');
+      productIdField.value = '';
+      productIdLabel.textContent = '(Auto-generated)';
+      productIdLabel.className = 'text-xs text-gray-500';
+      productIdField.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100';
+      
+      document.getElementById('poModal').style.display = 'block';
+    }
+
+    // Close PO modal
+    function closePOModal() {
+      document.getElementById('poModal').style.display = 'none';
+    }
+
+    // Handle form submission
+    document.getElementById('poForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const formData = {
+        id: document.getElementById('poNumber').value,
+        date: document.getElementById('poDate').value,
+        supplier: document.getElementById('supplier').value,
+        productName: document.getElementById('productName').value,
+        productId: document.getElementById('productId').value,
+        quantity: parseInt(document.getElementById('quantity').value),
+        status: 'pending'
+      };
+
+      if (editingIndex === -1) {
+        // Add new PO
+        window.inventoryManager.addPurchaseOrder(formData);
+      } else {
+        // Edit existing PO
+        window.inventoryManager.updatePurchaseOrder(editingIndex, formData);
+      }
+
+      updateStats();
+      renderTable();
+      closePOModal();
+    });
+
+    // Render table
+    function renderTable() {
+      const tbody = document.getElementById('poTableBody');
+      tbody.innerHTML = '';
+
+      window.inventoryManager.purchaseOrders.forEach((po, index) => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50 transition';
+        row.setAttribute('data-status', po.status);
+        row.setAttribute('data-date', po.date);
+        
+        const statusClass = po.status === 'pending' ? 'status-pending' : 
+                           po.status === 'received' ? 'status-received' : 'status-cancelled';
+        
+        row.innerHTML = `
+          <td class="py-4 px-4 font-semibold">${po.id}</td>
+          <td class="py-4 px-4">${formatDate(po.date)}</td>
+          <td class="py-4 px-4">${po.supplier}</td>
+          <td class="py-4 px-4">${po.productName}</td>
+          <td class="py-4 px-4">${po.productId}</td>
+          <td class="py-4 px-4 text-center">${po.quantity}</td>
+          <td class="py-4 px-4 text-center">
+            <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${po.status.charAt(0).toUpperCase() + po.status.slice(1)}</span>
+          </td>
+          <td class="py-4 px-4 text-center">
+            <div class="flex justify-center gap-2">
+              <button onclick="editPO(${index})" class="text-blue-600 hover:text-blue-800" title="Edit">
+                <i class="fa-solid fa-edit"></i>
+              </button>
+              <button onclick="toggleStatus(${index})" class="text-green-600 hover:text-green-800" title="Toggle Status">
+                <i class="fa-solid fa-${po.status === 'received' ? 'undo' : 'check'}"></i>
+              </button>
+              <button onclick="deletePO(${index})" class="text-red-600 hover:text-red-800" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+
+    // Edit PO
+    function editPO(index) {
+      editingIndex = index;
+      const po = window.inventoryManager.purchaseOrders[index];
+      
+      document.getElementById('modalTitle').textContent = 'Edit Purchase Order';
+      document.getElementById('poNumber').value = po.id;
+      document.getElementById('poDate').value = po.date;
+      document.getElementById('supplier').value = po.supplier;
+      document.getElementById('productName').value = po.productName;
+      document.getElementById('productId').value = po.productId;
+      document.getElementById('quantity').value = po.quantity;
+      
+      document.getElementById('poModal').style.display = 'block';
+    }
+
+    // Toggle status
+    function toggleStatus(index) {
+      const po = window.inventoryManager.togglePOStatus(index);
+      
+      // Show notification
+      if (po.status === 'received') {
+        alert(`Inventory updated: Added ${po.quantity} units of ${po.productName} (${po.productId}) to inventory.`);
+      }
+      
+      updateStats();
+      renderTable();
+    }
+
+    // Delete PO
+    function deletePO(index) {
+      if (confirm('Are you sure you want to delete this purchase order?')) {
+        window.inventoryManager.deletePurchaseOrder(index);
+        updateStats();
+        renderTable();
+      }
+    }
+
+    // Update statistics
+    function updateStats() {
+      const stats = window.inventoryManager.getPOStats();
+
+      document.getElementById('totalPOs').textContent = stats.totalPOs;
+      document.getElementById('pendingPOs').textContent = stats.pendingPOs;
+      document.getElementById('receivedPOs').textContent = stats.receivedPOs;
+      document.getElementById('totalItems').textContent = stats.totalItems;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#poTableBody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // Filter by status
+    function filterByStatus(status) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        if(btn.textContent.includes('All Orders') || btn.textContent.includes('Pending') || 
+           btn.textContent.includes('Received') || btn.textContent.includes('Cancelled')) {
+          btn.classList.remove('active');
+        }
+      });
+      event.target.classList.add('active');
+      
+      const rows = document.querySelectorAll('#poTableBody tr');
+      rows.forEach(row => {
+        if(status === 'all') {
+          row.style.display = '';
+        } else {
+          const rowStatus = row.getAttribute('data-status');
+          row.style.display = rowStatus === status ? '' : 'none';
+        }
+      });
+    }
+
+    // Filter by date range
+    function filterByDate() {
+      const dateFrom = document.getElementById('dateFrom').value;
+      const dateTo = document.getElementById('dateTo').value;
+      const rows = document.querySelectorAll('#poTableBody tr');
+      
+      rows.forEach(row => {
+        const rowDate = row.getAttribute('data-date');
+        let show = true;
+        
+        if (dateFrom && rowDate < dateFrom) show = false;
+        if (dateTo && rowDate > dateTo) show = false;
+        
+        row.style.display = show ? '' : 'none';
+      });
+    }
+
+    // Export to CSV
+    function exportToCSV() {
+      let csv = 'PO Number,Date,Supplier,Product Name,Product ID,Quantity,Status\n';
+      
+      window.inventoryManager.purchaseOrders.forEach(po => {
+        csv += `${po.id},${po.date},${po.supplier},${po.productName},${po.productId},${po.quantity},${po.status}\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'purchase_orders.csv';
+      a.click();
+    }
+
+    // Format date for display
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const userMenu = document.getElementById('userMenu');
+      const userMenuButton = document.getElementById('userMenuButton');
+      
+      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+        userMenu.classList.add('hidden');
+      }
+    });
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('poModal');
+      if (event.target === modal) {
+        closePOModal();
+      }
+    }
+  </script>
+  <script type="module" src="role-check.js"></script>
 </body>
 </html>
