@@ -236,3 +236,5 @@ window.inventoryManager = new InventoryManager();
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = InventoryManager;
 }
+
+
