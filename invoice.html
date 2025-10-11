@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Invoice | Skinship Beauty</title>
+  <title>Invoice Management | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -30,6 +35,7 @@
       background: #da5c73;
       color: white;
     }
+    
     .notification-badge {
       position: absolute;
       top: -8px;
@@ -105,42 +111,196 @@
       color: #9ca3af;
     }
     
-    .notification-modal {
-      display: none;
+    .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
       align-items: center;
       justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
     }
     
-    .notification-modal.show {
-      display: flex;
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
     }
     
     .modal-content {
       background: white;
-      border-radius: 16px;
-      padding: 30px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 80vh;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      width: 100%;
       overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
     }
-    
-    .modal-close {
-      float: right;
-      font-size: 24px;
-      cursor: pointer;
-      color: #9ca3af;
+
+    .modal-overlay.show .modal-content {
+      transform: scale(1);
     }
-    
-    .modal-close:hover {
+
+    .invoice-print {
+      background: white;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .invoice-print h1 {
       color: #da5c73;
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .invoice-print .business-info {
+      margin-bottom: 2rem;
+    }
+
+    .invoice-print .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #f3f4f6;
+    }
+
+    .invoice-print .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+
+    .invoice-print .items-table th,
+    .invoice-print .items-table td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .invoice-print .items-table th {
+      background-color: #f7d4d0;
+      font-weight: bold;
+      color: #da5c73;
+    }
+
+    .invoice-print .totals {
+      text-align: right;
+      margin-top: 1rem;
+    }
+
+    .invoice-print .totals .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .invoice-print .totals .grand-total {
+      font-size: 1.25rem;
+      font-weight: bold;
+      color: #da5c73;
+      border-top: 2px solid #da5c73;
+      padding-top: 0.5rem;
+    }
+
+    .status-badge {
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-paid {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-void {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    .item-type-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.375rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .item-type-product {
+      background-color: #fef2f2;
+      color: #da5c73;
+    }
+
+    .item-type-service {
+      background-color: #eff6ff;
+      color: #2563eb;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #da5c73;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 2px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+      background: #da5c73;
+      color: white;
+    }
+
+    .filter-btn.active {
+      background: #da5c73;
+      color: white;
+    }
+
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      
+      .invoice-print {
+        box-shadow: none;
+        margin: 0;
+        padding: 0;
+      }
     }
   </style>
 </head>
@@ -162,16 +322,22 @@
     <button class="sidebar-btn active" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
     <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
+
   <!-- Main Content -->
-  <main class="flex-1 p-0 w-full flex flex-col items-stretch justify-stretch ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-4 shadow-lg w-full h-full flex flex-col min-h-screen">
-      <!-- Top bar -->
-      <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center gap-2">
-          <input type="text" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
-          <button class="bg-white text-[#b97b8b] font-semibold px-4 py-2 rounded shadow hover:bg-[#f7d4d0] border border-[#b97b8b]">New Invoice</button>
-        </div>
+  <main class="flex-1 p-6 w-full ml-20">
+    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
+      <!-- Header Section -->
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVOICE MANAGEMENT</h1>
         <div class="flex items-center gap-4">
+          <!-- Search Bar -->
+          <input type="text" id="searchInput" placeholder="Search invoices..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          
+          <!-- New Invoice Button -->
+          <button class="filter-btn" onclick="openNewInvoiceModal()">
+            <i class="fa-solid fa-plus mr-2"></i>New Invoice
+          </button>
+          
           <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
@@ -190,241 +356,1273 @@
             </div>
           </div>
 
-          <span class="font-semibold text-lg text-white">Username</span>
+          <!-- User Menu -->
+          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
-            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+            <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
+              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+            </button>
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
       </div>
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-4 text-white drop-shadow">INVOICE</h1>
-      <!-- Invoice Content -->
-      <div class="flex-1 flex justify-center items-stretch min-h-0">
-        <div class="w-full h-full bg-white rounded-2xl shadow p-6 overflow-auto flex flex-col gap-4">
-          <!-- Header Info -->
-          <div class="grid grid-cols-2 gap-4">
+
+      <!-- Stats Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold text-lg">Skinship Beauty</div>
-              <div>123 Beauty Ave, City</div>
-              <div>Phone: 0123 456 7890</div>
+              <p class="text-gray-600 text-sm font-semibold">Total Invoices</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalInvoices">0</p>
             </div>
-            <div class="text-right">
-              <div class="font-bold">Invoice #: INV-2025-001</div>
-              <div>Date: May 15, 2025</div>
-              <div>Due: May 22, 2025</div>
+            <i class="fa-solid fa-file-invoice text-3xl text-[#da5c73] opacity-50"></i>
             </div>
           </div>
-          <!-- Bill To -->
-          <div class="grid grid-cols-2 gap-4">
+        <div class="bg-white rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
             <div>
-              <div class="font-bold">Bill To:</div>
-              <div>Customer Name</div>
-              <div>customer@email.com</div>
+              <p class="text-gray-600 text-sm font-semibold">Total Revenue</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="totalRevenue">₱ 0</p>
             </div>
-            <div class="text-right">
-              <button class="px-4 py-2 bg-[#f7d4d0] rounded font-semibold">Download PDF</button>
+            <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
             </div>
           </div>
-          <!-- Items Table -->
-          <table class="w-full text-left">
-            <thead class="bg-[#f7d4d0] sticky top-0">
+        <div class="bg-white rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Pending</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="pendingInvoices">0</p>
+            </div>
+            <i class="fa-solid fa-clock text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 shadow-lg">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-sm font-semibold">Paid</p>
+              <p class="text-2xl font-bold text-[#da5c73]" id="paidInvoices">0</p>
+            </div>
+            <i class="fa-solid fa-check-circle text-3xl text-[#da5c73] opacity-50"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="flex gap-3 mb-6 flex-wrap">
+        <button class="filter-btn active" onclick="filterByStatus('all')">All Invoices</button>
+        <button class="filter-btn" onclick="filterByStatus('paid')">Paid</button>
+        <button class="filter-btn" onclick="filterByStatus('pending')">Pending</button>
+        <button class="filter-btn" onclick="filterByStatus('void')">Void</button>
+        <input type="date" id="dateFrom" class="filter-btn" placeholder="From Date" onchange="filterByDate()" />
+        <input type="date" id="dateTo" class="filter-btn" placeholder="To Date" onchange="filterByDate()" />
+        <button class="filter-btn" onclick="exportInvoices()">
+          <i class="fa-solid fa-download mr-2"></i>Export
+        </button>
+      </div>
+
+      <!-- Invoice List -->
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+        <div class="flex-1 overflow-auto">
+          <table class="w-full text-sm" id="invoiceTable">
+            <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
               <tr>
-                <th class="p-3 font-bold">Item</th>
-                <th class="p-3 font-bold">Qty</th>
-                <th class="p-3 font-bold">Price</th>
-                <th class="p-3 font-bold">Total</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Invoice #</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Date</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Customer</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Total Amount</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Payment Method</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              <tr class="border-b">
-                <td class="p-3">Haircut</td>
-                <td class="p-3">1</td>
-                <td class="p-3">₱ 300</td>
-                <td class="p-3">₱ 300</td>
-              </tr>
-              <tr class="border-b">
-                <td class="p-3">Hair Color</td>
-                <td class="p-3">1</td>
-                <td class="p-3">₱ 499</td>
-                <td class="p-3">₱ 499</td>
+            <tbody id="invoiceTableBody">
+              <tr>
+                <td colspan="7" class="text-center py-8 text-gray-500">
+                  <div class="loading-spinner mx-auto mb-2"></div>
+                  Loading invoices...
+                </td>
               </tr>
             </tbody>
           </table>
-          <!-- Summary -->
-          <div class="flex justify-end">
-            <div class="w-full max-w-sm">
-              <div class="flex justify-between"><span>Subtotal</span><span>₱ 799</span></div>
-              <div class="flex justify-between"><span>Tax (12%)</span><span>₱ 95.88</span></div>
-              <div class="flex justify-between font-bold text-lg"><span>Total</span><span>₱ 894.88</span></div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
+  <!-- Invoice Detail Modal -->
+  <div id="invoiceDetailModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 900px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-file-invoice mr-2"></i>Invoice Details
+        </h2>
+        <span class="modal-close text-3xl cursor-pointer text-gray-400 hover:text-[#da5c73]" onclick="closeInvoiceDetail()">&times;</span>
+      </div>
+      
+      <div id="invoiceDetailContent" class="invoice-print">
+        <!-- Invoice content will be loaded here -->
+      </div>
+      
+      <div class="flex gap-3 mt-6 no-print">
+        <button onclick="printInvoice()" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+          <i class="fa-solid fa-print mr-2"></i>Print Invoice
+        </button>
+        <button onclick="updateInvoiceStatus()" class="flex-1 bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition">
+          <i class="fa-solid fa-edit mr-2"></i>Update Status
+        </button>
+        <button onclick="closeInvoiceDetail()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Notification System Script -->
+  <!-- New Invoice Modal -->
+  <div id="newInvoiceModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-plus-circle mr-2"></i>Create New Invoice
+        </h2>
+        <span class="modal-close text-3xl cursor-pointer text-gray-400 hover:text-[#da5c73]" onclick="closeNewInvoiceModal()">&times;</span>
+      </div>
+      
+      <form id="newInvoiceForm" class="space-y-6">
+        <!-- Customer Information -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Customer Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
+              <input type="text" id="customerName" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Email (Optional)</label>
+              <input type="email" id="customerEmail" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Phone (Optional)</label>
+              <input type="tel" id="customerPhone" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Details -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Invoice Details</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
+              <input type="text" id="invoiceNumber" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Date *</label>
+              <input type="date" id="invoiceDate" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
+              <input type="date" id="dueDate" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
+            </div>
+          </div>
+        </div>
+
+        <!-- Line Items -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-800">Line Items (Products & Services)</h3>
+              <p class="text-sm text-gray-600 mt-1">Add products (shampoo, hair dye) or services (haircut, coloring) to your invoice</p>
+            </div>
+            <div class="flex gap-2">
+              <button type="button" onclick="addLineItem('product')" class="bg-[#da5c73] text-white px-4 py-2 rounded-lg hover:bg-[#c54d63] transition">
+                <i class="fa-solid fa-box mr-2"></i>Add Product
+              </button>
+              <button type="button" onclick="addLineItem('service')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                <i class="fa-solid fa-scissors mr-2"></i>Add Service
+              </button>
+            </div>
+          </div>
+          
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead class="bg-[#f7d4d0]">
+                <tr>
+                  <th class="p-3 text-left font-bold text-[#da5c73]">Type</th>
+                  <th class="p-3 text-left font-bold text-[#da5c73]">Name *</th>
+                  <th class="p-3 text-left font-bold text-[#da5c73]">ID/Code</th>
+                  <th class="p-3 text-center font-bold text-[#da5c73]">Quantity *</th>
+                  <th class="p-3 text-right font-bold text-[#da5c73]">Unit Price *</th>
+                  <th class="p-3 text-right font-bold text-[#da5c73]">Line Total</th>
+                  <th class="p-3 text-center font-bold text-[#da5c73]">Action</th>
+              </tr>
+              </thead>
+              <tbody id="lineItemsTableBody">
+                <!-- Line items will be added here dynamically -->
+            </tbody>
+          </table>
+            </div>
+          </div>
+
+        <!-- Item Summary -->
+        <div class="bg-blue-50 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Item Summary</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="flex items-center gap-3">
+              <div class="item-type-badge item-type-product">
+                <i class="fa-solid fa-box"></i>
+                <span>Products</span>
+        </div>
+              <span class="text-sm text-gray-600" id="productCount">0 items</span>
+      </div>
+            <div class="flex items-center gap-3">
+              <div class="item-type-badge item-type-service">
+                <i class="fa-solid fa-scissors"></i>
+                <span>Services</span>
+    </div>
+              <span class="text-sm text-gray-600" id="serviceCount">0 items</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calculations -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Calculations</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Subtotal</label>
+                <input type="number" id="subtotal" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
+        </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
+                <input type="number" id="taxPercentage" value="12" min="0" max="100" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateTotals()" />
+      </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tax Amount</label>
+                <input type="number" id="taxAmount" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
+    </div>
+            </div>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Discount Amount</label>
+                <input type="number" id="discountAmount" value="0" min="0" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateTotals()" />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Grand Total</label>
+                <input type="number" id="grandTotal" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 font-bold text-lg" readonly />
+              </div>
+            </div>
+    </div>
+  </div>
+
+        <!-- Payment Information -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method *</label>
+              <select id="paymentMethod" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
+                <option value="cash">Cash</option>
+                <option value="card">Card</option>
+                <option value="gcash">GCash</option>
+                <option value="paymaya">PayMaya</option>
+                <option value="bank_transfer">Bank Transfer</option>
+                <option value="check">Check</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
+              <select id="paymentStatus" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
+                <option value="unpaid">Unpaid</option>
+                <option value="paid">Paid</option>
+                <option value="partially_paid">Partially Paid</option>
+              </select>
+            </div>
+          </div>
+          <div class="mt-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
+            <textarea id="notes" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="Additional notes or comments..."></textarea>
+    </div>
+  </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+            <i class="fa-solid fa-save mr-2"></i>Save Invoice
+          </button>
+          <button type="button" onclick="closeNewInvoiceModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+            <i class="fa-solid fa-times mr-2"></i>Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Status Update Modal -->
+  <div id="statusUpdateModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-[#da5c73]">
+          <i class="fa-solid fa-edit mr-2"></i>Update Status
+        </h2>
+        <span class="modal-close text-3xl cursor-pointer text-gray-400 hover:text-[#da5c73]" onclick="closeStatusUpdate()">&times;</span>
+      </div>
+      
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Status</label>
+          <select id="statusSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]">
+            <option value="pending">Pending</option>
+            <option value="paid">Paid</option>
+            <option value="void">Void</option>
+          </select>
+        </div>
+        
+        <div id="paymentMethodDiv" style="display: none;">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+          <select id="paymentMethodSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]">
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="gcash">GCash</option>
+            <option value="paymaya">PayMaya</option>
+            <option value="bank_transfer">Bank Transfer</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="flex gap-3 mt-6">
+        <button onclick="saveStatusUpdate()" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+          <i class="fa-solid fa-save mr-2"></i>Save Changes
+        </button>
+        <button onclick="closeStatusUpdate()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logout Confirmation Modal -->
+  <div class="modal-overlay" id="logoutModal">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="text-center mb-6">
+        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fa-solid fa-right-from-bracket text-3xl text-red-500"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Confirm Logout</h2>
+        <p class="text-gray-600">Are you sure you want to sign out?</p>
+      </div>
+      
+      <div class="flex gap-3">
+        <button onclick="hideLogoutModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-times mr-2"></i>Cancel
+        </button>
+        <button onclick="confirmLogout()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Configuration and JavaScript -->
   <script>
-    function loadNotifications() {
-      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notificationList = document.getElementById('notificationList');
-      const badge = document.getElementById('notificationBadge');
-      
-      const unreadCount = notifications.filter(n => !n.read).length;
-      
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'flex';
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // Global variables
+    let invoices = [];
+    let currentUser = null;
+    let currentInvoiceId = null;
+    let invoiceCounter = 0;
+
+    // Load current user
+    async function loadCurrentUser() {
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          try {
+            const userDoc = await db.collection('users').doc(user.uid).get();
+            if (userDoc.exists) {
+              const userData = userDoc.data();
+              currentUser = {
+                uid: user.uid,
+                fullName: userData.fullName || userData.email || 'User',
+                email: userData.email || user.email
+              };
       } else {
-        badge.style.display = 'none';
+              currentUser = {
+                uid: user.uid,
+                fullName: user.email || 'User',
+                email: user.email
+              };
+            }
+            document.getElementById('userDisplayName').textContent = currentUser.fullName;
+          } catch (error) {
+            console.error('Error loading user data:', error);
+            currentUser = {
+              uid: user.uid,
+              fullName: user.email || 'User',
+              email: user.email
+            };
+            document.getElementById('userDisplayName').textContent = currentUser.fullName;
+          }
+        } else {
+          window.location.href = 'Login.html';
+        }
+      });
+    }
+
+    // Generate unique invoice number
+    async function generateInvoiceNumber() {
+      try {
+        const counterRef = db.collection('metadata').doc('invoiceCounter');
+        let newNumber = 1;
+
+        await db.runTransaction(async (tx) => {
+          const docSnap = await tx.get(counterRef);
+          if (docSnap.exists) {
+            newNumber = (docSnap.data().last || 0) + 1;
+            tx.update(counterRef, { last: newNumber });
+          } else {
+            tx.set(counterRef, { last: 1 });
+            newNumber = 1;
+          }
+        });
+
+        return `IV-${String(newNumber).padStart(3, '0')}`;
+      } catch (error) {
+        console.error('Error generating invoice number:', error);
+        return `IV-${Date.now().toString().slice(-3)}`;
       }
-      
-      if (notifications.length === 0) {
-        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+    }
+
+    // Create new invoice from POS sale
+    async function createInvoiceFromSale(saleData) {
+      try {
+        const invoiceNumber = await generateInvoiceNumber();
+        const now = new Date();
+        
+        const invoice = {
+          invoiceNumber: invoiceNumber,
+          date: now,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          customerName: saleData.customerName || 'Walk-in Customer',
+          customerEmail: saleData.customerEmail || '',
+          customerPhone: saleData.customerPhone || '',
+          items: saleData.items || [],
+          subtotal: saleData.subtotal || 0,
+          taxRate: saleData.taxRate || 0.12, // 12% VAT
+          taxAmount: saleData.taxAmount || 0,
+          discountAmount: saleData.discountAmount || 0,
+          grandTotal: saleData.grandTotal || 0,
+          paymentMethod: saleData.paymentMethod || 'cash',
+          amountPaid: saleData.amountPaid || saleData.grandTotal || 0,
+          changeGiven: saleData.changeGiven || 0,
+          status: saleData.amountPaid >= saleData.grandTotal ? 'paid' : 'pending',
+          createdBy: currentUser ? currentUser.fullName : 'Unknown',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastUpdatedBy: currentUser ? currentUser.fullName : 'Unknown',
+          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docRef = await db.collection('invoices').add(invoice);
+        invoice.id = docRef.id;
+        
+        // Add to local array
+        invoices.unshift(invoice);
+        
+        // Update UI
+        updateStats();
+        renderInvoiceTable();
+        
+        return invoice;
+      } catch (error) {
+        console.error('Error creating invoice:', error);
+        throw error;
+      }
+    }
+
+    // Load invoices from Firebase
+    async function loadInvoices() {
+      try {
+        const snapshot = await db.collection('invoices')
+          .orderBy('timestamp', 'desc')
+          .get();
+        
+        invoices = [];
+        snapshot.forEach(doc => {
+          const invoice = doc.data();
+          invoice.id = doc.id;
+          invoices.push(invoice);
+        });
+        
+        updateStats();
+        renderInvoiceTable();
+      } catch (error) {
+        console.error('Error loading invoices:', error);
+        document.getElementById('invoiceTableBody').innerHTML = 
+          '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading invoices. Please refresh the page.</td></tr>';
+      }
+    }
+
+    // Update statistics
+    function updateStats() {
+      const totalInvoices = invoices.length;
+      const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.grandTotal || 0), 0);
+      const pendingInvoices = invoices.filter(invoice => invoice.status === 'pending').length;
+      const paidInvoices = invoices.filter(invoice => invoice.status === 'paid').length;
+
+      document.getElementById('totalInvoices').textContent = totalInvoices;
+      document.getElementById('totalRevenue').textContent = `₱ ${totalRevenue.toLocaleString()}`;
+      document.getElementById('pendingInvoices').textContent = pendingInvoices;
+      document.getElementById('paidInvoices').textContent = paidInvoices;
+    }
+
+    // Render invoice table
+    function renderInvoiceTable() {
+      const tbody = document.getElementById('invoiceTableBody');
+      tbody.innerHTML = '';
+
+      if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No invoices found.</td></tr>';
         return;
       }
       
-      notificationList.innerHTML = '';
-      
-      notifications.forEach(notification => {
-        const item = document.createElement('div');
-        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-        item.onclick = () => viewNotification(notification.id);
+      invoices.forEach(invoice => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-gray-50 transition';
+        row.setAttribute('data-status', invoice.status);
         
-        const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
+        const statusClass = invoice.status === 'paid' ? 'status-paid' : 
+                           invoice.status === 'pending' ? 'status-pending' : 
+                           'status-void';
+        
+        const date = invoice.timestamp ? 
+          invoice.timestamp.toDate().toLocaleDateString('en-US', { 
+            year: 'numeric', 
           month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
+            day: 'numeric' 
+          }) : 
+          (invoice.date ? new Date(invoice.date).toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+          }) : 'N/A');
         
-        item.innerHTML = `
-          <div class="flex justify-between items-start mb-1">
-            <strong class="text-[#da5c73]">${notification.message}</strong>
-            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-          </div>
-          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        row.innerHTML = `
+          <td class="py-4 px-4 font-semibold">${invoice.invoiceNumber}</td>
+          <td class="py-4 px-4">${date}</td>
+          <td class="py-4 px-4">${invoice.customerName}</td>
+          <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${(invoice.grandTotal || 0).toLocaleString()}</td>
+          <td class="py-4 px-4 text-center">${(invoice.paymentMethod || 'N/A').toUpperCase()}</td>
+          <td class="py-4 px-4 text-center">
+            <span class="status-badge ${statusClass}">${(invoice.status || 'pending').toUpperCase()}</span>
+          </td>
+          <td class="py-4 px-4 text-center">
+            <button onclick="viewInvoice('${invoice.id}')" class="text-[#da5c73] hover:text-[#c54d63] mr-2" title="View Invoice">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+            <button onclick="printInvoiceDirect('${invoice.id}')" class="text-blue-500 hover:text-blue-600 mr-2" title="Print Invoice">
+              <i class="fa-solid fa-print"></i>
+            </button>
+          </td>
         `;
         
-        notificationList.appendChild(item);
+        tbody.appendChild(row);
       });
     }
 
+    // View invoice details
+    async function viewInvoice(invoiceId) {
+      try {
+        const invoice = invoices.find(inv => inv.id === invoiceId);
+        if (!invoice) {
+          alert('Invoice not found');
+          return;
+        }
+
+        currentInvoiceId = invoiceId;
+        displayInvoiceDetail(invoice);
+        document.getElementById('invoiceDetailModal').classList.add('show');
+      } catch (error) {
+        console.error('Error viewing invoice:', error);
+        alert('Error loading invoice details');
+      }
+    }
+
+    // Display invoice detail
+    function displayInvoiceDetail(invoice) {
+      const content = document.getElementById('invoiceDetailContent');
+      
+      const date = invoice.timestamp ? 
+        invoice.timestamp.toDate().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }) : 
+        (invoice.date ? new Date(invoice.date).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }) : 'N/A');
+
+      content.innerHTML = `
+        <div class="business-info">
+          <h1>Skinship Beauty</h1>
+          <p>Primark Towncenter Cainta, Rizal</p>
+          <p>Phone: (02) 123-4567 | Email: info@skinshipbeauty.com</p>
+          </div>
+        
+        <div class="invoice-header">
+          <div>
+            <h2>INVOICE</h2>
+            <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}</p>
+            <p><strong>Date:</strong> ${date}</p>
+          </div>
+          <div>
+            <p><strong>Bill To:</strong></p>
+            <p>${invoice.customerName}</p>
+            ${invoice.customerEmail ? `<p>${invoice.customerEmail}</p>` : ''}
+            ${invoice.customerPhone ? `<p>${invoice.customerPhone}</p>` : ''}
+          </div>
+        </div>
+        
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Item</th>
+              <th>ID/Code</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(invoice.items || []).map(item => `
+              <tr>
+                <td>
+                  <div class="item-type-badge item-type-${item.type || 'product'}">
+                    <i class="fa-solid ${item.type === 'service' ? 'fa-scissors' : 'fa-box'}"></i>
+                    <span>${(item.type || 'product').charAt(0).toUpperCase() + (item.type || 'product').slice(1)}</span>
+                  </div>
+                </td>
+                <td>${item.name || 'N/A'}</td>
+                <td>${item.itemId || item.productId || 'N/A'}</td>
+                <td>${item.quantity || 0}</td>
+                <td>₱ ${(item.unitPrice || 0).toLocaleString()}</td>
+                <td>₱ ${(item.total || 0).toLocaleString()}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        
+        <div class="totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
+            <span>₱ ${(invoice.subtotal || 0).toLocaleString()}</span>
+          </div>
+          ${invoice.discountAmount > 0 ? `
+            <div class="total-row">
+              <span>Discount:</span>
+              <span>-₱ ${invoice.discountAmount.toLocaleString()}</span>
+            </div>
+          ` : ''}
+          <div class="total-row">
+            <span>Tax (${((invoice.taxRate || 0.12) * 100).toFixed(0)}%):</span>
+            <span>₱ ${(invoice.taxAmount || 0).toLocaleString()}</span>
+          </div>
+          <div class="total-row grand-total">
+            <span>Grand Total:</span>
+            <span>₱ ${(invoice.grandTotal || 0).toLocaleString()}</span>
+          </div>
+          <div class="total-row">
+            <span>Payment Method:</span>
+            <span>${(invoice.paymentMethod || 'N/A').toUpperCase()}</span>
+          </div>
+          <div class="total-row">
+            <span>Amount Paid:</span>
+            <span>₱ ${(invoice.amountPaid || 0).toLocaleString()}</span>
+          </div>
+          ${invoice.changeGiven > 0 ? `
+            <div class="total-row">
+              <span>Change Given:</span>
+              <span>₱ ${invoice.changeGiven.toLocaleString()}</span>
+            </div>
+          ` : ''}
+        </div>
+      `;
+    }
+
+    // Print invoice
+    function printInvoice() {
+      window.print();
+    }
+
+    // Print invoice directly
+    function printInvoiceDirect(invoiceId) {
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (!invoice) {
+        alert('Invoice not found');
+        return;
+      }
+
+      displayInvoiceDetail(invoice);
+      setTimeout(() => {
+        window.print();
+      }, 100);
+    }
+
+    // Update invoice status
+    function updateInvoiceStatus() {
+      const invoice = invoices.find(inv => inv.id === currentInvoiceId);
+      if (!invoice) return;
+
+      document.getElementById('statusSelect').value = invoice.status || 'pending';
+      
+      // Show/hide payment method based on status
+      const paymentMethodDiv = document.getElementById('paymentMethodDiv');
+      if (invoice.status === 'paid') {
+        paymentMethodDiv.style.display = 'block';
+        document.getElementById('paymentMethodSelect').value = invoice.paymentMethod || 'cash';
+      } else {
+        paymentMethodDiv.style.display = 'none';
+      }
+      
+      document.getElementById('statusUpdateModal').classList.add('show');
+    }
+
+    // Save status update
+    async function saveStatusUpdate() {
+      try {
+        const newStatus = document.getElementById('statusSelect').value;
+        const paymentMethod = document.getElementById('paymentMethodSelect').value;
+        
+        const updateData = {
+          status: newStatus,
+          lastUpdatedBy: currentUser ? currentUser.fullName : 'Unknown',
+          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        
+        if (newStatus === 'paid') {
+          updateData.paymentMethod = paymentMethod;
+        }
+        
+        await db.collection('invoices').doc(currentInvoiceId).update(updateData);
+        
+        // Update local data
+        const invoiceIndex = invoices.findIndex(inv => inv.id === currentInvoiceId);
+        if (invoiceIndex !== -1) {
+          invoices[invoiceIndex] = { ...invoices[invoiceIndex], ...updateData };
+        }
+        
+        updateStats();
+        renderInvoiceTable();
+        closeStatusUpdate();
+        
+        alert('Invoice status updated successfully!');
+      } catch (error) {
+        console.error('Error updating invoice status:', error);
+        alert('Error updating invoice status');
+      }
+    }
+
+    // Filter functions
+    function filterByStatus(status) {
+      const buttons = document.querySelectorAll('.filter-btn');
+      buttons.forEach(btn => {
+        if (btn.textContent.includes('All Invoices') || btn.textContent.includes('Paid') || 
+           btn.textContent.includes('Pending') || btn.textContent.includes('Void')) {
+          btn.classList.remove('active');
+        }
+      });
+      event.target.classList.add('active');
+      
+      const rows = document.querySelectorAll('#invoiceTableBody tr');
+      rows.forEach(row => {
+        if (status === 'all') {
+          row.style.display = '';
+        } else {
+          const rowStatus = row.getAttribute('data-status');
+          row.style.display = rowStatus === status ? '' : 'none';
+        }
+      });
+    }
+
+    function filterByDate() {
+      const fromDate = document.getElementById('dateFrom').value;
+      const toDate = document.getElementById('dateTo').value;
+      
+      if (!fromDate && !toDate) {
+        renderInvoiceTable();
+        return;
+      }
+      
+      const filteredInvoices = invoices.filter(invoice => {
+        const invoiceDate = invoice.timestamp ? 
+          invoice.timestamp.toDate() : 
+          new Date(invoice.date);
+        
+        if (fromDate && toDate) {
+          return invoiceDate >= new Date(fromDate) && invoiceDate <= new Date(toDate);
+        } else if (fromDate) {
+          return invoiceDate >= new Date(fromDate);
+        } else if (toDate) {
+          return invoiceDate <= new Date(toDate);
+        }
+        return true;
+      });
+      
+      // Temporarily replace invoices array for filtering
+      const originalInvoices = [...invoices];
+      invoices = filteredInvoices;
+      renderInvoiceTable();
+      invoices = originalInvoices;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function(e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const rows = document.querySelectorAll('#invoiceTableBody tr');
+      
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchTerm) ? '' : 'none';
+      });
+    });
+
+    // Export invoices
+    function exportInvoices() {
+      let csv = 'Invoice #,Date,Customer Name,Total Amount,Payment Method,Status\n';
+      
+      invoices.forEach(invoice => {
+        const date = invoice.timestamp ? 
+          invoice.timestamp.toDate().toLocaleDateString() : 
+          (invoice.date ? new Date(invoice.date).toLocaleDateString() : 'N/A');
+        
+        csv += `${invoice.invoiceNumber},${date},${invoice.customerName},${invoice.grandTotal},${invoice.paymentMethod},${invoice.status}\n`;
+      });
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'invoices_export.csv';
+      a.click();
+    }
+
+    // Open new invoice modal
+    async function openNewInvoiceModal() {
+      try {
+        // Generate invoice number
+        const invoiceNumber = await generateInvoiceNumber();
+        document.getElementById('invoiceNumber').value = invoiceNumber;
+        
+        // Set today's date as default
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('invoiceDate').value = today;
+        
+        // Set due date to 30 days from today
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
+        
+        // Clear form
+        document.getElementById('newInvoiceForm').reset();
+        document.getElementById('invoiceNumber').value = invoiceNumber;
+        document.getElementById('invoiceDate').value = today;
+        document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
+        
+        // Clear line items
+        document.getElementById('lineItemsTableBody').innerHTML = '';
+        
+        // Add first line item (default to product)
+        addLineItem('product');
+        
+        // Reset calculations
+        calculateTotals();
+        
+        // Show modal
+        document.getElementById('newInvoiceModal').classList.add('show');
+      } catch (error) {
+        console.error('Error opening new invoice modal:', error);
+        alert('Error opening invoice form. Please try again.');
+      }
+    }
+
+    // Close new invoice modal
+    function closeNewInvoiceModal() {
+      document.getElementById('newInvoiceModal').classList.remove('show');
+    }
+
+    // Add line item row
+    function addLineItem(type = 'product') {
+      const tbody = document.getElementById('lineItemsTableBody');
+      const row = document.createElement('tr');
+      const rowIndex = tbody.children.length;
+      
+      // Determine the type display and icon
+      const typeDisplay = type === 'service' ? 'Service' : 'Product';
+      const typeIcon = type === 'service' ? 'fa-scissors' : 'fa-box';
+      const typeColor = type === 'service' ? 'text-blue-600' : 'text-[#da5c73]';
+      
+      row.innerHTML = `
+        <td class="p-3">
+          <div class="item-type-badge item-type-${type}">
+            <i class="fa-solid ${typeIcon}"></i>
+            <span>${typeDisplay}</span>
+        </div>
+          <input type="hidden" name="itemType" value="${type}" />
+        </td>
+        <td class="p-3">
+          <input type="text" name="itemName" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="${type === 'service' ? 'e.g., Haircut, Hair Color' : 'e.g., Shampoo, Hair Dye'}" required />
+        </td>
+        <td class="p-3">
+          <input type="text" name="itemId" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="${type === 'service' ? 'e.g., HC-001' : 'e.g., PROD-001'}" />
+        </td>
+        <td class="p-3">
+          <input type="number" name="quantity" min="1" step="1" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateLineTotal(this)" required />
+        </td>
+        <td class="p-3">
+          <input type="number" name="unitPrice" min="0" step="0.01" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateLineTotal(this)" required />
+        </td>
+        <td class="p-3">
+          <input type="number" name="lineTotal" class="w-full p-2 border border-gray-300 rounded bg-gray-100" readonly />
+        </td>
+        <td class="p-3 text-center">
+          <button type="button" onclick="removeLineItem(this)" class="text-red-500 hover:text-red-700">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </td>
+      `;
+      
+      tbody.appendChild(row);
+      
+      // Update item summary
+      updateItemSummary();
+    }
+
+    // Remove line item row
+    function removeLineItem(button) {
+      const row = button.closest('tr');
+      row.remove();
+      calculateTotals();
+    }
+
+    // Calculate line total for individual row
+    function calculateLineTotal(input) {
+      const row = input.closest('tr');
+      const quantity = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
+      const unitPrice = parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0;
+      const lineTotal = quantity * unitPrice;
+      
+      row.querySelector('input[name="lineTotal"]').value = lineTotal.toFixed(2);
+      calculateTotals();
+    }
+
+    // Calculate all totals
+    function calculateTotals() {
+      const lineItems = document.querySelectorAll('input[name="lineTotal"]');
+      let subtotal = 0;
+      
+      lineItems.forEach(input => {
+        subtotal += parseFloat(input.value) || 0;
+      });
+      
+      const taxPercentage = parseFloat(document.getElementById('taxPercentage').value) || 0;
+      const taxAmount = (subtotal * taxPercentage) / 100;
+      const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+      const grandTotal = subtotal + taxAmount - discountAmount;
+      
+      document.getElementById('subtotal').value = subtotal.toFixed(2);
+      document.getElementById('taxAmount').value = taxAmount.toFixed(2);
+      document.getElementById('grandTotal').value = grandTotal.toFixed(2);
+      
+      // Update item summary
+      updateItemSummary();
+    }
+
+    // Update item summary
+    function updateItemSummary() {
+      const rows = document.querySelectorAll('#lineItemsTableBody tr');
+      let productCount = 0;
+      let serviceCount = 0;
+      
+      rows.forEach(row => {
+        const itemType = row.querySelector('input[name="itemType"]').value;
+        const itemName = row.querySelector('input[name="itemName"]').value.trim();
+        
+        if (itemName) {
+          if (itemType === 'service') {
+            serviceCount++;
+          } else {
+            productCount++;
+          }
+        }
+      });
+      
+      document.getElementById('productCount').textContent = `${productCount} item${productCount !== 1 ? 's' : ''}`;
+      document.getElementById('serviceCount').textContent = `${serviceCount} item${serviceCount !== 1 ? 's' : ''}`;
+    }
+
+    // Handle form submission
+    document.getElementById('newInvoiceForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        // Validate form
+        if (!validateInvoiceForm()) {
+          return;
+        }
+        
+        // Collect form data
+        const formData = collectInvoiceFormData();
+        
+        // Create invoice
+        const invoice = await createInvoiceFromFormData(formData);
+        
+        // Show success message
+        alert(`Invoice ${invoice.invoiceNumber} created successfully!`);
+        
+        // Close modal
+        closeNewInvoiceModal();
+        
+        // Refresh invoice list
+        loadInvoices();
+        
+      } catch (error) {
+        console.error('Error creating invoice:', error);
+        alert('Error creating invoice. Please try again.');
+      }
+    });
+
+    // Validate invoice form
+    function validateInvoiceForm() {
+      const customerName = document.getElementById('customerName').value.trim();
+      if (!customerName) {
+        alert('Customer name is required.');
+        return false;
+      }
+      
+      const lineItems = document.querySelectorAll('input[name="itemName"]');
+      if (lineItems.length === 0) {
+        alert('At least one line item is required.');
+        return false;
+      }
+      
+      let hasValidItem = false;
+      lineItems.forEach(input => {
+        if (input.value.trim()) {
+          hasValidItem = true;
+        }
+      });
+      
+      if (!hasValidItem) {
+        alert('At least one line item with a name is required.');
+        return false;
+      }
+      
+      return true;
+    }
+
+    // Collect form data
+    function collectInvoiceFormData() {
+      const lineItems = [];
+      const rows = document.querySelectorAll('#lineItemsTableBody tr');
+      
+      rows.forEach(row => {
+        const itemName = row.querySelector('input[name="itemName"]').value.trim();
+        if (itemName) {
+          const itemType = row.querySelector('input[name="itemType"]').value;
+          lineItems.push({
+            type: itemType,
+            name: itemName,
+            itemId: row.querySelector('input[name="itemId"]').value.trim() || 'N/A',
+            quantity: parseFloat(row.querySelector('input[name="quantity"]').value) || 0,
+            unitPrice: parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0,
+            total: parseFloat(row.querySelector('input[name="lineTotal"]').value) || 0
+          });
+        }
+      });
+      
+      const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
+      const taxPercentage = parseFloat(document.getElementById('taxPercentage').value) || 0;
+      const taxAmount = parseFloat(document.getElementById('taxAmount').value) || 0;
+      const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
+      const grandTotal = parseFloat(document.getElementById('grandTotal').value) || 0;
+      
+      return {
+        invoiceNumber: document.getElementById('invoiceNumber').value,
+        customerName: document.getElementById('customerName').value.trim(),
+        customerEmail: document.getElementById('customerEmail').value.trim(),
+        customerPhone: document.getElementById('customerPhone').value.trim(),
+        invoiceDate: new Date(document.getElementById('invoiceDate').value),
+        dueDate: new Date(document.getElementById('dueDate').value),
+        items: lineItems,
+        subtotal: subtotal,
+        taxRate: taxPercentage / 100,
+        taxAmount: taxAmount,
+        discountAmount: discountAmount,
+        grandTotal: grandTotal,
+        paymentMethod: document.getElementById('paymentMethod').value,
+        paymentStatus: document.getElementById('paymentStatus').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+    }
+
+    // Create invoice from form data
+    async function createInvoiceFromFormData(formData) {
+      try {
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error('User must be authenticated to create invoice');
+        }
+
+        // Get user details
+        let userFullName = 'Unknown';
+        try {
+          const userDoc = await db.collection('users').doc(user.uid).get();
+          if (userDoc.exists) {
+            const userData = userDoc.data();
+            userFullName = userData.fullName || userData.email || 'Unknown';
+          } else {
+            userFullName = user.email || 'Unknown';
+          }
+        } catch (error) {
+          console.warn('Could not load user details:', error);
+          userFullName = user.email || 'Unknown';
+        }
+
+        // Create invoice object
+        const invoice = {
+          invoiceNumber: formData.invoiceNumber,
+          date: formData.invoiceDate,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          dueDate: formData.dueDate,
+          customerName: formData.customerName,
+          customerEmail: formData.customerEmail,
+          customerPhone: formData.customerPhone,
+          items: formData.items,
+          subtotal: formData.subtotal,
+          taxRate: formData.taxRate,
+          taxAmount: formData.taxAmount,
+          discountAmount: formData.discountAmount,
+          grandTotal: formData.grandTotal,
+          paymentMethod: formData.paymentMethod,
+          paymentStatus: formData.paymentStatus,
+          notes: formData.notes,
+          status: formData.paymentStatus === 'paid' ? 'paid' : 'pending',
+          createdBy: userFullName,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          lastUpdatedBy: userFullName,
+          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Save to Firebase
+        const docRef = await db.collection('invoices').add(invoice);
+        invoice.id = docRef.id;
+        
+        // Add to local array
+        invoices.unshift(invoice);
+        
+        console.log('Invoice created successfully:', invoice);
+        return invoice;
+        
+      } catch (error) {
+        console.error('Error creating invoice:', error);
+        throw error;
+      }
+    }
+
+    // Modal functions
+    function closeInvoiceDetail() {
+      document.getElementById('invoiceDetailModal').classList.remove('show');
+    }
+
+    function closeStatusUpdate() {
+      document.getElementById('statusUpdateModal').classList.remove('show');
+    }
+
+    function showLogoutModal() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    function hideLogoutModal() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    async function confirmLogout() {
+      try {
+        await auth.signOut();
+        window.location.href = 'Login.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+        window.location.href = 'Login.html';
+      }
+    }
+
+    // Notification functions (simplified)
     function toggleNotifications() {
       const dropdown = document.getElementById('notificationDropdown');
       dropdown.classList.toggle('show');
-      loadNotifications();
-    }
-
-    function viewNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notification = notifications.find(n => n.id === id);
-      
-      if (!notification) return;
-      
-      notification.read = true;
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      const modal = document.getElementById('notificationModal');
-      const modalBody = document.getElementById('modalBody');
-      
-      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-      });
-      
-      modalBody.innerHTML = `
-        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-        <div class="space-y-3">
-          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-          <div><strong>Email:</strong> ${notification.details.email}</div>
-          <div><strong>Phone:</strong> ${notification.details.phone}</div>
-          <div><strong>Service:</strong> ${notification.details.service}</div>
-          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-        </div>
-        <div class="mt-6 flex gap-3">
-          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            <i class="fa-solid fa-check mr-2"></i>Approve
-          </button>
-          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-            <i class="fa-solid fa-times mr-2"></i>Decline
-          </button>
-        </div>
-      `;
-      
-      modal.classList.add('show');
-      loadNotifications();
-    }
-
-    function closeNotificationModal() {
-      document.getElementById('notificationModal').classList.remove('show');
-    }
-
-    function markAllRead() {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications.forEach(n => n.read = true);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
     }
 
     function clearAllNotifications() {
-      localStorage.setItem('skinshipNotifications', '[]');
-      loadNotifications();
+      // Implementation for clearing notifications
     }
 
-    function approveAppointment(id) {
-      alert('Appointment approved!');
-      closeNotificationModal();
-      deleteNotification(id);
+    function markAllRead() {
+      // Implementation for marking notifications as read
     }
 
-    function rejectAppointment(id) {
-      alert('Appointment declined!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
-
-    function deleteNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      notifications = notifications.filter(n => n.id !== id);
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      loadNotifications();
-    }
-
-    // Load notifications on page load and refresh every 5 seconds
-    loadNotifications();
-    setInterval(loadNotifications, 5000);
-
-    // Close user menu and notifications on outside click
-    window.addEventListener('click', (e) => {
+    // Close dropdowns on outside click
+    document.addEventListener('click', function(event) {
       const userMenu = document.getElementById('userMenu');
-      const btn = document.getElementById('userMenuButton');
-      if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
+      const userMenuButton = document.getElementById('userMenuButton');
+      
+      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
         userMenu.classList.add('hidden');
       }
 
-      if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
+      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
         document.getElementById('notificationDropdown').classList.remove('show');
       }
     });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadCurrentUser();
+      loadInvoices();
+      
+      // Setup logout button handler
+      const logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          showLogoutModal();
+        });
+      }
+    });
+
+    // Make functions globally available for POS integration
+    window.createInvoiceFromSale = createInvoiceFromSale;
+    window.generateInvoiceNumber = generateInvoiceNumber;
   </script>
   
   <script type="module" src="role-check.js"></script>
-
 </body>
 </html>
