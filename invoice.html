@@ -220,7 +220,7 @@
       font-weight: 600;
     }
 
-    .status-paid {
+    .status-received {
       background-color: #dcfce7;
       color: #166534;
     }
@@ -228,31 +228,6 @@
     .status-pending {
       background-color: #fef3c7;
       color: #92400e;
-    }
-
-    .status-void {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-
-    .item-type-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.25rem;
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.375rem;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    .item-type-product {
-      background-color: #fef2f2;
-      color: #da5c73;
-    }
-
-    .item-type-service {
-      background-color: #eff6ff;
-      color: #2563eb;
     }
 
     .loading-spinner {
@@ -291,6 +266,154 @@
       color: white;
     }
 
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+    }
+
+    /* Logout Modal Styles */
+    .logout-modal {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
     @media print {
       .no-print {
         display: none !important;
@@ -302,11 +425,25 @@
         padding: 0;
       }
     }
+
+    @media (max-width: 768px) {
+      .logout-modal {
+        padding: 1.5rem;
+      }
+
+      .logout-modal-actions {
+        flex-direction: column-reverse;
+      }
+
+      .logout-btn {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -328,16 +465,12 @@
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Header Section -->
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVOICE MANAGEMENT</h1>
         <div class="flex items-center gap-4">
+          <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVOICE MANAGEMENT</h1>
           <!-- Search Bar -->
           <input type="text" id="searchInput" placeholder="Search invoices..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
-          
-          <!-- New Invoice Button -->
-          <button class="filter-btn" onclick="openNewInvoiceModal()">
-            <i class="fa-solid fa-plus mr-2"></i>New Invoice
-          </button>
-          
+        </div>
+        <div class="flex items-center gap-4">
           <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
@@ -350,7 +483,6 @@
               <div class="notification-header">
                 <h3 class="font-bold text-gray-800">Notifications</h3>
                 <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
-                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
               </div>
               <div id="notificationList"></div>
             </div>
@@ -373,25 +505,25 @@
 
       <!-- Stats Summary -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-2xl p-4 shadow-lg">
+        <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Total Invoices</p>
               <p class="text-2xl font-bold text-[#da5c73]" id="totalInvoices">0</p>
             </div>
             <i class="fa-solid fa-file-invoice text-3xl text-[#da5c73] opacity-50"></i>
-            </div>
           </div>
-        <div class="bg-white rounded-2xl p-4 shadow-lg">
+        </div>
+        <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Total Revenue</p>
+              <p class="text-gray-600 text-sm font-semibold">Total Value</p>
               <p class="text-2xl font-bold text-[#da5c73]" id="totalRevenue">₱ 0</p>
             </div>
             <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
-            </div>
           </div>
-        <div class="bg-white rounded-2xl p-4 shadow-lg">
+        </div>
+        <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-sm font-semibold">Pending</p>
@@ -400,10 +532,10 @@
             <i class="fa-solid fa-clock text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
-        <div class="bg-white rounded-2xl p-4 shadow-lg">
+        <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Paid</p>
+              <p class="text-gray-600 text-sm font-semibold">Received</p>
               <p class="text-2xl font-bold text-[#da5c73]" id="paidInvoices">0</p>
             </div>
             <i class="fa-solid fa-check-circle text-3xl text-[#da5c73] opacity-50"></i>
@@ -414,9 +546,8 @@
       <!-- Filters -->
       <div class="flex gap-3 mb-6 flex-wrap">
         <button class="filter-btn active" onclick="filterByStatus('all')">All Invoices</button>
-        <button class="filter-btn" onclick="filterByStatus('paid')">Paid</button>
+        <button class="filter-btn" onclick="filterByStatus('received')">Received</button>
         <button class="filter-btn" onclick="filterByStatus('pending')">Pending</button>
-        <button class="filter-btn" onclick="filterByStatus('void')">Void</button>
         <input type="date" id="dateFrom" class="filter-btn" placeholder="From Date" onchange="filterByDate()" />
         <input type="date" id="dateTo" class="filter-btn" placeholder="To Date" onchange="filterByDate()" />
         <button class="filter-btn" onclick="exportInvoices()">
@@ -432,16 +563,18 @@
               <tr>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Invoice #</th>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Date</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Customer</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Supplier</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Product</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Category</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Quantity</th>
+                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Unit Price</th>
                 <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Total Amount</th>
-                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Payment Method</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
-                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Actions</th>
               </tr>
             </thead>
             <tbody id="invoiceTableBody">
               <tr>
-                <td colspan="7" class="text-center py-8 text-gray-500">
+                <td colspan="9" class="text-center py-8 text-gray-500">
                   <div class="loading-spinner mx-auto mb-2"></div>
                   Loading invoices...
                 </td>
@@ -471,9 +604,6 @@
         <button onclick="printInvoice()" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
           <i class="fa-solid fa-print mr-2"></i>Print Invoice
         </button>
-        <button onclick="updateInvoiceStatus()" class="flex-1 bg-blue-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 transition">
-          <i class="fa-solid fa-edit mr-2"></i>Update Status
-        </button>
         <button onclick="closeInvoiceDetail()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
           <i class="fa-solid fa-times mr-2"></i>Close
         </button>
@@ -481,253 +611,45 @@
     </div>
   </div>
 
-  <!-- New Invoice Modal -->
-  <div id="newInvoiceModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 1000px; max-height: 90vh;">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-plus-circle mr-2"></i>Create New Invoice
-        </h2>
-        <span class="modal-close text-3xl cursor-pointer text-gray-400 hover:text-[#da5c73]" onclick="closeNewInvoiceModal()">&times;</span>
-      </div>
-      
-      <form id="newInvoiceForm" class="space-y-6">
-        <!-- Customer Information -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Customer Information</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
-              <input type="text" id="customerName" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Email (Optional)</label>
-              <input type="email" id="customerEmail" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Phone (Optional)</label>
-              <input type="tel" id="customerPhone" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" />
-            </div>
-          </div>
-        </div>
-
-        <!-- Invoice Details -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Invoice Details</h3>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Number</label>
-              <input type="text" id="invoiceNumber" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Date *</label>
-              <input type="date" id="invoiceDate" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
-              <input type="date" id="dueDate" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required />
-            </div>
-          </div>
-        </div>
-
-        <!-- Line Items -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h3 class="text-lg font-semibold text-gray-800">Line Items (Products & Services)</h3>
-              <p class="text-sm text-gray-600 mt-1">Add products (shampoo, hair dye) or services (haircut, coloring) to your invoice</p>
-            </div>
-            <div class="flex gap-2">
-              <button type="button" onclick="addLineItem('product')" class="bg-[#da5c73] text-white px-4 py-2 rounded-lg hover:bg-[#c54d63] transition">
-                <i class="fa-solid fa-box mr-2"></i>Add Product
-              </button>
-              <button type="button" onclick="addLineItem('service')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
-                <i class="fa-solid fa-scissors mr-2"></i>Add Service
-              </button>
-            </div>
-          </div>
-          
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-[#f7d4d0]">
-                <tr>
-                  <th class="p-3 text-left font-bold text-[#da5c73]">Type</th>
-                  <th class="p-3 text-left font-bold text-[#da5c73]">Name *</th>
-                  <th class="p-3 text-left font-bold text-[#da5c73]">ID/Code</th>
-                  <th class="p-3 text-center font-bold text-[#da5c73]">Quantity *</th>
-                  <th class="p-3 text-right font-bold text-[#da5c73]">Unit Price *</th>
-                  <th class="p-3 text-right font-bold text-[#da5c73]">Line Total</th>
-                  <th class="p-3 text-center font-bold text-[#da5c73]">Action</th>
-              </tr>
-              </thead>
-              <tbody id="lineItemsTableBody">
-                <!-- Line items will be added here dynamically -->
-            </tbody>
-          </table>
-            </div>
-          </div>
-
-        <!-- Item Summary -->
-        <div class="bg-blue-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Item Summary</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="flex items-center gap-3">
-              <div class="item-type-badge item-type-product">
-                <i class="fa-solid fa-box"></i>
-                <span>Products</span>
-        </div>
-              <span class="text-sm text-gray-600" id="productCount">0 items</span>
-      </div>
-            <div class="flex items-center gap-3">
-              <div class="item-type-badge item-type-service">
-                <i class="fa-solid fa-scissors"></i>
-                <span>Services</span>
-    </div>
-              <span class="text-sm text-gray-600" id="serviceCount">0 items</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Calculations -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Calculations</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Subtotal</label>
-                <input type="number" id="subtotal" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
-        </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Tax Percentage (%)</label>
-                <input type="number" id="taxPercentage" value="12" min="0" max="100" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateTotals()" />
-      </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Tax Amount</label>
-                <input type="number" id="taxAmount" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" readonly />
-    </div>
-            </div>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Discount Amount</label>
-                <input type="number" id="discountAmount" value="0" min="0" step="0.01" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateTotals()" />
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Grand Total</label>
-                <input type="number" id="grandTotal" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 font-bold text-lg" readonly />
-              </div>
-            </div>
-    </div>
-  </div>
-
-        <!-- Payment Information -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Information</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method *</label>
-              <select id="paymentMethod" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
-                <option value="cash">Cash</option>
-                <option value="card">Card</option>
-                <option value="gcash">GCash</option>
-                <option value="paymaya">PayMaya</option>
-                <option value="bank_transfer">Bank Transfer</option>
-                <option value="check">Check</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status *</label>
-              <select id="paymentStatus" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
-                <option value="unpaid">Unpaid</option>
-                <option value="paid">Paid</option>
-                <option value="partially_paid">Partially Paid</option>
-              </select>
-            </div>
-          </div>
-          <div class="mt-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Notes (Optional)</label>
-            <textarea id="notes" rows="3" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="Additional notes or comments..."></textarea>
-    </div>
-  </div>
-
-        <!-- Action Buttons -->
-        <div class="flex gap-3 pt-4">
-          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-            <i class="fa-solid fa-save mr-2"></i>Save Invoice
-          </button>
-          <button type="button" onclick="closeNewInvoiceModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-            <i class="fa-solid fa-times mr-2"></i>Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Status Update Modal -->
-  <div id="statusUpdateModal" class="modal-overlay">
-    <div class="modal-content" style="max-width: 400px;">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-edit mr-2"></i>Update Status
-        </h2>
-        <span class="modal-close text-3xl cursor-pointer text-gray-400 hover:text-[#da5c73]" onclick="closeStatusUpdate()">&times;</span>
-      </div>
-      
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Invoice Status</label>
-          <select id="statusSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]">
-            <option value="pending">Pending</option>
-            <option value="paid">Paid</option>
-            <option value="void">Void</option>
-          </select>
-        </div>
-        
-        <div id="paymentMethodDiv" style="display: none;">
-          <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-          <select id="paymentMethodSelect" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]">
-            <option value="cash">Cash</option>
-            <option value="card">Card</option>
-            <option value="gcash">GCash</option>
-            <option value="paymaya">PayMaya</option>
-            <option value="bank_transfer">Bank Transfer</option>
-          </select>
-        </div>
-      </div>
-      
-      <div class="flex gap-3 mt-6">
-        <button onclick="saveStatusUpdate()" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-          <i class="fa-solid fa-save mr-2"></i>Save Changes
-        </button>
-        <button onclick="closeStatusUpdate()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-          <i class="fa-solid fa-times mr-2"></i>Cancel
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- Logout Confirmation Modal -->
   <div class="modal-overlay" id="logoutModal">
-    <div class="modal-content" style="max-width: 450px;">
-      <div class="text-center mb-6">
-        <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <i class="fa-solid fa-right-from-bracket text-3xl text-red-500"></i>
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
         </div>
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Confirm Logout</h2>
-        <p class="text-gray-600">Are you sure you want to sign out?</p>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
       </div>
-      
-      <div class="flex gap-3">
-        <button onclick="hideLogoutModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-          <i class="fa-solid fa-times mr-2"></i>Cancel
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
         </button>
-        <button onclick="confirmLogout()" class="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 transition">
-          <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Firebase Configuration and JavaScript -->
   <script>
     // Firebase configuration
     const firebaseConfig = {
@@ -748,7 +670,69 @@
     let invoices = [];
     let currentUser = null;
     let currentInvoiceId = null;
-    let invoiceCounter = 0;
+
+    // Clock out function
+    async function handleClockOut() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const today = new Date().toLocaleDateString();
+        const logsRef = db.collection('staffLogs').doc(user.uid).collection('history');
+        
+        const todayQuery = logsRef.where('date', '==', today);
+        const todaySnap = await todayQuery.get();
+        
+        if (!todaySnap.empty) {
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await logsRef.doc(activeLog.id).set({
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
+          }
+        }
+
+        const staffRef = db.collection('users').doc(user.uid);
+        await staffRef.update({ 
+          availability: false,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (error) {
+        console.error("Error during clock out:", error);
+      }
+    }
+
+    // Logout modal functions
+    function showLogoutModal() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    function hideLogoutModal() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    async function confirmLogout() {
+      const confirmBtn = document.getElementById('confirmLogoutBtn');
+      confirmBtn.classList.add('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
+      try {
+        await handleClockOut();
+        localStorage.removeItem('currentUserEmail');
+        localStorage.removeItem('currentUserRole');
+        localStorage.removeItem('currentUsername');
+        localStorage.removeItem('currentUserFullName');
+        await auth.signOut();
+        window.location.href = "Login.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        confirmBtn.classList.remove('loading');
+        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+        alert("An error occurred during logout. Please try again.");
+        await auth.signOut();
+        window.location.href = "Login.html";
+      }
+    }
 
     // Load current user
     async function loadCurrentUser() {
@@ -763,7 +747,7 @@
                 fullName: userData.fullName || userData.email || 'User',
                 email: userData.email || user.email
               };
-      } else {
+            } else {
               currentUser = {
                 uid: user.uid,
                 fullName: user.email || 'User',
@@ -771,6 +755,7 @@
               };
             }
             document.getElementById('userDisplayName').textContent = currentUser.fullName;
+            document.getElementById('logoutUsername').textContent = currentUser.fullName;
           } catch (error) {
             console.error('Error loading user data:', error);
             currentUser = {
@@ -779,11 +764,77 @@
               email: user.email
             };
             document.getElementById('userDisplayName').textContent = currentUser.fullName;
+            document.getElementById('logoutUsername').textContent = currentUser.fullName;
           }
         } else {
           window.location.href = 'Login.html';
         }
       });
+    }
+
+    // Listen to Purchase Orders and auto-create/update invoices
+    function listenToPurchaseOrders() {
+      db.collection('purchaseOrders')
+        .onSnapshot(async (snapshot) => {
+          snapshot.docChanges().forEach(async (change) => {
+            if (change.type === 'added' || change.type === 'modified') {
+              const poData = change.doc.data();
+              const poId = change.doc.id;
+              
+              // Check if invoice already exists for this PO
+              const existingInvoice = await db.collection('invoices')
+                .where('purchaseOrderId', '==', poId)
+                .get();
+              
+              if (existingInvoice.empty) {
+                // Create invoice from PO
+                await createInvoiceFromPO(poData, poId);
+              } else {
+                // Update existing invoice status
+                const invoiceDoc = existingInvoice.docs[0];
+                await db.collection('invoices').doc(invoiceDoc.id).update({
+                  status: poData.status,
+                  receivedDate: poData.receivedDate || null,
+                  receivedBy: poData.receivedBy || null
+                });
+                // Reload invoices to reflect changes
+                await loadInvoices();
+              }
+            }
+          });
+        });
+    }
+
+    // Create invoice from Purchase Order
+    async function createInvoiceFromPO(poData, poId) {
+      try {
+        const invoiceNumber = await generateInvoiceNumber();
+        const now = new Date();
+        
+        const invoice = {
+          invoiceNumber: invoiceNumber,
+          purchaseOrderId: poId,
+          purchaseOrderNumber: poData.id,
+          date: poData.date || now.toISOString().split('T')[0],
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          supplier: poData.supplier || 'N/A',
+          productName: poData.productName || 'N/A',
+          productId: poData.productId || 'N/A',
+          category: poData.category || 'N/A',
+          quantity: poData.quantity || 0,
+          unitPrice: poData.unitPrice || 0,
+          totalValue: poData.totalValue || 0,
+          status: poData.status || 'pending',
+          createdBy: poData.receivedBy || currentUser?.fullName || 'System',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          receivedDate: poData.receivedDate || getCurrentDate()
+        };
+
+        await db.collection('invoices').add(invoice);
+        console.log('Invoice created from PO:', invoiceNumber);
+      } catch (error) {
+        console.error('Error creating invoice from PO:', error);
+      }
     }
 
     // Generate unique invoice number
@@ -803,57 +854,18 @@
           }
         });
 
-        return `IV-${String(newNumber).padStart(3, '0')}`;
+        return `INV-${String(newNumber).padStart(3, '0')}`;
       } catch (error) {
         console.error('Error generating invoice number:', error);
-        return `IV-${Date.now().toString().slice(-3)}`;
+        return `INV-${Date.now().toString().slice(-3)}`;
       }
     }
 
-    // Create new invoice from POS sale
-    async function createInvoiceFromSale(saleData) {
-      try {
-        const invoiceNumber = await generateInvoiceNumber();
-        const now = new Date();
-        
-        const invoice = {
-          invoiceNumber: invoiceNumber,
-          date: now,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          customerName: saleData.customerName || 'Walk-in Customer',
-          customerEmail: saleData.customerEmail || '',
-          customerPhone: saleData.customerPhone || '',
-          items: saleData.items || [],
-          subtotal: saleData.subtotal || 0,
-          taxRate: saleData.taxRate || 0.12, // 12% VAT
-          taxAmount: saleData.taxAmount || 0,
-          discountAmount: saleData.discountAmount || 0,
-          grandTotal: saleData.grandTotal || 0,
-          paymentMethod: saleData.paymentMethod || 'cash',
-          amountPaid: saleData.amountPaid || saleData.grandTotal || 0,
-          changeGiven: saleData.changeGiven || 0,
-          status: saleData.amountPaid >= saleData.grandTotal ? 'paid' : 'pending',
-          createdBy: currentUser ? currentUser.fullName : 'Unknown',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastUpdatedBy: currentUser ? currentUser.fullName : 'Unknown',
-          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        const docRef = await db.collection('invoices').add(invoice);
-        invoice.id = docRef.id;
-        
-        // Add to local array
-        invoices.unshift(invoice);
-        
-        // Update UI
-        updateStats();
-        renderInvoiceTable();
-        
-        return invoice;
-      } catch (error) {
-        console.error('Error creating invoice:', error);
-        throw error;
-      }
+    // Get current date
+    function getCurrentDate() {
+      const today = new Date();
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return today.toLocaleDateString('en-US', options);
     }
 
     // Load invoices from Firebase
@@ -875,21 +887,21 @@
       } catch (error) {
         console.error('Error loading invoices:', error);
         document.getElementById('invoiceTableBody').innerHTML = 
-          '<tr><td colspan="7" class="text-center py-8 text-red-500">Error loading invoices. Please refresh the page.</td></tr>';
+          '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading invoices. Please refresh the page.</td></tr>';
       }
     }
 
     // Update statistics
     function updateStats() {
       const totalInvoices = invoices.length;
-      const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.grandTotal || 0), 0);
+      const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalValue || 0), 0);
       const pendingInvoices = invoices.filter(invoice => invoice.status === 'pending').length;
-      const paidInvoices = invoices.filter(invoice => invoice.status === 'paid').length;
+      const receivedInvoices = invoices.filter(invoice => invoice.status === 'received').length;
 
       document.getElementById('totalInvoices').textContent = totalInvoices;
       document.getElementById('totalRevenue').textContent = `₱ ${totalRevenue.toLocaleString()}`;
       document.getElementById('pendingInvoices').textContent = pendingInvoices;
-      document.getElementById('paidInvoices').textContent = paidInvoices;
+      document.getElementById('paidInvoices').textContent = receivedInvoices;
     }
 
     // Render invoice table
@@ -898,23 +910,22 @@
       tbody.innerHTML = '';
 
       if (invoices.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No invoices found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-500">No invoices found.</td></tr>';
         return;
       }
       
       invoices.forEach(invoice => {
         const row = document.createElement('tr');
-        row.className = 'border-b hover:bg-gray-50 transition';
+        row.className = 'border-b hover:bg-gray-50 transition cursor-pointer';
         row.setAttribute('data-status', invoice.status);
+        row.onclick = () => viewInvoice(invoice.id);
         
-        const statusClass = invoice.status === 'paid' ? 'status-paid' : 
-                           invoice.status === 'pending' ? 'status-pending' : 
-                           'status-void';
+        const statusClass = invoice.status === 'received' ? 'status-received' : 'status-pending';
         
         const date = invoice.timestamp ? 
           invoice.timestamp.toDate().toLocaleDateString('en-US', { 
             year: 'numeric', 
-          month: 'short', 
+            month: 'short', 
             day: 'numeric' 
           }) : 
           (invoice.date ? new Date(invoice.date).toLocaleDateString('en-US', { 
@@ -924,21 +935,16 @@
           }) : 'N/A');
         
         row.innerHTML = `
-          <td class="py-4 px-4 font-semibold">${invoice.invoiceNumber}</td>
+          <td class="py-4 px-4 font-semibold">${invoice.invoiceNumber || 'N/A'}</td>
           <td class="py-4 px-4">${date}</td>
-          <td class="py-4 px-4">${invoice.customerName}</td>
-          <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${(invoice.grandTotal || 0).toLocaleString()}</td>
-          <td class="py-4 px-4 text-center">${(invoice.paymentMethod || 'N/A').toUpperCase()}</td>
+          <td class="py-4 px-4">${invoice.supplier || 'N/A'}</td>
+          <td class="py-4 px-4">${invoice.productName || 'N/A'}</td>
+          <td class="py-4 px-4">${invoice.category || 'N/A'}</td>
+          <td class="py-4 px-4 text-center">${invoice.quantity || 0}</td>
+          <td class="py-4 px-4 text-right">₱ ${(invoice.unitPrice || 0).toLocaleString()}</td>
+          <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${(invoice.totalValue || 0).toLocaleString()}</td>
           <td class="py-4 px-4 text-center">
             <span class="status-badge ${statusClass}">${(invoice.status || 'pending').toUpperCase()}</span>
-          </td>
-          <td class="py-4 px-4 text-center">
-            <button onclick="viewInvoice('${invoice.id}')" class="text-[#da5c73] hover:text-[#c54d63] mr-2" title="View Invoice">
-              <i class="fa-solid fa-eye"></i>
-            </button>
-            <button onclick="printInvoiceDirect('${invoice.id}')" class="text-blue-500 hover:text-blue-600 mr-2" title="Print Invoice">
-              <i class="fa-solid fa-print"></i>
-            </button>
           </td>
         `;
         
@@ -985,83 +991,58 @@
           <h1>Skinship Beauty</h1>
           <p>Primark Towncenter Cainta, Rizal</p>
           <p>Phone: (02) 123-4567 | Email: info@skinshipbeauty.com</p>
-          </div>
+        </div>
         
         <div class="invoice-header">
           <div>
             <h2>INVOICE</h2>
-            <p><strong>Invoice #:</strong> ${invoice.invoiceNumber}</p>
+            <p><strong>Invoice #:</strong> ${invoice.invoiceNumber || 'N/A'}</p>
             <p><strong>Date:</strong> ${date}</p>
+            ${invoice.purchaseOrderNumber ? `<p><strong>PO #:</strong> ${invoice.purchaseOrderNumber}</p>` : ''}
           </div>
           <div>
-            <p><strong>Bill To:</strong></p>
-            <p>${invoice.customerName}</p>
-            ${invoice.customerEmail ? `<p>${invoice.customerEmail}</p>` : ''}
-            ${invoice.customerPhone ? `<p>${invoice.customerPhone}</p>` : ''}
+            <p><strong>Supplier:</strong></p>
+            <p>${invoice.supplier || 'N/A'}</p>
+            ${invoice.receivedDate ? `<p><strong>Received:</strong> ${invoice.receivedDate}</p>` : ''}
           </div>
         </div>
         
         <table class="items-table">
           <thead>
             <tr>
-              <th>Type</th>
-              <th>Item</th>
-              <th>ID/Code</th>
-              <th>Qty</th>
+              <th>Product ID</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Quantity</th>
               <th>Unit Price</th>
               <th>Total</th>
             </tr>
           </thead>
           <tbody>
-            ${(invoice.items || []).map(item => `
-              <tr>
-                <td>
-                  <div class="item-type-badge item-type-${item.type || 'product'}">
-                    <i class="fa-solid ${item.type === 'service' ? 'fa-scissors' : 'fa-box'}"></i>
-                    <span>${(item.type || 'product').charAt(0).toUpperCase() + (item.type || 'product').slice(1)}</span>
-                  </div>
-                </td>
-                <td>${item.name || 'N/A'}</td>
-                <td>${item.itemId || item.productId || 'N/A'}</td>
-                <td>${item.quantity || 0}</td>
-                <td>₱ ${(item.unitPrice || 0).toLocaleString()}</td>
-                <td>₱ ${(item.total || 0).toLocaleString()}</td>
-              </tr>
-            `).join('')}
+            <tr>
+              <td>${invoice.productId || 'N/A'}</td>
+              <td>${invoice.productName || 'N/A'}</td>
+              <td>${invoice.category || 'N/A'}</td>
+              <td>${invoice.quantity || 0}</td>
+              <td>₱ ${(invoice.unitPrice || 0).toLocaleString()}</td>
+              <td>₱ ${(invoice.totalValue || 0).toLocaleString()}</td>
+            </tr>
           </tbody>
         </table>
         
         <div class="totals">
-          <div class="total-row">
-            <span>Subtotal:</span>
-            <span>₱ ${(invoice.subtotal || 0).toLocaleString()}</span>
-          </div>
-          ${invoice.discountAmount > 0 ? `
-            <div class="total-row">
-              <span>Discount:</span>
-              <span>-₱ ${invoice.discountAmount.toLocaleString()}</span>
-            </div>
-          ` : ''}
-          <div class="total-row">
-            <span>Tax (${((invoice.taxRate || 0.12) * 100).toFixed(0)}%):</span>
-            <span>₱ ${(invoice.taxAmount || 0).toLocaleString()}</span>
-          </div>
           <div class="total-row grand-total">
-            <span>Grand Total:</span>
-            <span>₱ ${(invoice.grandTotal || 0).toLocaleString()}</span>
+            <span>Total Amount:</span>
+            <span>₱ ${(invoice.totalValue || 0).toLocaleString()}</span>
           </div>
           <div class="total-row">
-            <span>Payment Method:</span>
-            <span>${(invoice.paymentMethod || 'N/A').toUpperCase()}</span>
+            <span>Status:</span>
+            <span>${(invoice.status || 'pending').toUpperCase()}</span>
           </div>
-          <div class="total-row">
-            <span>Amount Paid:</span>
-            <span>₱ ${(invoice.amountPaid || 0).toLocaleString()}</span>
-          </div>
-          ${invoice.changeGiven > 0 ? `
+          ${invoice.createdBy ? `
             <div class="total-row">
-              <span>Change Given:</span>
-              <span>₱ ${invoice.changeGiven.toLocaleString()}</span>
+              <span>Received By:</span>
+              <span>${invoice.createdBy}</span>
             </div>
           ` : ''}
         </div>
@@ -1073,80 +1054,17 @@
       window.print();
     }
 
-    // Print invoice directly
-    function printInvoiceDirect(invoiceId) {
-      const invoice = invoices.find(inv => inv.id === invoiceId);
-      if (!invoice) {
-        alert('Invoice not found');
-        return;
-      }
-
-      displayInvoiceDetail(invoice);
-      setTimeout(() => {
-        window.print();
-      }, 100);
-    }
-
-    // Update invoice status
-    function updateInvoiceStatus() {
-      const invoice = invoices.find(inv => inv.id === currentInvoiceId);
-      if (!invoice) return;
-
-      document.getElementById('statusSelect').value = invoice.status || 'pending';
-      
-      // Show/hide payment method based on status
-      const paymentMethodDiv = document.getElementById('paymentMethodDiv');
-      if (invoice.status === 'paid') {
-        paymentMethodDiv.style.display = 'block';
-        document.getElementById('paymentMethodSelect').value = invoice.paymentMethod || 'cash';
-      } else {
-        paymentMethodDiv.style.display = 'none';
-      }
-      
-      document.getElementById('statusUpdateModal').classList.add('show');
-    }
-
-    // Save status update
-    async function saveStatusUpdate() {
-      try {
-        const newStatus = document.getElementById('statusSelect').value;
-        const paymentMethod = document.getElementById('paymentMethodSelect').value;
-        
-        const updateData = {
-          status: newStatus,
-          lastUpdatedBy: currentUser ? currentUser.fullName : 'Unknown',
-          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-        
-        if (newStatus === 'paid') {
-          updateData.paymentMethod = paymentMethod;
-        }
-        
-        await db.collection('invoices').doc(currentInvoiceId).update(updateData);
-        
-        // Update local data
-        const invoiceIndex = invoices.findIndex(inv => inv.id === currentInvoiceId);
-        if (invoiceIndex !== -1) {
-          invoices[invoiceIndex] = { ...invoices[invoiceIndex], ...updateData };
-        }
-        
-        updateStats();
-        renderInvoiceTable();
-        closeStatusUpdate();
-        
-        alert('Invoice status updated successfully!');
-      } catch (error) {
-        console.error('Error updating invoice status:', error);
-        alert('Error updating invoice status');
-      }
+    // Close invoice detail modal
+    function closeInvoiceDetail() {
+      document.getElementById('invoiceDetailModal').classList.remove('show');
     }
 
     // Filter functions
     function filterByStatus(status) {
       const buttons = document.querySelectorAll('.filter-btn');
       buttons.forEach(btn => {
-        if (btn.textContent.includes('All Invoices') || btn.textContent.includes('Paid') || 
-           btn.textContent.includes('Pending') || btn.textContent.includes('Void')) {
+        if (btn.textContent.includes('All Invoices') || btn.textContent.includes('Received') || 
+           btn.textContent.includes('Pending')) {
           btn.classList.remove('active');
         }
       });
@@ -1187,7 +1105,6 @@
         return true;
       });
       
-      // Temporarily replace invoices array for filtering
       const originalInvoices = [...invoices];
       invoices = filteredInvoices;
       renderInvoiceTable();
@@ -1207,14 +1124,14 @@
 
     // Export invoices
     function exportInvoices() {
-      let csv = 'Invoice #,Date,Customer Name,Total Amount,Payment Method,Status\n';
+      let csv = 'Invoice #,Date,Supplier,Product,Quantity,Unit Price,Total Amount,Status\n';
       
       invoices.forEach(invoice => {
         const date = invoice.timestamp ? 
           invoice.timestamp.toDate().toLocaleDateString() : 
           (invoice.date ? new Date(invoice.date).toLocaleDateString() : 'N/A');
         
-        csv += `${invoice.invoiceNumber},${date},${invoice.customerName},${invoice.grandTotal},${invoice.paymentMethod},${invoice.status}\n`;
+        csv += `${invoice.invoiceNumber},${date},${invoice.supplier},${invoice.productName},${invoice.quantity},${invoice.unitPrice},${invoice.totalValue},${invoice.status}\n`;
       });
       
       const blob = new Blob([csv], { type: 'text/csv' });
@@ -1225,368 +1142,84 @@
       a.click();
     }
 
-    // Open new invoice modal
-    async function openNewInvoiceModal() {
-      try {
-        // Generate invoice number
-        const invoiceNumber = await generateInvoiceNumber();
-        document.getElementById('invoiceNumber').value = invoiceNumber;
-        
-        // Set today's date as default
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('invoiceDate').value = today;
-        
-        // Set due date to 30 days from today
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
-        document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
-        
-        // Clear form
-        document.getElementById('newInvoiceForm').reset();
-        document.getElementById('invoiceNumber').value = invoiceNumber;
-        document.getElementById('invoiceDate').value = today;
-        document.getElementById('dueDate').value = dueDate.toISOString().split('T')[0];
-        
-        // Clear line items
-        document.getElementById('lineItemsTableBody').innerHTML = '';
-        
-        // Add first line item (default to product)
-        addLineItem('product');
-        
-        // Reset calculations
-        calculateTotals();
-        
-        // Show modal
-        document.getElementById('newInvoiceModal').classList.add('show');
-      } catch (error) {
-        console.error('Error opening new invoice modal:', error);
-        alert('Error opening invoice form. Please try again.');
+    // Notification functions
+    function loadNotifications() {
+      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notificationList = document.getElementById('notificationList');
+      const badge = document.getElementById('notificationBadge');
+      
+      const unreadCount = notifications.filter(n => !n.read).length;
+      
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
       }
-    }
-
-    // Close new invoice modal
-    function closeNewInvoiceModal() {
-      document.getElementById('newInvoiceModal').classList.remove('show');
-    }
-
-    // Add line item row
-    function addLineItem(type = 'product') {
-      const tbody = document.getElementById('lineItemsTableBody');
-      const row = document.createElement('tr');
-      const rowIndex = tbody.children.length;
       
-      // Determine the type display and icon
-      const typeDisplay = type === 'service' ? 'Service' : 'Product';
-      const typeIcon = type === 'service' ? 'fa-scissors' : 'fa-box';
-      const typeColor = type === 'service' ? 'text-blue-600' : 'text-[#da5c73]';
+      if (notifications.length === 0) {
+        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+        return;
+      }
       
-      row.innerHTML = `
-        <td class="p-3">
-          <div class="item-type-badge item-type-${type}">
-            <i class="fa-solid ${typeIcon}"></i>
-            <span>${typeDisplay}</span>
-        </div>
-          <input type="hidden" name="itemType" value="${type}" />
-        </td>
-        <td class="p-3">
-          <input type="text" name="itemName" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="${type === 'service' ? 'e.g., Haircut, Hair Color' : 'e.g., Shampoo, Hair Dye'}" required />
-        </td>
-        <td class="p-3">
-          <input type="text" name="itemId" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="${type === 'service' ? 'e.g., HC-001' : 'e.g., PROD-001'}" />
-        </td>
-        <td class="p-3">
-          <input type="number" name="quantity" min="1" step="1" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateLineTotal(this)" required />
-        </td>
-        <td class="p-3">
-          <input type="number" name="unitPrice" min="0" step="0.01" class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="calculateLineTotal(this)" required />
-        </td>
-        <td class="p-3">
-          <input type="number" name="lineTotal" class="w-full p-2 border border-gray-300 rounded bg-gray-100" readonly />
-        </td>
-        <td class="p-3 text-center">
-          <button type="button" onclick="removeLineItem(this)" class="text-red-500 hover:text-red-700">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-        </td>
-      `;
+      notificationList.innerHTML = '';
       
-      tbody.appendChild(row);
-      
-      // Update item summary
-      updateItemSummary();
-    }
-
-    // Remove line item row
-    function removeLineItem(button) {
-      const row = button.closest('tr');
-      row.remove();
-      calculateTotals();
-    }
-
-    // Calculate line total for individual row
-    function calculateLineTotal(input) {
-      const row = input.closest('tr');
-      const quantity = parseFloat(row.querySelector('input[name="quantity"]').value) || 0;
-      const unitPrice = parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0;
-      const lineTotal = quantity * unitPrice;
-      
-      row.querySelector('input[name="lineTotal"]').value = lineTotal.toFixed(2);
-      calculateTotals();
-    }
-
-    // Calculate all totals
-    function calculateTotals() {
-      const lineItems = document.querySelectorAll('input[name="lineTotal"]');
-      let subtotal = 0;
-      
-      lineItems.forEach(input => {
-        subtotal += parseFloat(input.value) || 0;
+      notifications.forEach(notification => {
+        const item = document.createElement('div');
+        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+        item.onclick = () => viewNotification(notification.id);
+        
+        const time = new Date(notification.timestamp);
+        const timeStr = time.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        
+        item.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <strong class="text-[#da5c73]">${notification.message}</strong>
+            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+          </div>
+          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
+          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        `;
+        
+        notificationList.appendChild(item);
       });
-      
-      const taxPercentage = parseFloat(document.getElementById('taxPercentage').value) || 0;
-      const taxAmount = (subtotal * taxPercentage) / 100;
-      const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
-      const grandTotal = subtotal + taxAmount - discountAmount;
-      
-      document.getElementById('subtotal').value = subtotal.toFixed(2);
-      document.getElementById('taxAmount').value = taxAmount.toFixed(2);
-      document.getElementById('grandTotal').value = grandTotal.toFixed(2);
-      
-      // Update item summary
-      updateItemSummary();
     }
 
-    // Update item summary
-    function updateItemSummary() {
-      const rows = document.querySelectorAll('#lineItemsTableBody tr');
-      let productCount = 0;
-      let serviceCount = 0;
-      
-      rows.forEach(row => {
-        const itemType = row.querySelector('input[name="itemType"]').value;
-        const itemName = row.querySelector('input[name="itemName"]').value.trim();
-        
-        if (itemName) {
-          if (itemType === 'service') {
-            serviceCount++;
-          } else {
-            productCount++;
-          }
-        }
-      });
-      
-      document.getElementById('productCount').textContent = `${productCount} item${productCount !== 1 ? 's' : ''}`;
-      document.getElementById('serviceCount').textContent = `${serviceCount} item${serviceCount !== 1 ? 's' : ''}`;
-    }
-
-    // Handle form submission
-    document.getElementById('newInvoiceForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      try {
-        // Validate form
-        if (!validateInvoiceForm()) {
-          return;
-        }
-        
-        // Collect form data
-        const formData = collectInvoiceFormData();
-        
-        // Create invoice
-        const invoice = await createInvoiceFromFormData(formData);
-        
-        // Show success message
-        alert(`Invoice ${invoice.invoiceNumber} created successfully!`);
-        
-        // Close modal
-        closeNewInvoiceModal();
-        
-        // Refresh invoice list
-        loadInvoices();
-        
-      } catch (error) {
-        console.error('Error creating invoice:', error);
-        alert('Error creating invoice. Please try again.');
-      }
-    });
-
-    // Validate invoice form
-    function validateInvoiceForm() {
-      const customerName = document.getElementById('customerName').value.trim();
-      if (!customerName) {
-        alert('Customer name is required.');
-        return false;
-      }
-      
-      const lineItems = document.querySelectorAll('input[name="itemName"]');
-      if (lineItems.length === 0) {
-        alert('At least one line item is required.');
-        return false;
-      }
-      
-      let hasValidItem = false;
-      lineItems.forEach(input => {
-        if (input.value.trim()) {
-          hasValidItem = true;
-        }
-      });
-      
-      if (!hasValidItem) {
-        alert('At least one line item with a name is required.');
-        return false;
-      }
-      
-      return true;
-    }
-
-    // Collect form data
-    function collectInvoiceFormData() {
-      const lineItems = [];
-      const rows = document.querySelectorAll('#lineItemsTableBody tr');
-      
-      rows.forEach(row => {
-        const itemName = row.querySelector('input[name="itemName"]').value.trim();
-        if (itemName) {
-          const itemType = row.querySelector('input[name="itemType"]').value;
-          lineItems.push({
-            type: itemType,
-            name: itemName,
-            itemId: row.querySelector('input[name="itemId"]').value.trim() || 'N/A',
-            quantity: parseFloat(row.querySelector('input[name="quantity"]').value) || 0,
-            unitPrice: parseFloat(row.querySelector('input[name="unitPrice"]').value) || 0,
-            total: parseFloat(row.querySelector('input[name="lineTotal"]').value) || 0
-          });
-        }
-      });
-      
-      const subtotal = parseFloat(document.getElementById('subtotal').value) || 0;
-      const taxPercentage = parseFloat(document.getElementById('taxPercentage').value) || 0;
-      const taxAmount = parseFloat(document.getElementById('taxAmount').value) || 0;
-      const discountAmount = parseFloat(document.getElementById('discountAmount').value) || 0;
-      const grandTotal = parseFloat(document.getElementById('grandTotal').value) || 0;
-      
-      return {
-        invoiceNumber: document.getElementById('invoiceNumber').value,
-        customerName: document.getElementById('customerName').value.trim(),
-        customerEmail: document.getElementById('customerEmail').value.trim(),
-        customerPhone: document.getElementById('customerPhone').value.trim(),
-        invoiceDate: new Date(document.getElementById('invoiceDate').value),
-        dueDate: new Date(document.getElementById('dueDate').value),
-        items: lineItems,
-        subtotal: subtotal,
-        taxRate: taxPercentage / 100,
-        taxAmount: taxAmount,
-        discountAmount: discountAmount,
-        grandTotal: grandTotal,
-        paymentMethod: document.getElementById('paymentMethod').value,
-        paymentStatus: document.getElementById('paymentStatus').value,
-        notes: document.getElementById('notes').value.trim()
-      };
-    }
-
-    // Create invoice from form data
-    async function createInvoiceFromFormData(formData) {
-      try {
-        const user = auth.currentUser;
-        if (!user) {
-          throw new Error('User must be authenticated to create invoice');
-        }
-
-        // Get user details
-        let userFullName = 'Unknown';
-        try {
-          const userDoc = await db.collection('users').doc(user.uid).get();
-          if (userDoc.exists) {
-            const userData = userDoc.data();
-            userFullName = userData.fullName || userData.email || 'Unknown';
-          } else {
-            userFullName = user.email || 'Unknown';
-          }
-        } catch (error) {
-          console.warn('Could not load user details:', error);
-          userFullName = user.email || 'Unknown';
-        }
-
-        // Create invoice object
-        const invoice = {
-          invoiceNumber: formData.invoiceNumber,
-          date: formData.invoiceDate,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          dueDate: formData.dueDate,
-          customerName: formData.customerName,
-          customerEmail: formData.customerEmail,
-          customerPhone: formData.customerPhone,
-          items: formData.items,
-          subtotal: formData.subtotal,
-          taxRate: formData.taxRate,
-          taxAmount: formData.taxAmount,
-          discountAmount: formData.discountAmount,
-          grandTotal: formData.grandTotal,
-          paymentMethod: formData.paymentMethod,
-          paymentStatus: formData.paymentStatus,
-          notes: formData.notes,
-          status: formData.paymentStatus === 'paid' ? 'paid' : 'pending',
-          createdBy: userFullName,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          lastUpdatedBy: userFullName,
-          lastUpdatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        // Save to Firebase
-        const docRef = await db.collection('invoices').add(invoice);
-        invoice.id = docRef.id;
-        
-        // Add to local array
-        invoices.unshift(invoice);
-        
-        console.log('Invoice created successfully:', invoice);
-        return invoice;
-        
-      } catch (error) {
-        console.error('Error creating invoice:', error);
-        throw error;
-      }
-    }
-
-    // Modal functions
-    function closeInvoiceDetail() {
-      document.getElementById('invoiceDetailModal').classList.remove('show');
-    }
-
-    function closeStatusUpdate() {
-      document.getElementById('statusUpdateModal').classList.remove('show');
-    }
-
-    function showLogoutModal() {
-      document.getElementById('logoutModal').classList.add('show');
-    }
-
-    function hideLogoutModal() {
-      document.getElementById('logoutModal').classList.remove('show');
-    }
-
-    async function confirmLogout() {
-      try {
-        await auth.signOut();
-        window.location.href = 'Login.html';
-      } catch (error) {
-        console.error('Logout error:', error);
-        window.location.href = 'Login.html';
-      }
-    }
-
-    // Notification functions (simplified)
     function toggleNotifications() {
       const dropdown = document.getElementById('notificationDropdown');
       dropdown.classList.toggle('show');
+      loadNotifications();
     }
 
-    function clearAllNotifications() {
-      // Implementation for clearing notifications
+    function viewNotification(id) {
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      const notification = notifications.find(n => n.id === id);
+      
+      if (!notification) return;
+      
+      notification.read = true;
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      
+      alert(`Notification: ${notification.message}\n\nService: ${notification.details.service}\nDate: ${notification.details.date}\nTime: ${notification.details.time}`);
+      
+      loadNotifications();
     }
 
     function markAllRead() {
-      // Implementation for marking notifications as read
+      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+      notifications.forEach(n => n.read = true);
+      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+      loadNotifications();
+    }
+
+    function clearAllNotifications() {
+      localStorage.setItem('skinshipNotifications', '[]');
+      loadNotifications();
     }
 
     // Close dropdowns on outside click
@@ -1601,12 +1234,34 @@
       if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
         document.getElementById('notificationDropdown').classList.remove('show');
       }
+
+      // Close logout modal on overlay click
+      const logoutModal = document.getElementById('logoutModal');
+      if (logoutModal && event.target === logoutModal) {
+        hideLogoutModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('logoutModal');
+        if (modal && modal.classList.contains('show')) {
+          hideLogoutModal();
+        }
+      }
+    });
+
+    // Handle page unload
+    window.addEventListener("beforeunload", async (e) => {
+      await handleClockOut();
     });
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
       loadCurrentUser();
       loadInvoices();
+      listenToPurchaseOrders();
       
       // Setup logout button handler
       const logoutBtn = document.getElementById('logoutBtn');
@@ -1617,10 +1272,6 @@
         });
       }
     });
-
-    // Make functions globally available for POS integration
-    window.createInvoiceFromSale = createInvoiceFromSale;
-    window.generateInvoiceNumber = generateInvoiceNumber;
   </script>
   
   <script type="module" src="role-check.js"></script>
