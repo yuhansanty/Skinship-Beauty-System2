@@ -670,8 +670,14 @@
     let invoices = [];
     let currentUser = null;
     let currentInvoiceId = null;
+    let invoicesListener = null;
+    let purchaseOrdersListener = null;
+    let processedPOs = new Set(); // Track processed POs to avoid duplicates
 
-    // Clock out function
+    // Cache user data to reduce reads
+    let userDataCache = null;
+
+    // Clock out function - optimized with batch writes
     async function handleClockOut() {
       const user = auth.currentUser;
       if (!user) return;
@@ -680,23 +686,28 @@
         const today = new Date().toLocaleDateString();
         const logsRef = db.collection('staffLogs').doc(user.uid).collection('history');
         
-        const todayQuery = logsRef.where('date', '==', today);
+        // Use limit(1) to reduce reads - we only need one active log
+        const todayQuery = logsRef.where('date', '==', today).limit(1);
         const todaySnap = await todayQuery.get();
         
         if (!todaySnap.empty) {
-          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-          if (activeLog) {
-            await logsRef.doc(activeLog.id).set({
+          const activeLog = todaySnap.docs[0];
+          if (!activeLog.data().clockOut) {
+            const batch = db.batch();
+            
+            // Batch both updates together to reduce writes
+            batch.update(logsRef.doc(activeLog.id), {
               clockOut: new Date().toLocaleString()
-            }, { merge: true });
+            });
+            
+            batch.update(db.collection('users').doc(user.uid), {
+              availability: false,
+              lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            
+            await batch.commit();
           }
         }
-
-        const staffRef = db.collection('users').doc(user.uid);
-        await staffRef.update({ 
-          availability: false,
-          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-        });
       } catch (error) {
         console.error("Error during clock out:", error);
       }
@@ -718,10 +729,15 @@
 
       try {
         await handleClockOut();
-        localStorage.removeItem('currentUserEmail');
-        localStorage.removeItem('currentUserRole');
-        localStorage.removeItem('currentUsername');
-        localStorage.removeItem('currentUserFullName');
+        
+        // Clear all cache
+        userDataCache = null;
+        processedPOs.clear();
+        
+        // Detach listeners to prevent memory leaks
+        if (invoicesListener) invoicesListener();
+        if (purchaseOrdersListener) purchaseOrdersListener();
+        
         await auth.signOut();
         window.location.href = "Login.html";
       } catch (error) {
@@ -734,11 +750,19 @@
       }
     }
 
-    // Load current user
+    // Load current user - optimized with caching
     async function loadCurrentUser() {
       auth.onAuthStateChanged(async (user) => {
         if (user) {
           try {
+            // Check cache first
+            if (userDataCache && userDataCache.uid === user.uid) {
+              currentUser = userDataCache;
+              document.getElementById('userDisplayName').textContent = currentUser.fullName;
+              document.getElementById('logoutUsername').textContent = currentUser.fullName;
+              return;
+            }
+            
             const userDoc = await db.collection('users').doc(user.uid).get();
             if (userDoc.exists) {
               const userData = userDoc.data();
@@ -754,15 +778,19 @@
                 email: user.email
               };
             }
+            
+            // Cache the user data
+            userDataCache = currentUser;
+            
             document.getElementById('userDisplayName').textContent = currentUser.fullName;
             document.getElementById('logoutUsername').textContent = currentUser.fullName;
           } catch (error) {
             console.error('Error loading user data:', error);
-            currentUser = {
-              uid: user.uid,
+            currentUser = {uid: user.uid,
               fullName: user.email || 'User',
               email: user.email
             };
+            userDataCache = currentUser;
             document.getElementById('userDisplayName').textContent = currentUser.fullName;
             document.getElementById('logoutUsername').textContent = currentUser.fullName;
           }
@@ -772,74 +800,118 @@
       });
     }
 
-    // Listen to Purchase Orders and auto-create/update invoices
+    // Listen to Purchase Orders and auto-create/update invoices - OPTIMIZED
     function listenToPurchaseOrders() {
-      db.collection('purchaseOrders')
+      // Use onSnapshot for real-time updates but with optimization
+      purchaseOrdersListener = db.collection('purchaseOrders')
+        .where('status', 'in', ['pending', 'received']) // Only listen to relevant statuses
         .onSnapshot(async (snapshot) => {
-          snapshot.docChanges().forEach(async (change) => {
+          const batch = db.batch();
+          let batchCount = 0;
+          const MAX_BATCH_SIZE = 500; // Firestore batch limit
+          
+          for (const change of snapshot.docChanges()) {
             if (change.type === 'added' || change.type === 'modified') {
               const poData = change.doc.data();
               const poId = change.doc.id;
               
-              // Check if invoice already exists for this PO
-              const existingInvoice = await db.collection('invoices')
-                .where('purchaseOrderId', '==', poId)
-                .get();
+              // Skip if already processed
+              if (processedPOs.has(poId)) {
+                // Only update status if it changed
+                if (change.type === 'modified') {
+                  const existingInvoice = invoices.find(inv => inv.purchaseOrderId === poId);
+                  if (existingInvoice && existingInvoice.status !== poData.status) {
+                    batch.update(db.collection('invoices').doc(existingInvoice.id), {
+                      status: poData.status,
+                      receivedDate: poData.receivedDate || null,
+                      receivedBy: poData.receivedBy || null
+                    });
+                    batchCount++;
+                  }
+                }
+                continue;
+              }
               
-              if (existingInvoice.empty) {
-                // Create invoice from PO
-                await createInvoiceFromPO(poData, poId);
-              } else {
-                // Update existing invoice status
-                const invoiceDoc = existingInvoice.docs[0];
-                await db.collection('invoices').doc(invoiceDoc.id).update({
-                  status: poData.status,
-                  receivedDate: poData.receivedDate || null,
-                  receivedBy: poData.receivedBy || null
-                });
-                // Reload invoices to reflect changes
-                await loadInvoices();
+              // Check if invoice exists (use in-memory check first)
+              let existingInvoice = invoices.find(inv => inv.purchaseOrderId === poId);
+              
+              if (!existingInvoice) {
+                // Only query Firestore if not in memory
+                const existingInvoiceQuery = await db.collection('invoices')
+                  .where('purchaseOrderId', '==', poId)
+                  .limit(1)
+                  .get();
+                
+                if (existingInvoiceQuery.empty) {
+                  // Create new invoice
+                  const invoiceData = await prepareInvoiceData(poData, poId);
+                  const newInvoiceRef = db.collection('invoices').doc();
+                  batch.set(newInvoiceRef, invoiceData);
+                  batchCount++;
+                  processedPOs.add(poId);
+                } else {
+                  processedPOs.add(poId);
+                }
               }
             }
-          });
+          }
+          
+          // Commit batch if there are changes
+          if (batchCount > 0 && batchCount < MAX_BATCH_SIZE) {
+            try {
+              await batch.commit();
+              console.log(`Batch updated ${batchCount} invoices`);
+            } catch (error) {
+              console.error('Error committing batch:', error);
+            }
+          }
+        }, (error) => {
+          console.error('Error listening to purchase orders:', error);
         });
     }
 
-    // Create invoice from Purchase Order
-    async function createInvoiceFromPO(poData, poId) {
-      try {
-        const invoiceNumber = await generateInvoiceNumber();
-        const now = new Date();
-        
-        const invoice = {
-          invoiceNumber: invoiceNumber,
-          purchaseOrderId: poId,
-          purchaseOrderNumber: poData.id,
-          date: poData.date || now.toISOString().split('T')[0],
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          supplier: poData.supplier || 'N/A',
-          productName: poData.productName || 'N/A',
-          productId: poData.productId || 'N/A',
-          category: poData.category || 'N/A',
-          quantity: poData.quantity || 0,
-          unitPrice: poData.unitPrice || 0,
-          totalValue: poData.totalValue || 0,
-          status: poData.status || 'pending',
-          createdBy: poData.receivedBy || currentUser?.fullName || 'System',
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          receivedDate: poData.receivedDate || getCurrentDate()
-        };
-
-        await db.collection('invoices').add(invoice);
-        console.log('Invoice created from PO:', invoiceNumber);
-      } catch (error) {
-        console.error('Error creating invoice from PO:', error);
-      }
+    // Prepare invoice data - separated for reusability
+    async function prepareInvoiceData(poData, poId) {
+      const invoiceNumber = await generateInvoiceNumber();
+      const now = new Date();
+      
+      return {
+        invoiceNumber: invoiceNumber,
+        purchaseOrderId: poId,
+        purchaseOrderNumber: poData.id,
+        date: poData.date || now.toISOString().split('T')[0],
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        supplier: poData.supplier || 'N/A',
+        productName: poData.productName || 'N/A',
+        productId: poData.productId || 'N/A',
+        category: poData.category || 'N/A',
+        quantity: poData.quantity || 0,
+        unitPrice: poData.unitPrice || 0,
+        totalValue: poData.totalValue || 0,
+        status: poData.status || 'pending',
+        createdBy: poData.receivedBy || currentUser?.fullName || 'System',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        receivedDate: poData.receivedDate || getCurrentDate()
+      };
     }
 
-    // Generate unique invoice number
+    // Generate unique invoice number - OPTIMIZED with caching
+    let invoiceCounterCache = null;
+    let lastCounterFetch = 0;
+    const COUNTER_CACHE_DURATION = 60000; // 1 minute
+
     async function generateInvoiceNumber() {
       try {
+        const now = Date.now();
+        
+        // Use cached counter if recent
+        if (invoiceCounterCache !== null && (now - lastCounterFetch) < COUNTER_CACHE_DURATION) {
+          invoiceCounterCache++;
+          // Update in background
+          db.collection('metadata').doc('invoiceCounter').update({ last: invoiceCounterCache });
+          return `INV-${String(invoiceCounterCache).padStart(3, '0')}`;
+        }
+        
         const counterRef = db.collection('metadata').doc('invoiceCounter');
         let newNumber = 1;
 
@@ -853,6 +925,10 @@
             newNumber = 1;
           }
         });
+
+        // Update cache
+        invoiceCounterCache = newNumber;
+        lastCounterFetch = now;
 
         return `INV-${String(newNumber).padStart(3, '0')}`;
       } catch (error) {
@@ -868,30 +944,43 @@
       return today.toLocaleDateString('en-US', options);
     }
 
-    // Load invoices from Firebase
-    async function loadInvoices() {
-      try {
-        const snapshot = await db.collection('invoices')
-          .orderBy('timestamp', 'desc')
-          .get();
-        
-        invoices = [];
-        snapshot.forEach(doc => {
-          const invoice = doc.data();
-          invoice.id = doc.id;
-          invoices.push(invoice);
+    // Load invoices from Firebase - OPTIMIZED with real-time listener
+    function loadInvoices() {
+      // Use onSnapshot for real-time updates instead of repeated gets
+      invoicesListener = db.collection('invoices')
+        .orderBy('timestamp', 'desc')
+        .onSnapshot((snapshot) => {
+          // Update invoices array efficiently
+          snapshot.docChanges().forEach((change) => {
+            const invoice = change.doc.data();
+            invoice.id = change.doc.id;
+            
+            if (change.type === 'added') {
+              invoices.push(invoice);
+            } else if (change.type === 'modified') {
+              const index = invoices.findIndex(inv => inv.id === invoice.id);
+              if (index !== -1) {
+                invoices[index] = invoice;
+              }
+            } else if (change.type === 'removed') {
+              const index = invoices.findIndex(inv => inv.id === invoice.id);
+              if (index !== -1) {
+                invoices.splice(index, 1);
+              }
+            }
+          });
+          
+          // Update UI
+          updateStats();
+          renderInvoiceTable();
+        }, (error) => {
+          console.error('Error loading invoices:', error);
+          document.getElementById('invoiceTableBody').innerHTML = 
+            '<tr><td colspan="9" class="text-center py-8 text-red-500">Error loading invoices. Please refresh the page.</td></tr>';
         });
-        
-        updateStats();
-        renderInvoiceTable();
-      } catch (error) {
-        console.error('Error loading invoices:', error);
-        document.getElementById('invoiceTableBody').innerHTML = 
-          '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading invoices. Please refresh the page.</td></tr>';
-      }
     }
 
-    // Update statistics
+    // Update statistics - calculate from memory
     function updateStats() {
       const totalInvoices = invoices.length;
       const totalRevenue = invoices.reduce((sum, invoice) => sum + (invoice.totalValue || 0), 0);
@@ -904,15 +993,17 @@
       document.getElementById('paidInvoices').textContent = receivedInvoices;
     }
 
-    // Render invoice table
+    // Render invoice table - optimized rendering
     function renderInvoiceTable() {
       const tbody = document.getElementById('invoiceTableBody');
-      tbody.innerHTML = '';
-
+      
       if (invoices.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-gray-500">No invoices found.</td></tr>';
         return;
       }
+      
+      // Use DocumentFragment for better performance
+      const fragment = document.createDocumentFragment();
       
       invoices.forEach(invoice => {
         const row = document.createElement('tr');
@@ -948,12 +1039,16 @@
           </td>
         `;
         
-        tbody.appendChild(row);
+        fragment.appendChild(row);
       });
+      
+      // Clear and append once for better performance
+      tbody.innerHTML = '';
+      tbody.appendChild(fragment);
     }
 
-    // View invoice details
-    async function viewInvoice(invoiceId) {
+    // View invoice details - use in-memory data instead of querying
+    function viewInvoice(invoiceId) {
       try {
         const invoice = invoices.find(inv => inv.id === invoiceId);
         if (!invoice) {
@@ -1059,7 +1154,7 @@
       document.getElementById('invoiceDetailModal').classList.remove('show');
     }
 
-    // Filter functions
+    // Filter functions - work with in-memory data
     function filterByStatus(status) {
       const buttons = document.querySelectorAll('.filter-btn');
       buttons.forEach(btn => {
@@ -1111,38 +1206,43 @@
       invoices = originalInvoices;
     }
 
-    // Search functionality
+    // Search functionality - optimized with debouncing
+    let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('#invoiceTableBody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        const searchTerm = e.target.value.toLowerCase();
+        const rows = document.querySelectorAll('#invoiceTableBody tr');
+        
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+      }, 300); // Debounce 300ms
     });
 
-    // Export invoices
+    // Export invoices - use in-memory data
     function exportInvoices() {
-      let csv = 'Invoice #,Date,Supplier,Product,Quantity,Unit Price,Total Amount,Status\n';
+      let csv = 'Invoice #,Date,Supplier,Product,Category,Quantity,Unit Price,Total Amount,Status\n';
       
       invoices.forEach(invoice => {
         const date = invoice.timestamp ? 
           invoice.timestamp.toDate().toLocaleDateString() : 
           (invoice.date ? new Date(invoice.date).toLocaleDateString() : 'N/A');
         
-        csv += `${invoice.invoiceNumber},${date},${invoice.supplier},${invoice.productName},${invoice.quantity},${invoice.unitPrice},${invoice.totalValue},${invoice.status}\n`;
+        csv += `${invoice.invoiceNumber},${date},${invoice.supplier},${invoice.productName},${invoice.category},${invoice.quantity},${invoice.unitPrice},${invoice.totalValue},${invoice.status}\n`;
       });
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'invoices_export.csv';
+      a.download = `invoices_export_${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
+      window.URL.revokeObjectURL(url);
     }
 
-    // Notification functions
+    // Notification functions - localStorage based
     function loadNotifications() {
       const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
       const notificationList = document.getElementById('notificationList');
@@ -1193,7 +1293,9 @@
     function toggleNotifications() {
       const dropdown = document.getElementById('notificationDropdown');
       dropdown.classList.toggle('show');
-      loadNotifications();
+      if (dropdown.classList.contains('show')) {
+        loadNotifications();
+      }
     }
 
     function viewNotification(id) {
@@ -1227,7 +1329,7 @@
       const userMenu = document.getElementById('userMenu');
       const userMenuButton = document.getElementById('userMenuButton');
       
-      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+      if (userMenuButton && !userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
         userMenu.classList.add('hidden');
       }
 
@@ -1245,9 +1347,14 @@
     // Close modal on Escape key
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
-        const modal = document.getElementById('logoutModal');
-        if (modal && modal.classList.contains('show')) {
+        const logoutModal = document.getElementById('logoutModal');
+        if (logoutModal && logoutModal.classList.contains('show')) {
           hideLogoutModal();
+        }
+        
+        const invoiceModal = document.getElementById('invoiceDetailModal');
+        if (invoiceModal && invoiceModal.classList.contains('show')) {
+          closeInvoiceDetail();
         }
       }
     });
@@ -1256,6 +1363,14 @@
     window.addEventListener("beforeunload", async (e) => {
       await handleClockOut();
     });
+
+    // Cleanup function
+    function cleanup() {
+      if (invoicesListener) invoicesListener();
+      if (purchaseOrdersListener) purchaseOrdersListener();
+      userDataCache = null;
+      processedPOs.clear();
+    }
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -1271,6 +1386,9 @@
           showLogoutModal();
         });
       }
+      
+      // Cleanup on page unload
+      window.addEventListener('unload', cleanup);
     });
   </script>
   
