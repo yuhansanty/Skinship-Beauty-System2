@@ -5,8 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Purchase Order | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="shared-inventory.js"></script>
   <style>
     .sidebar-btn { 
       width: 50px;
@@ -75,18 +79,78 @@
       padding: 20px;
       border-radius: 16px;
       width: 90%;
-      max-width: 600px;
+      max-width: 700px;
       max-height: 80vh;
       overflow-y: auto;
     }
     .status-pending { background-color: #fef3c7; color: #92400e; }
     .status-received { background-color: #d1fae5; color: #065f46; }
     .status-cancelled { background-color: #fee2e2; color: #991b1b; }
+    
+    .notification-badge {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #ef4444;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+    }
+    
+    .notification-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 8px;
+      width: 350px;
+      max-height: 400px;
+      overflow-y: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      z-index: 100;
+    }
+    
+    .notification-dropdown.show {
+      display: block;
+    }
+    
+    .info-box {
+      background: #f0f9ff;
+      border: 1px solid #0ea5e9;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+    
+    .product-mode-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 2px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      width: 100%;
+    }
+    
+    .product-mode-btn.active {
+      background: #da5c73;
+      color: white;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -106,29 +170,45 @@
   <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
-      <!-- Top bar -->
+      <!-- Header Section -->
       <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-2">
-          <input type="text" id="searchInput" placeholder="Search purchase orders..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
-          <button class="filter-btn" onclick="openNewPOModal()">
+        <div class="flex items-center gap-4">
+          <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">PURCHASE ORDER</h1>
+          <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="openNewPOModal()">
             <i class="fa-solid fa-plus mr-2"></i>New Purchase Order
           </button>
         </div>
         <div class="flex items-center gap-4">
-          <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
-          <span class="font-semibold text-lg text-white">Username</span>
+          <!-- Notification Bell -->
+          <div class="relative">
+            <button id="notificationBtn" class="relative">
+              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
+            </button>
+            <div id="notificationDropdown" class="notification-dropdown">
+              <div class="p-3 border-b">
+                <h3 class="font-bold text-gray-800">Notifications</h3>
+              </div>
+              <div id="notificationList" class="p-2">
+                <p class="text-gray-500 text-sm text-center py-4">No notifications</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- User Menu -->
+          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
               <i class="fa-solid fa-user-circle text-2xl text-white"></i>
             </button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='Login.html'">Logout</button>
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+              </button>
             </div>
           </div>
         </div>
       </div>
-
-      <h1 class="text-center text-4xl font-bold tracking-widest mb-6 text-white drop-shadow-lg">PURCHASE ORDER</h1>
 
       <!-- Stats Summary -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -171,7 +251,10 @@
       </div>
 
       <!-- Filters -->
-      <div class="flex gap-3 mb-6 flex-wrap">
+      <div class="flex gap-3 mb-6 flex-wrap items-center">
+        <!-- Search Bar -->
+        <input type="text" id="searchInput" placeholder="Search purchase orders..." class="rounded-lg px-4 py-2 border border-white bg-white focus:outline-none focus:ring-2 focus:ring-white w-80" />
+        
         <button class="filter-btn active" onclick="filterByStatus('all')">All Orders</button>
         <button class="filter-btn" onclick="filterByStatus('pending')">Pending</button>
         <button class="filter-btn" onclick="filterByStatus('received')">Received</button>
@@ -194,13 +277,16 @@
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Supplier</th>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Product Name</th>
                 <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Product ID</th>
+                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Category</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Quantity</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Unit Price</th>
+                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Total Value</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
                 <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Actions</th>
               </tr>
             </thead>
             <tbody id="poTableBody">
-              <!-- Dynamic content will be inserted here -->
+              <tr><td colspan="11" class="text-center py-8 text-gray-500">Loading purchase orders...</td></tr>
             </tbody>
           </table>
         </div>
@@ -241,21 +327,96 @@
             <option value="Skincare Essentials">Skincare Essentials</option>
           </select>
         </div>
-        
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-            <input type="text" id="productName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required oninput="generateProductId()" />
+
+        <!-- Product Selection Mode -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Product Source</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" class="product-mode-btn active" id="existingProductBtn" onclick="switchProductMode('existing')">
+              <i class="fa-solid fa-box mr-2"></i>Existing Product
+            </button>
+            <button type="button" class="product-mode-btn" id="newProductBtn" onclick="switchProductMode('new')">
+              <i class="fa-solid fa-plus mr-2"></i>New Product
+            </button>
           </div>
+        </div>
+
+        <!-- Existing Product Selection -->
+        <div id="existingProductSection">
+          <label class="block text-sm font-medium text-gray-700 mb-1">Select Product from Inventory</label>
+          <select id="existingProduct" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="loadProductDetails()">
+            <option value="">Choose a product...</option>
+          </select>
+          
+          <div id="productDetails" class="info-box mt-3" style="display: none;">
+            <div class="grid grid-cols-2 gap-2 text-sm">
+              <div><strong>Product ID:</strong> <span id="detailProductId"></span></div>
+              <div><strong>Category:</strong> <span id="detailCategory"></span></div>
+              <div><strong>Current Stock:</strong> <span id="detailStock"></span></div>
+              <div><strong>Unit Price:</strong> <span id="detailPrice"></span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- New Product Section -->
+        <div id="newProductSection" style="display: none;">
+          <div class="info-box bg-amber-50 border-amber-500">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-info-circle text-amber-600 mt-1"></i>
+              <p class="text-sm text-amber-800">Creating a new product will add it to your inventory with the details below.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+              <input type="text" id="newProductName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" placeholder="e.g., Hair Dye - Blonde" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+              <select id="newProductCategory" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]">
+                <option value="">Select Category</option>
+                <option value="Hair Products">Hair Products</option>
+                <option value="Tools">Tools</option>
+                <option value="Nail Products">Nail Products</option>
+                <option value="Skincare">Skincare</option>
+                <option value="Lash Products">Lash Products</option>
+                <option value="Uncategorized">Uncategorized</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Unit Price (₱) *</label>
+              <input type="number" id="newProductPrice" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" step="0.01" placeholder="0.00" />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Stock Level *</label>
+              <input type="number" id="newProductMinStock" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" value="10" />
+            </div>
+          </div>
+
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Product ID <span class="text-xs text-gray-500" id="productIdLabel">(Auto-generated)</span></label>
-            <input type="text" id="productId" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly placeholder="Enter product name to generate ID" />
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+            <textarea id="newProductDescription" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" rows="2" placeholder="Add any additional details..."></textarea>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Product ID</label>
+            <input type="text" id="newProductId" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly placeholder="Auto-generated" />
           </div>
         </div>
         
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
-          <input type="number" id="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="1" required />
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Order Quantity *</label>
+            <input type="number" id="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="1" required oninput="calculateTotal()" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Total Order Value</label>
+            <input type="text" id="totalValue" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100" readonly placeholder="₱ 0.00" />
+          </div>
         </div>
         
         <div class="flex justify-end gap-3 pt-4">
@@ -270,321 +431,7 @@
     </div>
   </div>
 
-  <script>
-    let editingIndex = -1;
-
-    // Initialize the page
-    document.addEventListener('DOMContentLoaded', function() {
-      updateStats();
-      renderTable();
-      generatePONumber();
-      
-      // Set today's date as default
-      document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
-      
-      // Listen for inventory updates
-      window.addEventListener('inventoryUpdated', function(event) {
-        console.log('Inventory updated:', event.detail);
-      });
-    });
-
-    // Generate PO Number
-    function generatePONumber() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const poCount = window.inventoryManager.purchaseOrders.length + 1;
-      document.getElementById('poNumber').value = `PO-${year}-${String(poCount).padStart(3, '0')}`;
-    }
-
-    // Generate Product ID based on product name
-    function generateProductId() {
-      const productName = document.getElementById('productName').value;
-      const productIdField = document.getElementById('productId');
-      const productIdLabel = document.getElementById('productIdLabel');
-      
-      if (productName.trim() === '') {
-        productIdField.value = '';
-        productIdLabel.textContent = '(Auto-generated)';
-        productIdLabel.className = 'text-xs text-gray-500';
-        productIdField.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100';
-        return;
-      }
-
-      // First, check if a product with this name already exists in inventory
-      const existingItem = window.inventoryManager.inventoryData.find(item => 
-        item.name.toLowerCase() === productName.toLowerCase()
-      );
-
-      if (existingItem) {
-        // Use the existing inventory item's ID
-        productIdField.value = existingItem.id;
-        productIdLabel.textContent = '(Existing product)';
-        productIdLabel.className = 'text-xs text-green-600';
-        productIdField.className = 'w-full px-3 py-2 border border-green-300 rounded-lg bg-green-50';
-        return;
-      }
-
-      // If no existing item found, generate a new ID
-      const existingIds = window.inventoryManager.inventoryData.map(item => item.id);
-      const existingPOIds = window.inventoryManager.purchaseOrders.map(po => po.productId);
-      const allIds = [...existingIds, ...existingPOIds];
-      
-      // Find the highest number in existing IDs
-      let maxNumber = 0;
-      allIds.forEach(id => {
-        const match = id.match(/INV-(\d+)/);
-        if (match) {
-          const num = parseInt(match[1]);
-          if (num > maxNumber) {
-            maxNumber = num;
-          }
-        }
-      });
-
-      // Generate new ID
-      const newId = `INV-${String(maxNumber + 1).padStart(3, '0')}`;
-      productIdField.value = newId;
-      productIdLabel.textContent = '(New product)';
-      productIdLabel.className = 'text-xs text-blue-600';
-      productIdField.className = 'w-full px-3 py-2 border border-blue-300 rounded-lg bg-blue-50';
-    }
-
-    // Open new PO modal
-    function openNewPOModal() {
-      editingIndex = -1;
-      document.getElementById('modalTitle').textContent = 'New Purchase Order';
-      document.getElementById('poForm').reset();
-      generatePONumber();
-      document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
-      
-      // Reset product ID field styling
-      const productIdField = document.getElementById('productId');
-      const productIdLabel = document.getElementById('productIdLabel');
-      productIdField.value = '';
-      productIdLabel.textContent = '(Auto-generated)';
-      productIdLabel.className = 'text-xs text-gray-500';
-      productIdField.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100';
-      
-      document.getElementById('poModal').style.display = 'block';
-    }
-
-    // Close PO modal
-    function closePOModal() {
-      document.getElementById('poModal').style.display = 'none';
-    }
-
-    // Handle form submission
-    document.getElementById('poForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const formData = {
-        id: document.getElementById('poNumber').value,
-        date: document.getElementById('poDate').value,
-        supplier: document.getElementById('supplier').value,
-        productName: document.getElementById('productName').value,
-        productId: document.getElementById('productId').value,
-        quantity: parseInt(document.getElementById('quantity').value),
-        status: 'pending'
-      };
-
-      if (editingIndex === -1) {
-        // Add new PO
-        window.inventoryManager.addPurchaseOrder(formData);
-      } else {
-        // Edit existing PO
-        window.inventoryManager.updatePurchaseOrder(editingIndex, formData);
-      }
-
-      updateStats();
-      renderTable();
-      closePOModal();
-    });
-
-    // Render table
-    function renderTable() {
-      const tbody = document.getElementById('poTableBody');
-      tbody.innerHTML = '';
-
-      window.inventoryManager.purchaseOrders.forEach((po, index) => {
-        const row = document.createElement('tr');
-        row.className = 'border-b hover:bg-gray-50 transition';
-        row.setAttribute('data-status', po.status);
-        row.setAttribute('data-date', po.date);
-        
-        const statusClass = po.status === 'pending' ? 'status-pending' : 
-                           po.status === 'received' ? 'status-received' : 'status-cancelled';
-        
-        row.innerHTML = `
-          <td class="py-4 px-4 font-semibold">${po.id}</td>
-          <td class="py-4 px-4">${formatDate(po.date)}</td>
-          <td class="py-4 px-4">${po.supplier}</td>
-          <td class="py-4 px-4">${po.productName}</td>
-          <td class="py-4 px-4">${po.productId}</td>
-          <td class="py-4 px-4 text-center">${po.quantity}</td>
-          <td class="py-4 px-4 text-center">
-            <span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${po.status.charAt(0).toUpperCase() + po.status.slice(1)}</span>
-          </td>
-          <td class="py-4 px-4 text-center">
-            <div class="flex justify-center gap-2">
-              <button onclick="editPO(${index})" class="text-blue-600 hover:text-blue-800" title="Edit">
-                <i class="fa-solid fa-edit"></i>
-              </button>
-              <button onclick="toggleStatus(${index})" class="text-green-600 hover:text-green-800" title="Toggle Status">
-                <i class="fa-solid fa-${po.status === 'received' ? 'undo' : 'check'}"></i>
-              </button>
-              <button onclick="deletePO(${index})" class="text-red-600 hover:text-red-800" title="Delete">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        `;
-        
-        tbody.appendChild(row);
-      });
-    }
-
-    // Edit PO
-    function editPO(index) {
-      editingIndex = index;
-      const po = window.inventoryManager.purchaseOrders[index];
-      
-      document.getElementById('modalTitle').textContent = 'Edit Purchase Order';
-      document.getElementById('poNumber').value = po.id;
-      document.getElementById('poDate').value = po.date;
-      document.getElementById('supplier').value = po.supplier;
-      document.getElementById('productName').value = po.productName;
-      document.getElementById('productId').value = po.productId;
-      document.getElementById('quantity').value = po.quantity;
-      
-      document.getElementById('poModal').style.display = 'block';
-    }
-
-    // Toggle status
-    function toggleStatus(index) {
-      const po = window.inventoryManager.togglePOStatus(index);
-      
-      // Show notification
-      if (po.status === 'received') {
-        alert(`Inventory updated: Added ${po.quantity} units of ${po.productName} (${po.productId}) to inventory.`);
-      }
-      
-      updateStats();
-      renderTable();
-    }
-
-    // Delete PO
-    function deletePO(index) {
-      if (confirm('Are you sure you want to delete this purchase order?')) {
-        window.inventoryManager.deletePurchaseOrder(index);
-        updateStats();
-        renderTable();
-      }
-    }
-
-    // Update statistics
-    function updateStats() {
-      const stats = window.inventoryManager.getPOStats();
-
-      document.getElementById('totalPOs').textContent = stats.totalPOs;
-      document.getElementById('pendingPOs').textContent = stats.pendingPOs;
-      document.getElementById('receivedPOs').textContent = stats.receivedPOs;
-      document.getElementById('totalItems').textContent = stats.totalItems;
-    }
-
-    // Search functionality
-    document.getElementById('searchInput').addEventListener('input', function(e) {
-      const searchTerm = e.target.value.toLowerCase();
-      const rows = document.querySelectorAll('#poTableBody tr');
-      
-      rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-      });
-    });
-
-    // Filter by status
-    function filterByStatus(status) {
-      const buttons = document.querySelectorAll('.filter-btn');
-      buttons.forEach(btn => {
-        if(btn.textContent.includes('All Orders') || btn.textContent.includes('Pending') || 
-           btn.textContent.includes('Received') || btn.textContent.includes('Cancelled')) {
-          btn.classList.remove('active');
-        }
-      });
-      event.target.classList.add('active');
-      
-      const rows = document.querySelectorAll('#poTableBody tr');
-      rows.forEach(row => {
-        if(status === 'all') {
-          row.style.display = '';
-        } else {
-          const rowStatus = row.getAttribute('data-status');
-          row.style.display = rowStatus === status ? '' : 'none';
-        }
-      });
-    }
-
-    // Filter by date range
-    function filterByDate() {
-      const dateFrom = document.getElementById('dateFrom').value;
-      const dateTo = document.getElementById('dateTo').value;
-      const rows = document.querySelectorAll('#poTableBody tr');
-      
-      rows.forEach(row => {
-        const rowDate = row.getAttribute('data-date');
-        let show = true;
-        
-        if (dateFrom && rowDate < dateFrom) show = false;
-        if (dateTo && rowDate > dateTo) show = false;
-        
-        row.style.display = show ? '' : 'none';
-      });
-    }
-
-    // Export to CSV
-    function exportToCSV() {
-      let csv = 'PO Number,Date,Supplier,Product Name,Product ID,Quantity,Status\n';
-      
-      window.inventoryManager.purchaseOrders.forEach(po => {
-        csv += `${po.id},${po.date},${po.supplier},${po.productName},${po.productId},${po.quantity},${po.status}\n`;
-      });
-      
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'purchase_orders.csv';
-      a.click();
-    }
-
-    // Format date for display
-    function formatDate(dateString) {
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(event) {
-      const userMenu = document.getElementById('userMenu');
-      const userMenuButton = document.getElementById('userMenuButton');
-      
-      if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
-        userMenu.classList.add('hidden');
-      }
-    });
-
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-      const modal = document.getElementById('poModal');
-      if (event.target === modal) {
-        closePOModal();
-      }
-    }
-  </script>
+  <script src="purchase-order.js"></script>
   <script type="module" src="role-check.js"></script>
 </body>
 </html>
