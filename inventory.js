@@ -18,12 +18,27 @@ let inventoryData = [];
 let editMode = false;
 let categories = [];
 let currentUser = null;
+let inventoryListener = null;
 
-// Load current user's full name
+// Cache for user data and categories
+let userDataCache = null;
+let categoriesCache = null;
+let lastCategoriesFetch = 0;
+const CACHE_DURATION = 300000; // 5 minutes
+
+// Load current user's full name - OPTIMIZED with caching
 async function loadCurrentUserName() {
   auth.onAuthStateChanged(async (user) => {
     if (user) {
       try {
+        // Check cache first
+        if (userDataCache && userDataCache.uid === user.uid) {
+          currentUser = userDataCache;
+          document.getElementById('userDisplayName').textContent = currentUser.fullName;
+          document.getElementById('logoutUsername').textContent = currentUser.fullName;
+          return;
+        }
+
         const userDoc = await db.collection('users').doc(user.uid).get();
         if (userDoc.exists) {
           const userData = userDoc.data();
@@ -32,17 +47,19 @@ async function loadCurrentUserName() {
             fullName: userData.fullName || userData.email || 'User',
             email: userData.email || user.email
           };
-          document.getElementById('userDisplayName').textContent = currentUser.fullName;
-          document.getElementById('logoutUsername').textContent = currentUser.fullName;
         } else {
           currentUser = {
             uid: user.uid,
             fullName: user.email || 'User',
             email: user.email
           };
-          document.getElementById('userDisplayName').textContent = currentUser.fullName;
-          document.getElementById('logoutUsername').textContent = currentUser.fullName;
         }
+
+        // Cache user data
+        userDataCache = currentUser;
+        
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
       } catch (error) {
         console.error('Error loading user data:', error);
         currentUser = {
@@ -50,17 +67,17 @@ async function loadCurrentUserName() {
           fullName: user.email || 'User',
           email: user.email
         };
+        userDataCache = currentUser;
         document.getElementById('userDisplayName').textContent = currentUser.fullName;
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
       }
     } else {
-      // User not logged in, redirect to login
       window.location.href = 'Login.html';
     }
   });
 }
 
-// Clock out function
+// Clock out function - OPTIMIZED with batch write
 async function handleClockOut() {
   const user = auth.currentUser;
   if (!user) return;
@@ -69,26 +86,29 @@ async function handleClockOut() {
     const today = new Date().toLocaleDateString();
     const logsRef = db.collection('staffLogs').doc(user.uid).collection('history');
     
-    const todayQuery = logsRef.where('date', '==', today);
+    // Use limit(1) to reduce reads
+    const todayQuery = logsRef.where('date', '==', today).limit(1);
     const todaySnap = await todayQuery.get();
     
     if (!todaySnap.empty) {
-      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-      if (activeLog) {
-        await logsRef.doc(activeLog.id).set({
+      const activeLog = todaySnap.docs[0];
+      if (!activeLog.data().clockOut) {
+        const batch = db.batch();
+        
+        // Batch both updates together
+        batch.update(logsRef.doc(activeLog.id), {
           clockOut: new Date().toLocaleString()
-        }, { merge: true });
+        });
+        
+        batch.update(db.collection('users').doc(user.uid), {
+          availability: false,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await batch.commit();
+        console.log("User clocked out and set to unavailable");
       }
     }
-
-    // Set user as unavailable
-    const staffRef = db.collection('users').doc(user.uid);
-    await staffRef.update({ 
-      availability: false,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    console.log("User clocked out and set to unavailable");
   } catch (error) {
     console.error("Error during clock out:", error);
   }
@@ -109,45 +129,44 @@ async function confirmLogout() {
   confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
   try {
-    // Clock out and set unavailable
     await handleClockOut();
     
-    // Clear local storage
-    localStorage.removeItem('currentUserEmail');
-    localStorage.removeItem('currentUserRole');
-    localStorage.removeItem('currentUsername');
-    localStorage.removeItem('currentUserFullName');
+    // Clear caches
+    userDataCache = null;
+    categoriesCache = null;
     
-    // Sign out
+    // Detach listener
+    if (inventoryListener) inventoryListener();
+    
     await auth.signOut();
-    
-    // Redirect to login page
     window.location.href = "Login.html";
   } catch (error) {
     console.error("Logout error:", error);
-    
-    // Reset button state
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    
     alert("An error occurred during logout. Please try again.");
-    
-    // Force sign out even if there's an error
     await auth.signOut();
     window.location.href = "Login.html";
   }
 }
 
-// Load categories from inventory collection
+// Load categories from memory first, then Firebase if needed - OPTIMIZED
 async function loadCategories() {
+  const now = Date.now();
+  
+  // Use cached categories if fresh
+  if (categoriesCache && (now - lastCategoriesFetch) < CACHE_DURATION) {
+    categories = categoriesCache;
+    updateCategorySelects();
+    return;
+  }
+
   try {
-    const snapshot = await db.collection('inventory').get();
-    const categoryOrder = [];
+    // Extract categories from already loaded inventory data
     const categorySet = new Set();
+    const categoryOrder = [];
     
-    // Preserve order of appearance (first occurrence)
-    snapshot.forEach(doc => {
-      const product = doc.data();
+    inventoryData.forEach(product => {
       if (product.category && !categorySet.has(product.category)) {
         categoryOrder.push(product.category);
         categorySet.add(product.category);
@@ -168,6 +187,10 @@ async function loadCategories() {
       }));
     }
 
+    // Cache categories
+    categoriesCache = categories;
+    lastCategoriesFetch = now;
+
     updateCategorySelects();
   } catch (error) {
     console.error('Error loading categories:', error);
@@ -187,16 +210,12 @@ function updateCategorySelects() {
     
     const currentValue = select.value;
     
-    // Clear existing options
     if (index === 2) {
-      // Category filter - no "Add New Category" option
       select.innerHTML = '<option value="all">All Categories</option>';
     } else {
-      // Add/Edit modals - include "Add New Category" option
       select.innerHTML = '<option value="">Select Category</option>';
     }
     
-    // Add category options (in order of appearance, not alphabetical)
     categories.forEach(cat => {
       const option = document.createElement('option');
       option.value = cat.name;
@@ -204,7 +223,6 @@ function updateCategorySelects() {
       select.appendChild(option);
     });
     
-    // Add "Add New Category..." and "Manage Categories" options only for Add/Edit modals
     if (index !== 2) {
       const addOption = document.createElement('option');
       addOption.value = '__ADD_NEW__';
@@ -221,13 +239,12 @@ function updateCategorySelects() {
       select.appendChild(manageOption);
     }
     
-    // Restore previous value if it exists
-    if (currentValue && currentValue !== 'all' && currentValue !== '' && currentValue !== '__ADD_NEW__' && currentValue !== '__MANAGE__') {
+    if (currentValue && currentValue !== 'all' && currentValue !== '' && 
+        currentValue !== '__ADD_NEW__' && currentValue !== '__MANAGE__') {
       select.value = currentValue;
     }
   });
   
-  // Add event listeners to handle "Add New Category" and "Manage Categories" selection
   const addCategorySelects = [
     document.getElementById('itemCategory'),
     document.getElementById('editItemCategory')
@@ -235,8 +252,6 @@ function updateCategorySelects() {
   
   addCategorySelects.forEach(select => {
     if (!select) return;
-    
-    // Remove existing listener to prevent duplicates
     select.removeEventListener('change', handleCategorySelectChange);
     select.addEventListener('change', handleCategorySelectChange);
   });
@@ -245,10 +260,8 @@ function updateCategorySelects() {
 // Handle category select change
 function handleCategorySelectChange(event) {
   if (event.target.value === '__ADD_NEW__') {
-    // Store which select triggered the modal
     event.target.dataset.triggerSelect = 'true';
     openAddCategoryModal();
-    // Reset to empty after opening modal
     setTimeout(() => {
       event.target.value = '';
     }, 100);
@@ -270,26 +283,23 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// Handle Add Category
+// Handle Add Category - OPTIMIZED
 async function handleAddCategory(event) {
   event.preventDefault();
   
   const categoryName = document.getElementById('newCategoryName').value.trim();
   
-  // Check for empty category name
   if (!categoryName) {
     alert('Category name cannot be empty!');
     return;
   }
   
-  // Check if category already exists (case-insensitive)
   if (categories.some(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
     alert('This category already exists! Please choose a different name.');
     return;
   }
   
   try {
-    // Create a placeholder item with the new category
     const placeholderItem = {
       id: await generateUniqueItemId(),
       name: `${categoryName} - Sample Item`,
@@ -310,22 +320,22 @@ async function handleAddCategory(event) {
 
     const docRef = await db.collection('inventory').add(placeholderItem);
     placeholderItem.firebaseId = docRef.id;
+    
+    // Update local data immediately (listener will update too)
     inventoryData.push(placeholderItem);
     
-    // Add new category to the array (will be at the end/bottom)
+    // Add to categories and clear cache
     categories.push({
       id: categoryName,
       name: categoryName
     });
+    categoriesCache = categories;
     
     updateCategorySelects();
     closeAddCategoryModal();
     
-    // Auto-select the newly added category in whichever modal is open
     const addSelect = document.getElementById('itemCategory');
     const editSelect = document.getElementById('editItemCategory');
-    
-    // Check which modal is currently visible
     const addModal = document.getElementById('addProductModal');
     const editModal = document.getElementById('editProductModal');
     
@@ -335,13 +345,7 @@ async function handleAddCategory(event) {
       editSelect.value = categoryName;
     }
     
-    alert(`Category "${categoryName}" added successfully! A placeholder item was created. You can edit or delete it later.`);
-    
-    // Refresh the table to show the new placeholder item
-    const tbody = document.getElementById('inventoryTableBody');
-    tbody.innerHTML = '';
-    inventoryData.forEach(p => addProductToTable(p));
-    updateStats();
+    alert(`Category "${categoryName}" added successfully!`);
     
   } catch (error) {
     console.error('Error adding category:', error);
@@ -359,7 +363,7 @@ function closeManageCategoriesModal() {
   document.getElementById('manageCategoriesModal').classList.remove('show');
 }
 
-// Load categories list for management
+// Load categories list for management - use in-memory data
 function loadManageCategoriesList() {
   const listContainer = document.getElementById('manageCategoriesList');
   
@@ -374,7 +378,7 @@ function loadManageCategoriesList() {
     const categoryItem = document.createElement('div');
     categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
     
-    // Count items in this category
+    // Count from in-memory data
     const itemCount = inventoryData.filter(i => i.category === cat.name).length;
     
     categoryItem.innerHTML = `
@@ -395,7 +399,7 @@ function loadManageCategoriesList() {
   });
 }
 
-// Handle Delete Category
+// Handle Delete Category - OPTIMIZED with batch delete
 async function handleDeleteCategory(categoryName, itemCount) {
   const itemsInCategory = inventoryData.filter(i => i.category === categoryName);
   
@@ -410,21 +414,33 @@ async function handleDeleteCategory(categoryName, itemCount) {
   }
   
   try {
-    // Delete all items in this category
-    const deletePromises = itemsInCategory.map(item => 
-      db.collection('inventory').doc(item.firebaseId).delete()
-    );
+    // Use batched deletes (max 500 per batch)
+    const batches = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
     
-    await Promise.all(deletePromises);
+    itemsInCategory.forEach(item => {
+      currentBatch.delete(db.collection('inventory').doc(item.firebaseId));
+      operationCount++;
+      
+      if (operationCount === 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
+      }
+    });
     
-    // Remove from local data
+    if (operationCount > 0) {
+      batches.push(currentBatch);
+    }
+    
+    // Commit all batches
+    await Promise.all(batches.map(batch => batch.commit()));
+    
+    // Update local data
     inventoryData = inventoryData.filter(i => i.category !== categoryName);
     categories = categories.filter(c => c.name !== categoryName);
-    
-    // Update UI
-    const tbody = document.getElementById('inventoryTableBody');
-    tbody.innerHTML = '';
-    inventoryData.forEach(i => addProductToTable(i));
+    categoriesCache = categories;
     
     updateStats();
     updateCategorySelects();
@@ -437,18 +453,22 @@ async function handleDeleteCategory(categoryName, itemCount) {
   }
 }
 
-// Search functionality
+// Search functionality - debounced
+let searchTimeout;
 document.getElementById('searchInput').addEventListener('input', function(e) {
-  const searchTerm = e.target.value.toLowerCase();
-  const rows = document.querySelectorAll('#inventoryTableBody tr');
-  
-  rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(searchTerm) ? '' : 'none';
-  });
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#inventoryTableBody tr');
+    
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+  }, 300);
 });
 
-// Filter by status
+// Filter by status - work with DOM
 function filterByStatus(status) {
   const buttons = document.querySelectorAll('.filter-btn');
   buttons.forEach(btn => {
@@ -490,7 +510,7 @@ function addNewItem() {
   openAddProductModal();
 }
 
-// Export to CSV
+// Export to CSV - use in-memory data
 function exportToCSV() {
   let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status,Last Edited By\n';
   
@@ -502,8 +522,9 @@ function exportToCSV() {
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'inventory_report.csv';
+  a.download = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
   a.click();
+  window.URL.revokeObjectURL(url);
 }
 
 // Close dropdown when clicking outside
@@ -511,7 +532,7 @@ document.addEventListener('click', function(event) {
   const userMenu = document.getElementById('userMenu');
   const userMenuButton = document.getElementById('userMenuButton');
   
-  if (!userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+  if (userMenuButton && !userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
     userMenu.classList.add('hidden');
   }
 
@@ -519,7 +540,6 @@ document.addEventListener('click', function(event) {
     document.getElementById('notificationDropdown').classList.remove('show');
   }
 
-  // Close logout modal on overlay click
   const logoutModal = document.getElementById('logoutModal');
   if (logoutModal && event.target === logoutModal) {
     hideLogoutModal();
@@ -536,7 +556,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Notification System
+// Notification System - localStorage based
 function loadNotifications() {
   const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
   const notificationList = document.getElementById('notificationList');
@@ -587,7 +607,9 @@ function loadNotifications() {
 function toggleNotifications() {
   const dropdown = document.getElementById('notificationDropdown');
   dropdown.classList.toggle('show');
-  loadNotifications();
+  if (dropdown.classList.contains('show')) {
+    loadNotifications();
+  }
 }
 
 function viewNotification(id) {
@@ -668,7 +690,7 @@ function deleteNotification(id) {
   loadNotifications();
 }
 
-// Generate next Item ID
+// Generate next Item ID - from in-memory data
 function generateItemId() {
   const maxId = inventoryData.reduce((max, item) => {
     const num = parseInt(item.id.split('-')[1]);
@@ -703,23 +725,46 @@ function closeAddProductModal() {
   document.getElementById('addProductForm').reset();
 }
 
-// Generate sequential unique ID from Firestore
+// Generate sequential unique ID - OPTIMIZED with caching
+let itemCounterCache = null;
+let lastCounterFetch = 0;
+const COUNTER_CACHE_DURATION = 60000; // 1 minute
+
 async function generateUniqueItemId() {
-  const counterRef = db.collection('metadata').doc('inventoryCounter');
-  let newNumber = 1;
-
-  await db.runTransaction(async (tx) => {
-    const docSnap = await tx.get(counterRef);
-    if (docSnap.exists) {
-      newNumber = (docSnap.data().last || 0) + 1;
-      tx.update(counterRef, { last: newNumber });
-    } else {
-      tx.set(counterRef, { last: 1 });
-      newNumber = 1;
+  try {
+    const now = Date.now();
+    
+    // Use cached counter if recent
+    if (itemCounterCache !== null && (now - lastCounterFetch) < COUNTER_CACHE_DURATION) {
+      itemCounterCache++;
+      // Update in background
+      db.collection('metadata').doc('inventoryCounter').update({ last: itemCounterCache });
+      return `INV-${String(itemCounterCache).padStart(3, '0')}`;
     }
-  });
+    
+    const counterRef = db.collection('metadata').doc('inventoryCounter');
+    let newNumber = 1;
 
-  return `INV-${String(newNumber).padStart(3, '0')}`;
+    await db.runTransaction(async (tx) => {
+      const docSnap = await tx.get(counterRef);
+      if (docSnap.exists) {
+        newNumber = (docSnap.data().last || 0) + 1;
+        tx.update(counterRef, { last: newNumber });
+      } else {
+        tx.set(counterRef, { last: 1 });
+        newNumber = 1;
+      }
+    });
+
+    // Update cache
+    itemCounterCache = newNumber;
+    lastCounterFetch = now;
+
+    return `INV-${String(newNumber).padStart(3, '0')}`;
+  } catch (error) {
+    console.error('Error generating ID:', error);
+    return `INV-${Date.now().toString().slice(-3)}`;
+  }
 }
 
 // Handle Add Product Form Submission
@@ -739,7 +784,6 @@ async function handleAddProduct(event) {
     return;
   }
 
-  // Check if category exists in the database (case-insensitive)
   const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
   
   if (!categoryExists) {
@@ -769,19 +813,13 @@ async function handleAddProduct(event) {
   
   try {
     const docRef = await db.collection('inventory').add(newProduct);
-    newProduct.firebaseId = docRef.id;
-    inventoryData.push(newProduct);
-    addProductToTable(newProduct);
+    // Local update will happen via listener
     
-    // Reload categories to include any new category at the end
-    await loadCategories();
-    
-    updateStats();
     closeAddProductModal();
-    alert(`Product "${name}" added successfully to Firebase!`);
+    alert(`Product "${name}" added successfully!`);
   } catch (error) {
-    console.error('Error adding product to Firebase:', error);
-    alert('Error adding product. Please check console for details.');
+    console.error('Error adding product:', error);
+    alert('Error adding product. Please try again.');
   }
 }
 
@@ -808,27 +846,23 @@ function enableEditMode() {
   }
 }
 
-// When a row is clicked in edit mode
+// When a row is clicked in edit mode - use in-memory data
 function selectRowForEdit(event) {
   if (!editMode) return;
   
-  // Don't trigger if clicking on the date column (which has its own click handler)
   if (event.target.closest('td:nth-child(7)')) return;
 
   const idCell = this.querySelector('td').textContent.trim();
   const product = inventoryData.find(p => p.id === idCell);
   if (!product) return alert('Product not found.');
 
-  // Ensure categories are loaded and update selects
   updateCategorySelects();
   
-  // Wait a bit for the select to be populated
   setTimeout(() => {
     document.getElementById('editFirebaseId').value = product.firebaseId;
     document.getElementById('editItemName').value = product.name;
     document.getElementById('editItemCategory').value = product.category;
-    document.getElementById('editItemQuantity').value = product.qty;
-    document.getElementById('editItemPrice').value = product.price;
+    document.getElementById('editItemQuantity').value = product.qty;document.getElementById('editItemPrice').value = product.price;
     document.getElementById('editMinStock').value = product.minStock || 0;
     document.getElementById('editItemSupplier').value = product.supplier || '';
     document.getElementById('editItemDescription').value = product.description || '';
@@ -855,7 +889,6 @@ async function handleEditProduct(e) {
     return;
   }
 
-  // Check if category exists in the database (case-insensitive)
   const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
   
   if (!categoryExists) {
@@ -885,17 +918,7 @@ async function handleEditProduct(e) {
   try {
     if (id) {
       await db.collection('inventory').doc(id).update(updatedProduct);
-      const index = inventoryData.findIndex(p => p.firebaseId === id);
-      if (index !== -1) inventoryData[index] = { ...inventoryData[index], ...updatedProduct };
-
-      const tbody = document.getElementById('inventoryTableBody');
-      tbody.innerHTML = '';
-      inventoryData.forEach(p => addProductToTable(p));
-      
-      // Reload categories to include any new category at the end
-      await loadCategories();
-      
-      updateStats();
+      // Local update will happen via listener
 
       closeEditProductModal();
       alert('✅ Product updated successfully!');
@@ -908,7 +931,7 @@ async function handleEditProduct(e) {
   }
 }
 
-// Show edit history modal
+// Show edit history modal - use in-memory data
 async function showEditHistory(firebaseId) {
   const product = inventoryData.find(p => p.firebaseId === firebaseId);
   if (!product) return;
@@ -985,6 +1008,7 @@ function addProductToTable(product) {
   row.className = 'border-b hover:bg-gray-50 transition';
   row.setAttribute('data-status', product.status || 'in-stock');
   row.setAttribute('data-category', product.category || '');
+  row.setAttribute('data-firebase-id', product.firebaseId);
   
   let statusBadge = '';
   if (product.status === 'in-stock') {
@@ -1013,7 +1037,7 @@ function addProductToTable(product) {
   tbody.appendChild(row);
 }
 
-// Update statistics
+// Update statistics - calculate from in-memory data
 function updateStats() {
   const totalItems = inventoryData.length;
   const totalValue = inventoryData.reduce((sum, item) => sum + item.total, 0);
@@ -1026,37 +1050,105 @@ function updateStats() {
   document.getElementById('outOfStock').textContent = outOfStock;
 }
 
-// Load inventory from Firebase
-async function loadInventoryFromFirebase() {
-  try {
-    const snapshot = await db.collection('inventory').get();
+// Render table from in-memory data - optimized
+function renderInventoryTable() {
+  const tbody = document.getElementById('inventoryTableBody');
+  
+  if (inventoryData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">No inventory items found. Click "Add Item" to get started.</td></tr>';
+    return;
+  }
+  
+  // Use DocumentFragment for better performance
+  const fragment = document.createDocumentFragment();
+  
+  inventoryData.forEach(product => {
+    const row = document.createElement('tr');
+    row.className = 'border-b hover:bg-gray-50 transition';
+    row.setAttribute('data-status', product.status || 'in-stock');
+    row.setAttribute('data-category', product.category || '');
+    row.setAttribute('data-firebase-id', product.firebaseId);
     
-    inventoryData = [];
-    const tbody = document.getElementById('inventoryTableBody');
-    tbody.innerHTML = '';
-    
-    if (snapshot.empty) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">No inventory items found. Click "Add Item" to get started.</td></tr>';
+    let statusBadge = '';
+    if (product.status === 'in-stock') {
+      statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>';
+    } else if (product.status === 'low-stock') {
+      statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>';
     } else {
-      snapshot.forEach(doc => {
-        const product = doc.data();
-        product.firebaseId = doc.id;
-        
-        inventoryData.push(product);
-        addProductToTable(product);
-      });
+      statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-600">Out of Stock</span>';
     }
     
-    updateStats();
+    const price = product.price || 0;
+    const total = product.total || 0;
+    const qty = product.qty || 0;
+    
+    row.innerHTML = `
+      <td class="py-4 px-4 font-semibold">${product.id || 'N/A'}</td>
+      <td class="py-4 px-4">${product.name || 'N/A'}</td>
+      <td class="py-4 px-4">${product.category || 'N/A'}</td>
+      <td class="py-4 px-4 text-center">${qty}</td>
+      <td class="py-4 px-4 text-right">₱ ${price.toLocaleString()}</td>
+      <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${total.toLocaleString()}</td>
+      <td class="py-4 px-4 text-center text-sm cursor-pointer hover:text-[#da5c73] hover:underline" onclick="showEditHistory('${product.firebaseId}')" title="Click to see edit history">${product.date || 'N/A'}</td>
+      <td class="py-4 px-4 text-center">${statusBadge}</td>
+    `;
+    
+    fragment.appendChild(row);
+  });
+  
+  tbody.innerHTML = '';
+  tbody.appendChild(fragment);
+}
+
+// Load inventory from Firebase - OPTIMIZED with real-time listener
+function loadInventoryFromFirebase() {
+  try {
+    // Use onSnapshot for real-time updates instead of repeated gets
+    inventoryListener = db.collection('inventory')
+      .onSnapshot((snapshot) => {
+        // Process changes efficiently
+        snapshot.docChanges().forEach((change) => {
+          const product = change.doc.data();
+          product.firebaseId = change.doc.id;
+          
+          if (change.type === 'added') {
+            // Check if already exists to avoid duplicates
+            const exists = inventoryData.find(p => p.firebaseId === product.firebaseId);
+            if (!exists) {
+              inventoryData.push(product);
+            }
+          } else if (change.type === 'modified') {
+            const index = inventoryData.findIndex(p => p.firebaseId === product.firebaseId);
+            if (index !== -1) {
+              inventoryData[index] = product;
+            }
+          } else if (change.type === 'removed') {
+            const index = inventoryData.findIndex(p => p.firebaseId === product.firebaseId);
+            if (index !== -1) {
+              inventoryData.splice(index, 1);
+            }
+          }
+        });
+        
+        // Update UI
+        renderInventoryTable();
+        updateStats();
+        loadCategories(); // Update categories from inventory data
+        
+      }, (error) => {
+        console.error('Error loading inventory:', error);
+        const tbody = document.getElementById('inventoryTableBody');
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading inventory. Please refresh the page.</td></tr>';
+      });
     
   } catch (error) {
-    console.error('Error loading inventory from Firebase:', error);
+    console.error('Error setting up inventory listener:', error);
     const tbody = document.getElementById('inventoryTableBody');
     tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-red-500">Error loading inventory. Please refresh the page.</td></tr>';
   }
 }
 
-// Delete product function
+// Delete product function - OPTIMIZED
 async function deleteProduct() {
   const id = document.getElementById('editFirebaseId').value;
   const productName = document.getElementById('editItemName').value;
@@ -1068,21 +1160,7 @@ async function deleteProduct() {
   try {
     if (id) {
       await db.collection('inventory').doc(id).delete();
-      
-      // Remove from local data
-      const index = inventoryData.findIndex(p => p.firebaseId === id);
-      if (index !== -1) {
-        inventoryData.splice(index, 1);
-      }
-      
-      // Refresh table
-      const tbody = document.getElementById('inventoryTableBody');
-      tbody.innerHTML = '';
-      inventoryData.forEach(p => addProductToTable(p));
-      updateStats();
-      
-      // Reload categories after deletion
-      await loadCategories();
+      // Local update will happen via listener
       
       closeEditProductModal();
       alert('✅ Product deleted successfully!');
@@ -1093,6 +1171,15 @@ async function deleteProduct() {
     console.error('Error deleting product:', error);
     alert('Error deleting product. Check console for details.');
   }
+}
+
+// Cleanup function
+function cleanup() {
+  if (inventoryListener) inventoryListener();
+  userDataCache = null;
+  categoriesCache = null;
+  inventoryData = [];
+  categories = [];
 }
 
 // Handle page unload
@@ -1107,10 +1194,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('inventoryTableBody').innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">Loading inventory data...</td></tr>';
   
   loadCurrentUserName();
-  loadCategories();
-  loadInventoryFromFirebase();
+  loadInventoryFromFirebase(); // This will also load categories
   loadNotifications();
-  setInterval(loadNotifications, 5000);
+  
+  // Reduced notification polling interval
+  setInterval(loadNotifications, 30000); // 30 seconds instead of 5
 
   // Setup logout button handler
   const logoutBtn = document.getElementById('logoutBtn');
@@ -1120,4 +1208,7 @@ document.addEventListener('DOMContentLoaded', function() {
       showLogoutModal();
     });
   }
+  
+  // Cleanup on page unload
+  window.addEventListener('unload', cleanup);
 });
