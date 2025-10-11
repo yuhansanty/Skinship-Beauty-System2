@@ -17,10 +17,26 @@ let editingIndex = -1;
 let purchaseOrders = [];
 let inventoryItems = [];
 let categories = [];
+let categoryCounts = {}; // Cache category item counts
 let suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
 let currentUser = null;
 let currentProductMode = 'existing';
 let selectedProduct = null;
+
+// Debug: Track Firebase reads
+let totalReads = 0;
+const originalCollectionGet = firebase.firestore.Firestore.prototype.collection;
+firebase.firestore.Firestore.prototype.collection = function(path) {
+  const collection = originalCollectionGet.call(this, path);
+  const originalGet = collection.get;
+  collection.get = async function() {
+    const snapshot = await originalGet.call(this);
+    totalReads += snapshot.size || 1;
+    console.log(`📖 Read ${snapshot.size || 1} documents from '${path}' | Total reads: ${totalReads}`);
+    return snapshot;
+  };
+  return collection;
+};
 
 // Load current user
 auth.onAuthStateChanged(async (user) => {
@@ -119,10 +135,13 @@ async function confirmLogout() {
   }
 }
 
-// Initialize the page
+// Initialize the page - OPTIMIZED
 document.addEventListener('DOMContentLoaded', async function() {
-  await loadCategories();
-  await loadInventoryItems();
+  console.log('🚀 Page loading started...');
+  console.log('📊 Initial Firebase reads: 0');
+  
+  // Single inventory load that populates both inventoryItems AND categories
+  await loadInventoryItemsAndCategories();
   await loadPurchaseOrders();
   updateStats();
   renderTable();
@@ -135,39 +154,51 @@ document.addEventListener('DOMContentLoaded', async function() {
     showLogoutModal();
   });
   
-  // Add supplier dropdown change listener
   document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
+  
+  console.log('✅ Page loading complete!');
+  console.log(`📊 Final Firebase reads for this page load: ${totalReads}`);
 });
 
-// Load categories from inventory
-async function loadCategories() {
+// OPTIMIZED: Load inventory items AND extract categories in ONE read
+async function loadInventoryItemsAndCategories() {
   try {
+    console.log('📖 Loading inventory and categories (single read)...');
     const snapshot = await db.collection('inventory').get();
+    
+    inventoryItems = [];
     const categorySet = new Set();
+    categoryCounts = {}; // Reset counts
     
     snapshot.forEach(doc => {
-      const product = doc.data();
-      if (product.category) {
-        categorySet.add(product.category);
+      const item = doc.data();
+      item.firebaseId = doc.id;
+      inventoryItems.push(item);
+      
+      // Extract categories while we're iterating
+      if (item.category) {
+        categorySet.add(item.category);
+        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
       }
     });
-
-    categories = Array.from(categorySet).map(cat => ({
-      id: cat,
-      name: cat
-    }));
-
-    if (categories.length === 0) {
+    
+    // Build categories array
+    if (categorySet.size === 0) {
       const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
-      categories = defaultCategories.map(cat => ({
-        id: cat,
-        name: cat
-      }));
+      categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+    } else {
+      categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
     }
-
+    
+    console.log(`✅ Loaded ${inventoryItems.length} items and ${categories.length} categories`);
+    console.log('📦 Category counts:', categoryCounts);
+    
+    // Update UI components
+    populateProductDropdown();
     updateCategorySelects();
+    
   } catch (error) {
-    console.error('Error loading categories:', error);
+    console.error('Error loading inventory:', error);
   }
 }
 
@@ -232,7 +263,7 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// Handle Add Category
+// OPTIMIZED: Handle Add Category - update cache instead of re-reading
 async function handleAddCategory(event) {
   event.preventDefault();
   
@@ -267,14 +298,20 @@ async function handleAddCategory(event) {
       isPlaceholder: true
     };
 
-    await db.collection('inventory').add(placeholderItem);
+    const docRef = await db.collection('inventory').add(placeholderItem);
+    placeholderItem.firebaseId = docRef.id;
     
+    // Update local cache - NO FIREBASE READ! 🎉
+    console.log('✅ Adding category to local cache (no read needed)');
+    inventoryItems.push(placeholderItem);
     categories.push({
       id: categoryName,
       name: categoryName
     });
+    categoryCounts[categoryName] = 1;
     
     updateCategorySelects();
+    populateProductDropdown();
     closeAddCategoryModal();
     
     const categorySelect = document.getElementById('newProductCategory');
@@ -307,8 +344,9 @@ function closeManageCategoriesModal() {
   }
 }
 
-// Load categories list for management
+// OPTIMIZED: Load categories list using cached counts - NO FIREBASE READ!
 async function loadManageCategoriesList() {
+  console.log('📦 Loading category list from cache (no Firebase read)');
   const listContainer = document.getElementById('manageCategoriesList');
   
   if (categories.length === 0) {
@@ -318,20 +356,7 @@ async function loadManageCategoriesList() {
   
   listContainer.innerHTML = '';
   
-  // Get item counts for each category
-  const categoryCounts = {};
-  try {
-    const snapshot = await db.collection('inventory').get();
-    snapshot.forEach(doc => {
-      const item = doc.data();
-      if (item.category) {
-        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
-      }
-    });
-  } catch (error) {
-    console.error('Error loading category counts:', error);
-  }
-  
+  // Use cached categoryCounts - NO FIREBASE READ! 🎉
   categories.forEach(cat => {
     const categoryItem = document.createElement('div');
     categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
@@ -354,9 +379,11 @@ async function loadManageCategoriesList() {
     
     listContainer.appendChild(categoryItem);
   });
+  
+  console.log('✅ Category list loaded from cache');
 }
 
-// Handle Delete Category
+// OPTIMIZED: Handle Delete Category - update cache after deletion
 async function handleDeleteCategory(categoryName, itemCount) {
   console.log('Deleting category:', categoryName, 'with', itemCount, 'items');
   
@@ -374,7 +401,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
     // Delete all items in this category from Firebase using batch
     const snapshot = await db.collection('inventory').where('category', '==', categoryName).get();
     
-    // Use batch writes for efficiency (max 500 operations per batch)
     const batches = [];
     let batch = db.batch();
     let operationCount = 0;
@@ -383,7 +409,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
       batch.delete(doc.ref);
       operationCount++;
       
-      // Firestore batch limit is 500 operations
       if (operationCount === 500) {
         batches.push(batch.commit());
         batch = db.batch();
@@ -391,22 +416,20 @@ async function handleDeleteCategory(categoryName, itemCount) {
       }
     });
     
-    // Commit remaining operations
     if (operationCount > 0) {
       batches.push(batch.commit());
     }
     
-    // Wait for all batches to complete
     await Promise.all(batches);
     
-    // Remove from local categories array
+    // Update local cache - NO FIREBASE READ! 🎉
+    console.log('✅ Updating local cache after category deletion (no read needed)');
     categories = categories.filter(c => c.name !== categoryName);
-    
-    // Remove from inventoryItems array
     inventoryItems = inventoryItems.filter(i => i.category !== categoryName);
+    delete categoryCounts[categoryName];
     
-    // Update UI
     updateCategorySelects();
+    populateProductDropdown();
     await loadManageCategoriesList();
     updateStats();
     
@@ -497,7 +520,7 @@ function handleAddSupplier(event) {
   }
   
   suppliers.push(supplierName);
-  suppliers.sort(); // Keep suppliers sorted alphabetically
+  suppliers.sort();
   updateSupplierDropdown();
   closeAddSupplierModal();
   
@@ -537,7 +560,6 @@ function loadManageSuppliersList() {
   
   listContainer.innerHTML = '';
   
-  // Get usage count for each supplier from purchase orders
   const supplierCounts = {};
   purchaseOrders.forEach(po => {
     if (po.supplier) {
@@ -583,10 +605,7 @@ function handleDeleteSupplier(supplierName, usageCount) {
     }
   }
   
-  // Remove from suppliers array
   suppliers = suppliers.filter(s => s !== supplierName);
-  
-  // Update UI
   updateSupplierDropdown();
   loadManageSuppliersList();
   
@@ -600,28 +619,6 @@ window.handleAddSupplier = handleAddSupplier;
 window.openManageSuppliersModal = openManageSuppliersModal;
 window.closeManageSuppliersModal = closeManageSuppliersModal;
 window.handleDeleteSupplier = handleDeleteSupplier;
-
-// Load inventory items
-async function loadInventoryItems() {
-  try {
-    const snapshot = await db.collection('inventory').get();
-    inventoryItems = [];
-    
-    snapshot.forEach(doc => {
-      const item = doc.data();
-      item.firebaseId = doc.id;
-      inventoryItems.push(item);
-    });
-    
-    console.log('Loaded inventory items:', inventoryItems.length);
-    populateProductDropdown();
-    
-    // Reload categories after loading inventory to ensure sync
-    await loadCategories();
-  } catch (error) {
-    console.error('Error loading inventory:', error);
-  }
-}
 
 // Populate product dropdown
 function populateProductDropdown() {
@@ -751,6 +748,7 @@ function calculateTotal() {
 // Load purchase orders from Firebase
 async function loadPurchaseOrders() {
   try {
+    console.log('📖 Loading purchase orders...');
     const snapshot = await db.collection('purchaseOrders').orderBy('date', 'desc').get();
     purchaseOrders = [];
     
@@ -760,7 +758,7 @@ async function loadPurchaseOrders() {
       purchaseOrders.push(po);
     });
     
-    console.log('Loaded purchase orders:', purchaseOrders.length);
+    console.log(`✅ Loaded ${purchaseOrders.length} purchase orders`);
   } catch (error) {
     console.error('Error loading purchase orders:', error);
   }
@@ -832,7 +830,6 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
       return;
     }
     
-    // Check for duplicate product name in inventory
     const duplicateName = inventoryItems.find(item => 
       item.name.toLowerCase().trim() === name.toLowerCase().trim()
     );
@@ -842,19 +839,16 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
       return;
     }
     
-    // Check for duplicate product ID in inventory
     const duplicateId = inventoryItems.find(item => 
       item.id === productId
     );
     
     if (duplicateId) {
       alert(`⚠️ Duplicate Product ID!\n\nA product with ID "${duplicateId.id}" already exists.\n\nProduct Name: ${duplicateId.name}\nCategory: ${duplicateId.category}\n\nPlease refresh the page to generate a new ID.`);
-      // Generate a new ID for the user
       await generateNewProductId();
       return;
     }
     
-    // Check for duplicate in pending purchase orders with new products
     const duplicateInPO = purchaseOrders.find(po => 
       po.isNewProduct && 
       po.status === 'pending' && 
@@ -1032,7 +1026,7 @@ function determineStatus(qty, minStock) {
   return 'in-stock';
 }
 
-// Receive order - Add to inventory
+// OPTIMIZED: Receive order - update cache instead of re-reading
 async function receiveOrder(index) {
   const po = purchaseOrders[index];
   
@@ -1046,6 +1040,7 @@ async function receiveOrder(index) {
       .get();
 
     if (!inventorySnapshot.empty) {
+      // Update existing product
       const doc = inventorySnapshot.docs[0];
       const existingProduct = doc.data();
       const newQty = existingProduct.qty + po.quantity;
@@ -1061,8 +1056,22 @@ async function receiveOrder(index) {
         supplier: po.supplier
       });
 
+      // Update local cache - NO FIREBASE READ! 🎉
+      console.log('✅ Updating inventory cache (no read needed)');
+      const localItemIndex = inventoryItems.findIndex(item => item.firebaseId === doc.id);
+      if (localItemIndex !== -1) {
+        inventoryItems[localItemIndex].qty = newQty;
+        inventoryItems[localItemIndex].total = newTotal;
+        inventoryItems[localItemIndex].status = newStatus;
+        inventoryItems[localItemIndex].date = getCurrentDate();
+        inventoryItems[localItemIndex].lastEditedBy = currentUser ? currentUser.fullName : 'Unknown';
+        inventoryItems[localItemIndex].supplier = po.supplier;
+        populateProductDropdown();
+      }
+
       alert(`✅ Inventory updated!\n\n${po.productName} (${po.productId})\nPrevious Quantity: ${existingProduct.qty}\nAdded: ${po.quantity}\nNew Quantity: ${newQty}\n\nCategory: ${po.category}\nUnit Price: ₱ ${(po.unitPrice || 0).toFixed(2)}`);
     } else {
+      // Add new product
       if (po.isNewProduct) {
         const counterRef = db.collection('metadata').doc('inventoryCounter');
         await db.runTransaction(async (tx) => {
@@ -1096,7 +1105,23 @@ async function receiveOrder(index) {
           lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
         };
 
-        await db.collection('inventory').add(newProduct);
+        const docRef = await db.collection('inventory').add(newProduct);
+        newProduct.firebaseId = docRef.id;
+
+        // Update local cache - NO FIREBASE READ! 🎉
+        console.log('✅ Adding new product to cache (no read needed)');
+        inventoryItems.push(newProduct);
+        
+        // Update category count if it's a new category
+        if (!categoryCounts[po.category]) {
+          categories.push({ id: po.category, name: po.category });
+          categoryCounts[po.category] = 1;
+          updateCategorySelects();
+        } else {
+          categoryCounts[po.category]++;
+        }
+        
+        populateProductDropdown();
 
         alert(`✅ New product added to inventory!\n\n${po.productName} (${po.productId})\nCategory: ${po.category}\nQuantity: ${po.quantity}\nUnit Price: ₱ ${po.unitPrice.toFixed(2)}\nTotal Value: ₱ ${(po.quantity * po.unitPrice).toFixed(2)}`);
       } else {
@@ -1115,11 +1140,10 @@ async function receiveOrder(index) {
     purchaseOrders[index].receivedDate = getCurrentDate();
     purchaseOrders[index].receivedBy = currentUser ? currentUser.fullName : 'Unknown';
 
-    // Reload inventory and categories to ensure sync
-    await loadInventoryItems();
-    await loadCategories();
     updateStats();
     renderTable();
+    
+    console.log('✅ Order received successfully (no inventory re-read needed)');
   } catch (error) {
     console.error('Error receiving order:', error);
     alert('Error processing the order. Please try again.');
