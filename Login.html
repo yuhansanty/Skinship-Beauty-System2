@@ -32,26 +32,19 @@
       flex: 1;
     }
 
-    .logo {
-      font-family: 'Cormorant Garamond', serif;
-      font-weight: 300;
-      font-size: 1.9rem;
-      margin-bottom: 3px;
-      letter-spacing: 0.05em;
-      text-align: left;
-      max-width: 160px;
-      position: relative;
+    .logo-container {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .logo svg {
-      position: absolute;
-      top: -32px;
-      left: 0;
-      width: 85px;
-      height: 85px;
-      stroke: #2b2b2b;
-      fill: none;
-      stroke-width: 1.7;
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .welcome-text {
@@ -169,43 +162,31 @@
     }
 
     .image-section {
-      width: 420px;
-      height: 420px;
-      border-radius: 50%;
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr;
-      gap: 3px;
-      box-shadow: 0 10px 25px rgb(0 0 0 / 0.15);
+      width: 300px;      /* made larger */
+      height: 300px;
+      flex-shrink: 0;
       user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 4px solid #000000;   /* black border */
+      border-radius: 50%;          /* perfect circle */
+      background-color: #f7d4d0;   /* same as your page background */
+     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* soft subtle shadow */
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    .image-section > div {
-      overflow: hidden;
-      position: relative;
-    }
-    .image-section > div img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      transition: transform 0.4s ease;
+    .image-section:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
     }
 
-    .image-section > div:hover img {
-      transform: scale(1.1);
+    .image-section img {
+      width: 80%;
+      height: 80%;
+      object-fit: contain;
+       border-radius: 50%;
     }
-
-    .image-section > div:nth-child(2),
-    .image-section > div:nth-child(3) {
-      clip-path: polygon(0 0, 100% 100%, 0% 100%);
-    }
-    .image-section > div:nth-child(1),
-    .image-section > div:nth-child(4) {
-      clip-path: polygon(100% 0, 0 100%, 100% 100%);
-    }
-
     .error-message {
       background: #fee2e2;
       color: #991b1b;
@@ -309,13 +290,6 @@
 <body>
   <main class="login-container">
     <section class="form-section" role="main" aria-label="Login Form Section">
-      <div class="logo" aria-label="Skinship beauty logo">
-        Skinship beauty
-        <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-          <path d="M30 15 Q45 50 30 80 Q55 50 45 15" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
-      
       <!-- Login Form -->
       <div id="loginSection">
         <h1 class="welcome-text">WELCOME BACK!</h1>
@@ -367,11 +341,8 @@
       <div id="loginSuccess" class="success-message"></div>
     </section>
     
-    <section class="image-section" aria-label="Decorative beauty images">
-      <div><img src="https://images.unsplash.com/photo-1587502536263-3e95976f7e34?auto=format&fit=crop&w=400&q=80" alt="Woman with perfectly shaped eyebrows receiving treatment"/></div>
-      <div><img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Close up of hands holding and manicured nails"/></div>
-      <div><img src="https://images.unsplash.com/photo-1556229164-01c5e05a736e?auto=format&fit=crop&w=400&q=80" alt="Feet spa treatment with pedicure tools"/></div>
-      <div><img src="https://images.unsplash.com/photo-1588776814546-355f5ee3ba8f?auto=format&fit=crop&w=400&q=80" alt="Man getting professional shaving and face spa treatment"/></div>
+    <section class="image-section" aria-label="Skinship Beauty Logo">
+      <img src="123transparent.png" alt="Skinship Beauty Logo" />
     </section>
   </main>
   
@@ -384,7 +355,7 @@
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // Initialize EmailJS with your public key
-    emailjs.init("JcMrqAedryjLalsIq"); // Replace with your EmailJS public key
+    emailjs.init("JcMrqAedryjLalsIq");
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -454,7 +425,6 @@
       });
     });
 
-    // Simple encoding for basic obfuscation
     function encodeData(str) {
       return btoa(str);
     }
@@ -467,7 +437,6 @@
       }
     }
 
-    // Check if 2FA is still valid (within 12 hours)
     function is2FAValid(uid) {
       const twoFAData = sessionStorage.getItem(`2fa_${uid}`);
       if (!twoFAData) return false;
@@ -483,7 +452,6 @@
       }
     }
 
-    // Mark 2FA as validated
     function mark2FAValidated(uid) {
       const data = {
         timestamp: Date.now(),
@@ -492,41 +460,37 @@
       sessionStorage.setItem(`2fa_${uid}`, JSON.stringify(data));
     }
 
-    // Generate 6-digit code
     function generateCode() {
       return Math.floor(100000 + Math.random() * 900000).toString();
     }
 
-async function sendVerificationCode(email, code) {
-  try {
-    // Store code in Firestore
-    await setDoc(doc(db, "verificationCodes", email), {
-      code: code,
-      timestamp: Date.now(),
-      expiresAt: Date.now() + (10 * 60 * 1000) // 10 minutes expiry
-    });
+    async function sendVerificationCode(email, code) {
+      try {
+        await setDoc(doc(db, "verificationCodes", email), {
+          code: code,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (10 * 60 * 1000)
+        });
 
-    // Send email using EmailJS
-    const templateParams = {
-      to_email: email,
-      verification_code: code,
-      user_email: email
-    };
+        const templateParams = {
+          to_email: email,
+          verification_code: code,
+          user_email: email
+        };
 
-    await emailjs.send(
-      'service_s0oyzpd',        // Replace with your EmailJS service ID
-      'template_bzyzwxf',       // Replace with your EmailJS template ID
-      templateParams
-    );
+        await emailjs.send(
+          'service_s0oyzpd',
+          'template_bzyzwxf',
+          templateParams
+        );
 
-    return true;
-  } catch (error) {
-    console.error("Error sending code:", error);
-    return false;
-  }
-}
+        return true;
+      } catch (error) {
+        console.error("Error sending code:", error);
+        return false;
+      }
+    }
 
-    // Load remembered credentials
     function loadRememberedCredentials() {
       const savedEmail = sessionStorage.getItem('rememberedEmail');
       const savedPassword = sessionStorage.getItem('rememberedPassword');
@@ -544,7 +508,6 @@ async function sendVerificationCode(email, code) {
       }
     }
 
-    // Save credentials if remember me is checked
     function saveCredentials(email, password, remember) {
       if (remember) {
         sessionStorage.setItem('rememberedEmail', encodeData(email));
@@ -648,7 +611,6 @@ async function sendVerificationCode(email, code) {
         const userCred = await signInWithEmailAndPassword(auth, email, password);
         const user = userCred.user;
 
-        // Check if email is verified
         if (!user.emailVerified) {
           await auth.signOut();
           showWarning("⚠️ Please verify your email before logging in. Check your inbox for the verification link.");
@@ -657,7 +619,6 @@ async function sendVerificationCode(email, code) {
           return;
         }
 
-        // Check if user exists in Firestore
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (!userDoc.exists()) {
           await auth.signOut();
@@ -676,9 +637,7 @@ async function sendVerificationCode(email, code) {
           return;
         }
 
-        // Check if 2FA is still valid
         if (is2FAValid(user.uid)) {
-          // 2FA still valid, proceed to dashboard
           saveCredentials(email, password, remember);
           const userData = userDoc.data();
           localStorage.setItem("currentUserEmail", email);
@@ -689,17 +648,14 @@ async function sendVerificationCode(email, code) {
           return;
         }
 
-        // Need 2FA verification
         currentUser = user;
         userEmail = email;
         
-        // Send verification code
         await sendCode();
         
         submitBtn.disabled = false;
         submitBtn.textContent = "SIGN IN";
         
-        // Switch to 2FA screen
         switchTo2FA();
 
       } catch (error) {
@@ -743,7 +699,6 @@ async function sendVerificationCode(email, code) {
       verifyBtn.textContent = "VERIFYING...";
 
       try {
-        // Verify code from Firestore
         const codeDoc = await getDoc(doc(db, "verificationCodes", userEmail));
         
         if (!codeDoc.exists()) {
@@ -764,22 +719,19 @@ async function sendVerificationCode(email, code) {
         }
 
         if (enteredCode === codeData.code) {
-          // Code is correct
           showSuccess("✅ Verification successful! Redirecting...");
           
-          // Mark 2FA as validated for 12 hours
           mark2FAValidated(currentUser.uid);
           
-          // Get user role and save credentials
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           const role = (userDoc.data().role || "").toLowerCase();
           
           saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
-            const userData = userDoc.data();
-            localStorage.setItem("currentUserEmail", userEmail);
-            localStorage.setItem("currentUserRole", role);
-            localStorage.setItem("currentUsername", userData.username || "");
-            localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
+          const userData = userDoc.data();
+          localStorage.setItem("currentUserEmail", userEmail);
+          localStorage.setItem("currentUserRole", role);
+          localStorage.setItem("currentUsername", userData.username || "");
+          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
           
           setTimeout(() => {
             window.location.href = "dashboard.html";
