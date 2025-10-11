@@ -216,19 +216,22 @@
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
       <!-- Header Section -->
       <div class="flex justify-between items-center mb-6">
-        <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVENTORY</h1>
         <div class="flex items-center gap-4">
+          <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVENTORY</h1>
+          
           <!-- Search Bar -->
-          <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80" />
+          <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-80" />
           
           <!-- Action Buttons -->
-          <button class="filter-btn" onclick="addNewItem()">
+          <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="addNewItem()">
             <i class="fa-solid fa-plus mr-2"></i>Add Item
           </button>
-          <button class="filter-btn" onclick="enableEditMode()" id="editModeBtn">
+          <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="enableEditMode()" id="editModeBtn">
             <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item
           </button>
-          
+        </div>
+        
+        <div class="flex items-center gap-4">
           <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
