@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - Skinship Beauty</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary-pink: #e83e8c;
+            --secondary-pink: #ff69b4;
+            --light-pink: #fff0f6;
+            --dark-pink: #c2185b;
+            --text-color: #4a2c3a;
+            --white: #ffffff;
+            --header-approx-h: clamp(80px, 16vw, 140px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text-color);
+            line-height: 1.6;
+            background-color: var(--light-pink);
+        }
+
+        html, body {
+            width: 100vw;
+            max-width: 100vw;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 clamp(12px, 3vw, 24px);
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @media (max-width: 1024px) {
+            .container {
+                padding: 0 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 2vw !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                margin: 0 !important;
+                box-sizing: border-box;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 1vw !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+            }
+        }
+
+        /* Header Styles */
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: clamp(12px, 2.5vw, 18px) 0 clamp(6px, 1.5vw, 10px) 0;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-logo img {
+            height: 48px;
+            width: auto;
+            margin-right: 14px;
+            vertical-align: middle;
+        }
+
+        .header-logo .logo {
+            font-size: clamp(20px, 4vw, 28px);
+            font-weight: 700;
+            color: var(--dark-pink);
+            letter-spacing: 1px;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--primary-pink);
+            padding: 0 0 0 0;
+            background: var(--light-pink);
+        }
+
+        .header-nav ul {
+            display: flex;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .header-nav ul li {
+            margin-right: clamp(14px, 4vw, 40px);
+        }
+
+        .header-nav ul li:last-child {
+            margin-right: 0;
+        }
+
+        .header-nav ul li a {
+            color: var(--dark-pink);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        .header-nav ul li a:hover {
+            color: var(--primary-pink);
+        }
+
+        .header-social {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-social a {
+            color: var(--primary-pink);
+            font-size: 22px;
+            transition: color 0.3s;
+        }
+
+        .header-social a:hover {
+            color: var(--dark-pink);
+        }
+
+        /* Mobile Menu Styles */
+        .mobile-menu-btn {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid rgba(0,0,0,0.06);
+            background: #fff;
+            color: var(--primary-pink);
+            cursor: pointer;
+        }
+
+        .mobile-menu-panel {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: var(--header-approx-h);
+            background: var(--white);
+            border-bottom: 1px solid #f1c9d6;
+            box-shadow: 0 8px 18px rgba(232,62,140,0.08);
+            z-index: 200;
+        }
+
+        .mobile-menu-panel.open { display: block; }
+        .mobile-menu-list { list-style: none; margin: 0; padding: 12px 16px; display: grid; gap: 8px; }
+        .mobile-menu-list a { color: var(--dark-pink); text-decoration: none; font-weight: 600; padding: 10px 4px; display: block; }
+
+        /* Products Section */
+        .products {
+            padding: clamp(48px, 8vw, 80px) 0;
+            background-color: var(--white);
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(22px, 4.5vw, 36px);
+            color: var(--dark-pink);
+            margin-bottom: clamp(10px, 2vw, 15px);
+        }
+
+        .section-title p {
+            color: var(--text-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: clamp(16px, 3vw, 30px);
+        }
+
+        .product-card {
+            background-color: var(--light-pink);
+            border-radius: 10px;
+            padding: clamp(16px, 3vw, 30px);
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-icon {
+            font-size: clamp(28px, 5vw, 40px);
+            color: var(--primary-pink);
+            margin-bottom: clamp(12px, 2.5vw, 20px);
+        }
+
+        .product-card h3 {
+            margin-bottom: 15px;
+            color: var(--dark-pink);
+        }
+
+        .product-card p {
+            color: var(--text-color);
+            margin-bottom: 15px;
+        }
+
+        .product-price {
+            font-size: clamp(18px, 3.5vw, 24px);
+            font-weight: bold;
+            color: var(--primary-pink);
+            margin-bottom: 10px;
+        }
+
+        .product-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .status-in-stock {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .status-low-stock {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .status-out-of-stock {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .store-only-notice {
+            background-color: var(--primary-pink);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        .placeholder-notice {
+            background-color: #6c757d;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 500;
+            margin: 8px 0;
+            display: inline-block;
+        }
+
+        .filter-btn {
+            background-color: var(--white);
+            color: var(--dark-pink);
+            border: 2px solid var(--primary-pink);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0 10px;
+        }
+
+        .filter-btn:hover {
+            background-color: var(--primary-pink);
+            color: white;
+        }
+
+        .filter-btn.active {
+            background-color: var(--primary-pink);
+            color: white;
+        }
+
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 24px;
+            color: var(--primary-pink);
+        }
+
+        .no-products {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-color);
+        }
+
+        .no-products i {
+            font-size: 48px;
+            color: var(--primary-pink);
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--dark-pink);
+            color: white;
+            padding: clamp(32px, 6vw, 50px) 0 20px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: clamp(16px, 3vw, 30px);
+            margin-bottom: clamp(24px, 4vw, 40px);
+        }
+
+        .footer-section h3 {
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 10px;
+        }
+
+        .footer-section ul li a {
+            color: white;
+            text-decoration: none;
+            transition: opacity 0.3s;
+        }
+
+        .footer-section ul li a:hover {
+            opacity: 0.8;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-icons a {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            text-align: center;
+            line-height: 40px;
+            color: white;
+            transition: background-color 0.3s;
+        }
+
+        .social-icons a:hover {
+            background-color: var(--primary-pink);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .header-nav ul { display: none; }
+            .header-social { display: none; }
+            .mobile-menu-btn { display: inline-flex; }
+            .products-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .products-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .product-card {
+                margin-bottom: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-top">
+                <div class="header-logo">
+                    <img src="Logo.png" alt="Skinship Beauty Logo" style="height:48px; width:auto; margin-right:14px; vertical-align:middle;" />
+                    <div class="logo">Skinship <span style="color:var(--dark-pink)">Beauty</span></div>
+                </div>
+            </div>
+            <div class="header-nav">
+                <ul>
+                    <li><a href="LandingPage.html">HOME</a></li>
+                    <li><a href="LandingPage.html#services">SERVICES</a></li>
+                    <li><a href="LandingPage.html#testimonials">REVIEWS</a></li>
+                    <li><a href="LandingPage.html#about">ABOUT</a></li>
+                    <li><a href="LandingPage.html#location">LOCATION</a></li>
+                </ul>
+                <div class="header-social">
+                    <a href="https://www.facebook.com/theskinshipbeauty"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/skinship_ph/"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@skinship_ph"><i class="fab fa-tiktok"></i></a>
+                </div>
+                <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open menu" aria-expanded="false">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+            <div id="mobileMenuPanel" class="mobile-menu-panel">
+                <ul class="mobile-menu-list">
+                    <li><a href="LandingPage.html" onclick="toggleMenu(false)">HOME</a></li>
+                    <li><a href="LandingPage.html#services" onclick="toggleMenu(false)">SERVICES</a></li>
+                    <li><a href="LandingPage.html#testimonials" onclick="toggleMenu(false)">REVIEWS</a></li>
+                    <li><a href="LandingPage.html#about" onclick="toggleMenu(false)">ABOUT</a></li>
+                    <li><a href="LandingPage.html#location" onclick="toggleMenu(false)">LOCATION</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- Products Section -->
+    <section class="products" id="products">
+        <div class="container">
+            <div class="section-title">
+                <h2>Our Products</h2>
+                <p>We offer a wide range of premium beauty and skincare products to help you look and feel your best. All products are available for purchase at our physical store location.</p>
+            </div>
+            
+            <!-- Filter Options -->
+            <div style="text-align: center; margin-bottom: 30px;">
+                <button id="showAllBtn" class="filter-btn active" onclick="toggleFilter('all')">All Products</button>
+                <button id="showRealBtn" class="filter-btn" onclick="toggleFilter('real')">Available Products</button>
+            </div>
+            
+            <!-- Loading State -->
+            <div id="loadingSpinner" class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span style="margin-left: 10px;">Loading products...</span>
+            </div>
+
+            <!-- No Products State -->
+            <div id="noProducts" class="no-products" style="display: none;">
+                <i class="fas fa-box-open"></i>
+                <h3>No Products Available</h3>
+                <p>We're currently updating our product catalog. Please visit our store for the latest products.</p>
+            </div>
+
+            <!-- Products Grid -->
+            <div id="productsGrid" class="products-grid" style="display: none;">
+                <!-- Products will be loaded here dynamically -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Skinship Beauty</h3>
+                    <p>Premium grooming services and products for the modern individual.</p>
+                    <div class="social-icons">
+                        <a href="https://www.facebook.com/theskinshipbeauty"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://www.instagram.com/skinship_ph/"><i class="fab fa-instagram"></i></a>
+                        <a href="https://www.tiktok.com/@skinship_ph"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="LandingPage.html">Home</a></li>
+                        <li><a href="LandingPage.html#services">Services</a></li>
+                        <li><a href="LandingPage.html#about">About</a></li>
+                        <li><a href="LandingPage.html#location">Location</a></li>
+                        <li><a href="LandingPage.html#testimonials">Reviews</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Info</h3>
+                    <p>Primark Towncenter Cainta, Rizal, Philippines, 1900</p>
+                    <p>0992 595 0241</p>
+                    <p>skinshipbyk@gmail.com</p>
+                    <p>10:00 AM - 9:00 PM</p>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>© 2025 Skinship Beauty. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+            authDomain: "skinship-1ff4b.firebaseapp.com",
+            projectId: "skinship-1ff4b",
+            storageBucket: "skinship-1ff4b.appspot.com",
+            messagingSenderId: "963752770497",
+            appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Mobile menu functionality
+        const menuBtn = document.getElementById('mobileMenuBtn');
+        const panel = document.getElementById('mobileMenuPanel');
+        
+        function toggleMenu(force) {
+            const willOpen = typeof force === 'boolean' ? force : !panel.classList.contains('open');
+            panel.classList.toggle('open', willOpen);
+            if (menuBtn) menuBtn.setAttribute('aria-expanded', String(willOpen));
+        }
+        
+        menuBtn?.addEventListener('click', () => toggleMenu());
+        
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768 && panel.classList.contains('open')) toggleMenu(false);
+        });
+
+        // Global variables
+        let allProducts = [];
+        let currentFilter = 'all';
+
+        // Filter functionality
+        function toggleFilter(filterType) {
+            currentFilter = filterType;
+            
+            // Update button states
+            document.getElementById('showAllBtn').classList.toggle('active', filterType === 'all');
+            document.getElementById('showRealBtn').classList.toggle('active', filterType === 'real');
+            
+            // Filter and display products
+            displayProducts();
+        }
+
+        function displayProducts() {
+            const productsGrid = document.getElementById('productsGrid');
+            const noProducts = document.getElementById('noProducts');
+            
+            let filteredProducts = allProducts;
+            
+            if (currentFilter === 'real') {
+                filteredProducts = allProducts.filter(product => !product.isPlaceholder);
+            }
+            
+            if (filteredProducts.length === 0) {
+                productsGrid.style.display = 'none';
+                noProducts.style.display = 'block';
+                noProducts.innerHTML = `
+                    <i class="fas fa-box-open"></i>
+                    <h3>No Products Available</h3>
+                    <p>We're currently updating our product catalog. Please visit our store for the latest products.</p>
+                `;
+            } else {
+                productsGrid.style.display = 'grid';
+                noProducts.style.display = 'none';
+                productsGrid.innerHTML = '';
+                
+                // Sort products by category, then by name
+                filteredProducts.sort((a, b) => {
+                    if (a.category !== b.category) {
+                        return a.category.localeCompare(b.category);
+                    }
+                    return a.name.localeCompare(b.name);
+                });
+                
+                // Create product cards
+                filteredProducts.forEach(product => {
+                    const card = createProductCard(product);
+                    productsGrid.appendChild(card);
+                });
+            }
+        }
+
+        // Product loading functionality
+        function getCategoryIcon(category) {
+            const iconMap = {
+                'Hair Products': 'fas fa-cut',
+                'Nail Products': 'fas fa-hand-paper',
+                'Skincare': 'fas fa-spa',
+                'Lash Products': 'fas fa-eye',
+                'Tools': 'fas fa-tools',
+                'Facial Products': 'fas fa-spa',
+                'Body Care': 'fas fa-heart',
+                'Makeup': 'fas fa-palette',
+                'Supplements': 'fas fa-pills',
+                'Accessories': 'fas fa-gem'
+            };
+            return iconMap[category] || 'fas fa-box';
+        }
+
+        function getStatusClass(status) {
+            switch(status) {
+                case 'in-stock': return 'status-in-stock';
+                case 'low-stock': return 'status-low-stock';
+                case 'out-of-stock': return 'status-out-of-stock';
+                default: return 'status-in-stock';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'in-stock': return 'In Stock';
+                case 'low-stock': return 'Low Stock';
+                case 'out-of-stock': return 'Out of Stock';
+                default: return 'Available';
+            }
+        }
+
+        function formatPrice(price) {
+            return `₱${parseFloat(price).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function createProductCard(product) {
+            const card = document.createElement('div');
+            card.className = 'product-card';
+            
+            const icon = getCategoryIcon(product.category);
+            const statusClass = getStatusClass(product.status);
+            const statusText = getStatusText(product.status);
+            const price = formatPrice(product.price);
+            
+            // Create a description similar to services
+            let description = '';
+            if (product.description && product.description.trim() !== '') {
+                description = product.description;
+            } else {
+                // Generate description based on category
+                const categoryDescriptions = {
+                    'Hair Products': 'Professional hair care products for all hair types.',
+                    'Nail Products': 'Premium nail care and beauty products.',
+                    'Skincare': 'Advanced skincare solutions for healthy, glowing skin.',
+                    'Lash Products': 'High-quality eyelash care and enhancement products.',
+                    'Tools': 'Professional beauty tools and equipment.',
+                    'Facial Products': 'Specialized facial care and treatment products.',
+                    'Body Care': 'Complete body care and wellness products.',
+                    'Makeup': 'Professional makeup products and cosmetics.',
+                    'Supplements': 'Health and beauty supplements for optimal wellness.',
+                    'Accessories': 'Beauty accessories and complementary products.'
+                };
+                description = categoryDescriptions[product.category] || 'Premium beauty product for your care routine.';
+            }
+            
+            card.innerHTML = `
+                <div class="product-icon">
+                    <i class="${icon}"></i>
+                </div>
+                <h3>${product.name}</h3>
+                <p>${description}</p>
+                <div class="product-price">${price}</div>
+                <div class="product-status ${statusClass}">${statusText}</div>
+                ${product.isPlaceholder ? '<div class="placeholder-notice"><i class="fas fa-info-circle" style="margin-right: 5px;"></i>Category Placeholder</div>' : ''}
+                <div class="store-only-notice">
+                    <i class="fas fa-store" style="margin-right: 5px;"></i>
+                    Available in Store Only
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function loadProducts() {
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const noProducts = document.getElementById('noProducts');
+            const productsGrid = document.getElementById('productsGrid');
+            
+            // Show loading spinner
+            loadingSpinner.style.display = 'flex';
+            noProducts.style.display = 'none';
+            productsGrid.style.display = 'none';
+            
+            // Listen to inventory collection - show ALL items
+            db.collection('inventory')
+                .onSnapshot((snapshot) => {
+                    allProducts = [];
+                    
+                    snapshot.forEach((doc) => {
+                        const product = doc.data();
+                        product.firebaseId = doc.id;
+                        allProducts.push(product);
+                    });
+                    
+                    // Hide loading spinner
+                    loadingSpinner.style.display = 'none';
+                    
+                    // Display products based on current filter
+                    displayProducts();
+                }, (error) => {
+                    console.error('Error loading products:', error);
+                    
+                    // Hide loading spinner and show error
+                    loadingSpinner.style.display = 'none';
+                    noProducts.style.display = 'block';
+                    noProducts.innerHTML = `
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Error Loading Products</h3>
+                        <p>Unable to load products at this time. Please visit our store for the latest products.</p>
+                    `;
+                });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProducts();
+        });
+    </script>
+</body>
+</html>

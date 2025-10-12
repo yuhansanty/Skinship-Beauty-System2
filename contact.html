@@ -33,7 +33,149 @@
     .form-group textarea { min-height: 150px; }
     .btn { background: var(--primary-pink); color: #fff; border: none; padding: 14px 32px; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: var(--dark-pink); }
-    a[href="landingpage.html"] {
+    
+    /* Success Modal Styles */
+    .success-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .success-modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .success-modal-content {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+      text-align: center;
+    }
+
+    .success-modal.show .success-modal-content {
+      transform: scale(1);
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      animation: successPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes successPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .success-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .success-title {
+      color: var(--dark-pink);
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 15px;
+    }
+
+    .success-message {
+      color: var(--text-color);
+      font-size: 1rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .countdown-message {
+      color: var(--primary-pink);
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 30px;
+      background: rgba(232, 62, 140, 0.1);
+      padding: 10px 15px;
+      border-radius: 10px;
+      border-left: 4px solid var(--primary-pink);
+    }
+
+    #countdown {
+      font-weight: 700;
+      color: var(--dark-pink);
+      transition: all 0.3s ease;
+    }
+
+    #countdown.warning {
+      color: #ef4444;
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
+    .success-btn {
+      background: linear-gradient(135deg, var(--primary-pink) 0%, var(--dark-pink) 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      box-shadow: 0 4px 6px rgba(232, 62, 140, 0.3);
+    }
+
+    .success-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(232, 62, 140, 0.4);
+    }
+
+    @media (max-width: 600px) {
+      .success-modal-content {
+        padding: 30px 20px;
+        margin: 20px;
+      }
+      
+      .success-title {
+        font-size: 1.5rem;
+      }
+      
+      .success-message {
+        font-size: 0.9rem;
+      }
+      
+      .countdown-message {
+        font-size: 0.8rem;
+        padding: 8px 12px;
+      }
+    }
+    a[href="LandingPage.html"] {
       position: absolute;
       top: 24px;
       left: 24px;
@@ -48,7 +190,7 @@
       display: inline-block;
       transition: background 0.2s, font-size 0.2s, padding 0.2s;
     }
-    a[href="landingpage.html"] {
+    a[href="LandingPage.html"] {
       position: static !important;
       top: auto !important;
       left: auto !important;
@@ -58,7 +200,7 @@
       z-index: auto !important;
     }
     @media (max-width: 600px) {
-      a[href="landingpage.html"] {
+      a[href="LandingPage.html"] {
         position: static;
         display: block;
         width: fit-content;
@@ -88,7 +230,7 @@
   </style>
 </head>
 <body>
-  <a href="landingpage.html" style="position: absolute; top: 24px; left: 24px; background: var(--primary-pink); color: #fff; padding: 10px 22px; border-radius: 5px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000;">&larr; Back</a>
+  <a href="LandingPage.html" style="position: absolute; top: 24px; left: 24px; background: var(--primary-pink); color: #fff; padding: 10px 22px; border-radius: 5px; text-decoration: none; font-weight: 600; box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 1000;">&larr; Back</a>
   <section class="contact" id="contact">
     <div class="container">
       <div class="section-title">
@@ -131,6 +273,26 @@
       </form>
     </div>
   </section>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="success-modal">
+    <div class="success-modal-content">
+      <div class="success-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <h2 class="success-title">Thank You!</h2>
+      <p class="success-message">
+        Your request has been sent successfully. A message will be sent to your email for further notice.
+      </p>
+      <p class="countdown-message">
+        You will be automatically redirected to the home page in <span id="countdown">30</span> seconds.
+      </p>
+      <a href="LandingPage.html" class="success-btn">
+        <i class="fas fa-home" style="margin-right: 8px;"></i>
+        Back to Home
+      </a>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script>
@@ -180,6 +342,54 @@
       }
     }
     loadStaff();
+
+    // Show success modal function
+    function showSuccessModal() {
+      const modal = document.getElementById('successModal');
+      modal.classList.add('show');
+      
+      // Start countdown timer
+      let timeLeft = 30;
+      const countdownElement = document.getElementById('countdown');
+      
+      const countdownInterval = setInterval(() => {
+        timeLeft--;
+        countdownElement.textContent = timeLeft;
+        
+        // Add warning animation for last 5 seconds
+        if (timeLeft <= 5) {
+          countdownElement.classList.add('warning');
+        }
+        
+        if (timeLeft <= 0) {
+          clearInterval(countdownInterval);
+          window.location.href = 'LandingPage.html';
+        }
+      }, 1000);
+      
+      // Clear countdown if user clicks the button
+      const backButton = document.querySelector('.success-btn');
+      backButton.addEventListener('click', () => {
+        clearInterval(countdownInterval);
+      });
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('successModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.classList.remove('show');
+      }
+    });
+
+    // Close modal when pressing Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('successModal');
+        if (modal.classList.contains('show')) {
+          modal.classList.remove('show');
+        }
+      }
+    });
 
     // Handle form submit
     document.querySelector(".contact-form").addEventListener("submit", async (e) => {
@@ -280,7 +490,8 @@
 
         await batch.commit();
 
-        alert("Your appointment has been booked successfully!");
+        // Show success modal instead of alert
+        showSuccessModal();
         e.target.reset();
       } catch (err) {
         console.error("Error adding document: ", err);
