@@ -15,6 +15,24 @@
       justify-content: center;
       align-items: center;
       padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Dot Grid Background */
+    .dot-grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .dot-grid-canvas {
+      width: 100%;
+      height: 100%;
     }
 
     .login-container {
@@ -25,11 +43,25 @@
       align-items: center;
       justify-content: space-between;
       color: #2b2b2b;
+      position: relative;
+      z-index: 1;
     }
 
     .form-section {
       max-width: 450px;
       flex: 1;
+      background: rgba(247, 212, 208, 0.95);
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --form-bg-opacity: 0.95;
+    }
+
+    .form-section.transparent {
+      background: rgba(247, 212, 208, var(--form-bg-opacity));
+      backdrop-filter: none;
+      box-shadow: none;
     }
 
     .logo-container {
@@ -56,6 +88,32 @@
       font-family: 'Poppins', sans-serif;
       margin-bottom: 6px;
       user-select: none;
+      display: inline-block;
+    }
+
+    .shuffle-parent {
+      display: inline-block;
+      white-space: normal;
+      word-wrap: break-word;
+      will-change: transform;
+      line-height: 1;
+      font-size: 2.3rem;
+      font-weight: 800;
+      font-family: 'Poppins', sans-serif;
+      text-transform: uppercase;
+      color: #000000cc;
+      letter-spacing: 4px;
+      visibility: hidden;
+    }
+
+    .shuffle-parent.is-ready {
+      visibility: visible;
+    }
+
+    .shuffle-char {
+      line-height: 1;
+      display: inline-block;
+      text-align: center;
     }
 
     .subtext {
@@ -83,7 +141,7 @@
       border-radius: 15px;
       font-size: 1rem;
       color: #2b2b2b;
-      background-color: #f7d4d0;
+      background-color: rgba(247, 212, 208, 0.8);
       outline-offset: 4px;
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
       user-select: text;
@@ -162,31 +220,77 @@
     }
 
     .image-section {
-      width: 300px;      /* made larger */
+      width: 300px;
       height: 300px;
       flex-shrink: 0;
       user-select: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 4px solid #000000;   /* black border */
-      border-radius: 50%;          /* perfect circle */
-      background-color: #f7d4d0;   /* same as your page background */
-     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15); /* soft subtle shadow */
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      border: 2px solid transparent;
+      border-radius: 25px;
+      background-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      perspective: 1000px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: box-shadow 0.3s ease;
     }
 
     .image-section:hover {
-      transform: scale(1.05);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+      box-shadow: none;
+    }
+
+    .image-section-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+    }
+
+    .pixel-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     .image-section img {
-      width: 80%;
-      height: 80%;
+      width: 90%;
+      height: 90%;
       object-fit: contain;
-       border-radius: 50%;
+      border-radius: 15px;
+      transform: translateZ(20px);
+      position: relative;
+      z-index: 2;
     }
+
+    .tilted-tooltip {
+      pointer-events: none;
+      position: absolute;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2d2d2d;
+      opacity: 0;
+      z-index: 10;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      white-space: nowrap;
+    }
+
+    .tilted-tooltip.show {
+      opacity: 1;
+    }
+
     .error-message {
       background: #fee2e2;
       color: #991b1b;
@@ -255,7 +359,7 @@
       font-weight: 700;
       border: 2px solid #b89a96;
       border-radius: 10px;
-      background-color: #f7d4d0;
+      background-color: rgba(247, 212, 208, 0.8);
     }
 
     .code-input:focus {
@@ -285,9 +389,30 @@
     .hidden {
       display: none;
     }
+
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .form-section {
+        padding: 30px;
+      }
+
+      .image-section {
+        width: 200px;
+        height: 200px;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Animated Dot Grid Background -->
+  <div class="dot-grid-bg">
+    <canvas id="dotGridCanvas" class="dot-grid-canvas"></canvas>
+  </div>
+
   <main class="login-container">
     <section class="form-section" role="main" aria-label="Login Form Section">
       <!-- Login Form -->
@@ -341,10 +466,368 @@
       <div id="loginSuccess" class="success-message"></div>
     </section>
     
-    <section class="image-section" aria-label="Skinship Beauty Logo">
-      <img src="123transparent.png" alt="Skinship Beauty Logo" />
+    <section class="image-section" id="tiltedLogo" aria-label="Skinship Beauty Logo">
+      <canvas id="pixelCanvas" class="pixel-canvas"></canvas>
+      <div class="image-section-inner">
+        <img src="123transparent.png" alt="Skinship Beauty Logo" />
+      </div>
+      <div class="tilted-tooltip" id="logoTooltip">Skinship Beauty</div>
     </section>
   </main>
+
+  <script>
+    // Dot Grid Animation
+    const canvas = document.getElementById('dotGridCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const particles = [];
+    const particleCount = 5;
+    
+    class Particle {
+      constructor() {
+        this.reset();
+        this.y = Math.random() * window.innerHeight;
+      }
+      
+      reset() {
+        this.x = Math.random() * window.innerWidth;
+        this.y = -50;
+        this.size = Math.random() * 100 + 50;
+        this.speedY = Math.random() * 0.5 + 0.2;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.3 + 0.1;
+        this.color = ['#da5c73', '#e2798d', '#f7d4d0'][Math.floor(Math.random() * 3)];
+      }
+      
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        
+        if (this.y > window.innerHeight + 50) {
+          this.reset();
+        }
+        
+        if (this.x < -50 || this.x > window.innerWidth + 50) {
+          this.x = Math.random() * window.innerWidth;
+        }
+      }
+      
+      draw(ctx) {
+        const gradient = ctx.createRadialGradient(
+          this.x, this.y, 0,
+          this.x, this.y, this.size
+        );
+        
+        gradient.addColorStop(0, this.color + Math.floor(this.opacity * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(1, this.color + '00');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(
+          this.x - this.size,
+          this.y - this.size,
+          this.size * 2,
+          this.size * 2
+        );
+      }
+    }
+    
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+    
+    let dots = [];
+    let pointer = { x: 0, y: 0, vx: 0, vy: 0, speed: 0, lastX: 0, lastY: 0, lastTime: 0 };
+    
+    // Configuration
+    const config = {
+      dotSize: 5,
+      gap: 30,
+      baseColor: '#da5c73',
+      activeColor: 'fffffff',
+      proximity: 120,
+      speedTrigger: 100,
+      shockRadius: 200,
+      shockStrength: 3,
+      maxSpeed: 5000,
+      resistance: 800,
+      returnDuration: 1200
+    };
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+
+    const baseRgb = hexToRgb(config.baseColor);
+    const activeRgb = hexToRgb(config.activeColor);
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(dpr, dpr);
+      buildGrid();
+    }
+
+    function buildGrid() {
+      dots = [];
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const cell = config.dotSize + config.gap;
+      const cols = Math.floor((width + config.gap) / cell);
+      const rows = Math.floor((height + config.gap) / cell);
+      
+      const gridW = cell * cols - config.gap;
+      const gridH = cell * rows - config.gap;
+      const startX = (width - gridW) / 2 + config.dotSize / 2;
+      const startY = (height - gridH) / 2 + config.dotSize / 2;
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          dots.push({
+            cx: startX + x * cell,
+            cy: startY + y * cell,
+            xOffset: 0,
+            yOffset: 0,
+            targetX: 0,
+            targetY: 0,
+            animating: false
+          });
+        }
+      }
+    }
+
+    function animate(dot, targetX, targetY, duration) {
+      const startX = dot.xOffset;
+      const startY = dot.yOffset;
+      const startTime = performance.now();
+
+      function update() {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Elastic easing out
+        const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        
+        dot.xOffset = startX + (targetX - startX) * easeOut;
+        dot.yOffset = startY + (targetY - startY) * easeOut;
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+      
+      requestAnimationFrame(update);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw floating particles
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw(ctx);
+      });
+      
+      const proxSq = config.proximity * config.proximity;
+
+      for (const dot of dots) {
+        const ox = dot.cx + dot.xOffset;
+        const oy = dot.cy + dot.yOffset;
+        const dx = dot.cx - pointer.x;
+        const dy = dot.cy - pointer.y;
+        const dsq = dx * dx + dy * dy;
+
+        let color = config.baseColor;
+        if (dsq <= proxSq) {
+          const dist = Math.sqrt(dsq);
+          const t = 1 - dist / config.proximity;
+          const r = Math.round(baseRgb.r + (activeRgb.r - baseRgb.r) * t);
+          const g = Math.round(baseRgb.g + (activeRgb.g - baseRgb.g) * t);
+          const b = Math.round(baseRgb.b + (activeRgb.b - baseRgb.b) * t);
+          color = `rgb(${r},${g},${b})`;
+        }
+
+        ctx.beginPath();
+        ctx.arc(ox, oy, config.dotSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    let lastMoveTime = 0;
+    function onMouseMove(e) {
+      const now = performance.now();
+      if (now - lastMoveTime < 16) return; // Throttle to ~60fps
+      lastMoveTime = now;
+
+      const dt = pointer.lastTime ? now - pointer.lastTime : 16;
+      const dx = e.clientX - pointer.lastX;
+      const dy = e.clientY - pointer.lastY;
+      
+      pointer.vx = (dx / dt) * 1000;
+      pointer.vy = (dy / dt) * 1000;
+      pointer.speed = Math.hypot(pointer.vx, pointer.vy);
+      
+      if (pointer.speed > config.maxSpeed) {
+        const scale = config.maxSpeed / pointer.speed;
+        pointer.vx *= scale;
+        pointer.vy *= scale;
+        pointer.speed = config.maxSpeed;
+      }
+
+      pointer.lastTime = now;
+      pointer.lastX = e.clientX;
+      pointer.lastY = e.clientY;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+
+      if (pointer.speed > config.speedTrigger) {
+        for (const dot of dots) {
+          const dist = Math.hypot(dot.cx - pointer.x, dot.cy - pointer.y);
+          if (dist < config.proximity && !dot.animating) {
+            const pushX = (dot.cx - pointer.x + pointer.vx * 0.003) * 0.3;
+            const pushY = (dot.cy - pointer.y + pointer.vy * 0.003) * 0.3;
+            
+            animate(dot, pushX, pushY, config.resistance);
+            setTimeout(() => {
+              animate(dot, 0, 0, config.returnDuration);
+            }, config.resistance);
+          }
+        }
+      }
+    }
+
+    function onClick(e) {
+      const cx = e.clientX;
+      const cy = e.clientY;
+
+      for (const dot of dots) {
+        const dist = Math.hypot(dot.cx - cx, dot.cy - cy);
+        if (dist < config.shockRadius && !dot.animating) {
+          const falloff = Math.max(0, 1 - dist / config.shockRadius);
+          const pushX = (dot.cx - cx) * config.shockStrength * falloff;
+          const pushY = (dot.cy - cy) * config.shockStrength * falloff;
+          
+          animate(dot, pushX, pushY, config.resistance);
+          setTimeout(() => {
+            animate(dot, 0, 0, config.returnDuration);
+          }, config.resistance);
+        }
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('click', onClick);
+
+    resizeCanvas();
+    draw();
+
+    // Particle visibility control - add data attribute to toggle
+    window.setParticlesVisible = (visible) => {
+      document.getElementById('dotGridCanvas').style.opacity = visible ? '1' : '0';
+    };
+
+    // Dot grid visibility control
+    window.setDotsVisible = (visible) => {
+      const dots = document.querySelectorAll('.pixel-canvas');
+      dots.forEach(canvas => {
+        canvas.style.opacity = visible ? '1' : '0';
+      });
+    };
+
+    // Form transparency control
+    window.setFormTransparent = (transparent) => {
+      const form = document.querySelector('.form-section');
+      if (form) {
+        if (transparent) {
+          form.classList.add('transparent');
+          form.style.setProperty('--form-bg-opacity', '0');
+        } else {
+          form.classList.remove('transparent');
+          form.style.setProperty('--form-bg-opacity', '0.95');
+        }
+      }
+    };
+  </script>
+
+  <script>
+    const tiltedLogo = document.getElementById('tiltedLogo');
+    const logoInner = tiltedLogo.querySelector('.image-section-inner');
+    const logoTooltip = document.getElementById('logoTooltip');
+    
+    let logoRotateX = 0;
+    let logoRotateY = 0;
+    let logoScale = 0;
+    let tooltipOpacity = 0;
+    let tooltipRotate = 0;
+    let lastLogoY = 0;
+
+    const rotateAmplitude = 12;
+    const scaleOnHover = 1;
+
+    function animateLogo() {
+      logoInner.style.transform = `rotateX(${logoRotateX}deg) rotateY(${logoRotateY}deg) scale(${logoScale})`;
+      logoTooltip.style.opacity = tooltipOpacity;
+      logoTooltip.style.transform = `translate(-50%, -50%) rotate(${tooltipRotate}deg)`;
+      
+      // Smooth interpolation
+      logoRotateX *= 0.85;
+      logoRotateY *= 0.85;
+      logoScale += (1 - logoScale) * 0.15;
+      tooltipOpacity *= 0.9;
+      tooltipRotate *= 0.85;
+      
+      requestAnimationFrame(animateLogo);
+    }
+
+    animateLogo();
+
+    tiltedLogo.addEventListener('mousemove', (e) => {
+      const rect = tiltedLogo.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left - rect.width / 2;
+      const offsetY = e.clientY - rect.top - rect.height / 2;
+
+      const rotationX = (offsetY / (rect.height / 2)) * -rotateAmplitude;
+      const rotationY = (offsetX / (rect.width / 2)) * rotateAmplitude;
+
+      logoRotateX = rotationX;
+      logoRotateY = rotationY;
+
+      // Tooltip position
+      logoTooltip.style.left = `${e.clientX - rect.left}px`;
+      logoTooltip.style.top = `${e.clientY - rect.top}px`;
+
+      // Tooltip rotation based on velocity
+      const velocityY = offsetY - lastLogoY;
+      tooltipRotate = -velocityY * 0.3;
+      lastLogoY = offsetY;
+    });
+
+    tiltedLogo.addEventListener('mouseenter', () => {
+      logoScale = scaleOnHover;
+      tooltipOpacity = 1;
+      logoTooltip.classList.add('show');
+    });
+
+    tiltedLogo.addEventListener('mouseleave', () => {
+      logoRotateX = 0;
+      logoRotateY = 0;
+      logoScale = 1;
+      tooltipOpacity = 0;
+      tooltipRotate = 0;
+      logoTooltip.classList.remove('show');
+    });
+  </script>
   
   <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -388,7 +871,6 @@
     let generatedCode = null;
     let userEmail = null;
 
-    // Code input handling
     const codeInputs = [
       document.getElementById("code1"),
       document.getElementById("code2"),
