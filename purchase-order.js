@@ -65,7 +65,7 @@ auth.onAuthStateChanged(async (user) => {
       console.error('Error loading user data:', error);
     }
   } else {
-    window.location.href = 'Login.html';
+    window.location.href = 'index.html';
   }
 });
 
@@ -124,14 +124,14 @@ async function confirmLogout() {
     localStorage.removeItem('currentUsername');
     localStorage.removeItem('currentUserFullName');
     await auth.signOut();
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     alert("An error occurred during logout. Please try again.");
     await auth.signOut();
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   }
 }
 

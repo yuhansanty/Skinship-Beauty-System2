@@ -8,7 +8,7 @@ echo The server will be available at: http://localhost:8080
 echo.
 echo Available pages:
 echo   - Main: http://localhost:8080/index.html
-echo   - Login: http://localhost:8080/Login.html
+echo   - Login: http://localhost:8080/index.html
 echo   - Dashboard: http://localhost:8080/dashboard.html
 echo   - Customer: http://localhost:8080/customer.html
 echo   - Staff: http://localhost:8080/staff.html

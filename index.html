@@ -5,23 +5,423 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Skinship Beauty Login</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="Skinship-Beauty-System/login.css">
+  <style>
+    body {
+      background-color: #f7d4d0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Dot Grid Background */
+    .dot-grid-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .dot-grid-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    .login-container {
+      max-width: 1000px;
+      width: 100%;
+      display: flex;
+      gap: 60px;
+      align-items: center;
+      justify-content: space-between;
+      color: #2b2b2b;
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-section {
+      max-width: 450px;
+      flex: 1;
+      background: rgba(247, 212, 208, 0.95);
+      padding: 40px;
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --form-bg-opacity: 0.95;
+    }
+
+    .form-section.transparent {
+      background: rgba(247, 212, 208, var(--form-bg-opacity));
+      backdrop-filter: none;
+      box-shadow: none;
+    }
+
+    .logo-container {
+      width: 150px;
+      height: 150px;
+      margin-bottom: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .welcome-text {
+      font-weight: 800;
+      color: #000000cc;
+      margin-top: 0;
+      font-size: 2.3rem;
+      letter-spacing: 4px;
+      font-family: 'Poppins', sans-serif;
+      margin-bottom: 6px;
+      user-select: none;
+      display: inline-block;
+    }
+
+    .shuffle-parent {
+      display: inline-block;
+      white-space: normal;
+      word-wrap: break-word;
+      will-change: transform;
+      line-height: 1;
+      font-size: 2.3rem;
+      font-weight: 800;
+      font-family: 'Poppins', sans-serif;
+      text-transform: uppercase;
+      color: #000000cc;
+      letter-spacing: 4px;
+      visibility: hidden;
+    }
+
+    .shuffle-parent.is-ready {
+      visibility: visible;
+    }
+
+    .shuffle-char {
+      line-height: 1;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .subtext {
+      font-size: 0.85rem;
+      color: #000000cc;
+      margin-bottom: 25px;
+      user-select: none;
+    }
+
+    label {
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: block;
+      margin-bottom: 5px;
+      user-select: none;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      display: block;
+      width: 100%;
+      padding: 13px 15px;
+      border: 1px solid #b89a96;
+      border-radius: 15px;
+      font-size: 1rem;
+      color: #2b2b2b;
+      background-color: rgba(247, 212, 208, 0.8);
+      outline-offset: 4px;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: text;
+    }
+
+    input[type="email"]::placeholder,
+    input[type="password"]::placeholder,
+    input[type="text"]::placeholder {
+      color: #af9d99cc;
+    }
+
+    input[type="email"]:focus,
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: #da5c73;
+      box-shadow: 0 0 10px #e88ea4cc;
+      background-color: #fbe7eb;
+    }
+
+    .checkbox-group {
+      margin-top: 10px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 0.82rem;
+      color: #2b2b2bcc;
+      user-select: none;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      accent-color: #da5c73;
+      cursor: pointer;
+    }
+
+    .forgot-password {
+      margin-left: auto;
+      font-weight: 700;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: #2b2b2bcc;
+      user-select: none;
+      transition: color 0.25s ease;
+    }
+
+    .forgot-password:hover {
+      color: #da5c73;
+      text-decoration: underline;
+    }
+
+    button.signin-btn {
+      width: 100%;
+      padding: 14px 0;
+      background-color: #da5c73;
+      border: none;
+      border-radius: 15px;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: 1.8px;
+      color: black;
+      cursor: pointer;
+      transition: background-color 0.35s ease;
+      user-select: none;
+    }
+
+    button.signin-btn:hover {
+      background-color: #e2798d;
+    }
+
+    button.signin-btn:disabled {
+      background-color: #c4a5a8;
+      cursor: not-allowed;
+    }
+
+    .image-section {
+      width: 300px;
+      height: 300px;
+      flex-shrink: 0;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid transparent;
+      border-radius: 25px;
+      background-color: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      perspective: 1000px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: box-shadow 0.3s ease;
+    }
+
+    .image-section:hover {
+      box-shadow: none;
+    }
+
+    .image-section-inner {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform-style: preserve-3d;
+      transition: transform 0.1s ease-out;
+    }
+
+    .pixel-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+
+    .image-section img {
+      width: 90%;
+      height: 90%;
+      object-fit: contain;
+      border-radius: 15px;
+      transform: translateZ(20px);
+      position: relative;
+      z-index: 2;
+    }
+
+    .tilted-tooltip {
+      pointer-events: none;
+      position: absolute;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 8px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2d2d2d;
+      opacity: 0;
+      z-index: 10;
+      transition: opacity 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      white-space: nowrap;
+    }
+
+    .tilted-tooltip.show {
+      opacity: 1;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .warning-message {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fcd34d;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .warning-message.show {
+      display: block;
+    }
+
+    .success-message {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #6ee7b7;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .twofa-section {
+      display: none;
+    }
+
+    .twofa-section.show {
+      display: block;
+    }
+
+    .code-inputs {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .code-input {
+      width: 50px;
+      height: 60px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      border: 2px solid #b89a96;
+      border-radius: 10px;
+      background-color: rgba(247, 212, 208, 0.8);
+    }
+
+    .code-input:focus {
+      border-color: #da5c73;
+      box-shadow: 0 0 10px #e88ea4cc;
+      background-color: #fbe7eb;
+    }
+
+    .resend-link {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: #2b2b2bcc;
+    }
+
+    .resend-link a {
+      color: #da5c73;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .resend-link a:hover {
+      text-decoration: underline;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .login-container {
+        flex-direction: column;
+        gap: 30px;
+      }
+
+      .form-section {
+        padding: 30px;
+      }
+
+      .image-section {
+        width: 200px;
+        height: 200px;
+      }
+    }
+  </style>
 </head>
 <body>
+  <!-- Animated Dot Grid Background -->
+  <div class="dot-grid-bg">
+    <canvas id="dotGridCanvas" class="dot-grid-canvas"></canvas>
+  </div>
+
   <main class="login-container">
     <section class="form-section" role="main" aria-label="Login Form Section">
-      <div class="logo" aria-label="Skinship beauty logo">
-        Skinship beauty
-        <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-          <!-- stylized S shape path -->
-          <path d="M30 15 Q45 50 30 80 Q55 50 45 15" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </div>
+      <!-- Login Form -->
+      <div id="loginSection">
       <h1 class="welcome-text">WELCOME BACK!</h1>
       <p class="subtext">Please enter your login details</p>
       <form id="loginForm">
-        <label for="username">Username</label>
-        <input id="username" name="username" type="text" placeholder="Enter your username" required autocomplete="username" aria-required="true"/>
+          <label for="email">Email</label>
+          <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email" aria-required="true"/>
         
         <label for="password" class="mt-4">Password</label>
         <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
@@ -29,23 +429,807 @@
         <div class="checkbox-group">
           <input type="checkbox" id="remember" name="remember" />
           <label for="remember" class="select-none">Remember me</label>
-          <span class="forgot-password" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
+            <span class="forgot-password" onclick="window.location.href='forgotpassword.html'" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
         </div>
 
         <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
       </form>
+      </div>
+
+      <!-- 2FA Verification Section -->
+      <div id="twofaSection" class="twofa-section">
+        <h1 class="welcome-text" style="font-size: 2rem;">VERIFY YOUR IDENTITY</h1>
+        <p class="subtext">Enter the 6-digit code sent to your email</p>
+        
+        <div class="code-inputs">
+          <input type="text" maxlength="1" class="code-input" id="code1" />
+          <input type="text" maxlength="1" class="code-input" id="code2" />
+          <input type="text" maxlength="1" class="code-input" id="code3" />
+          <input type="text" maxlength="1" class="code-input" id="code4" />
+          <input type="text" maxlength="1" class="code-input" id="code5" />
+          <input type="text" maxlength="1" class="code-input" id="code6" />
+        </div>
+
+        <button id="verifyBtn" class="signin-btn">VERIFY CODE</button>
+        
+        <div class="resend-link">
+          Didn't receive the code? <a id="resendLink">Resend Code</a>
+        </div>
+
+        <div class="resend-link" style="margin-top: 10px;">
+          <a id="backToLoginLink">← Back to Login</a>
+        </div>
+      </div>
+
+      <div id="loginError" class="error-message"></div>
+      <div id="loginWarning" class="warning-message"></div>
+      <div id="loginSuccess" class="success-message"></div>
     </section>
-    <section class="image-section" aria-label="Decorative beauty images">
-      <div><img src="https://images.unsplash.com/photo-1587502536263-3e95976f7e34?auto=format&fit=crop&w=400&q=80" alt="Woman with perfectly shaped eyebrows receiving treatment"/></div>
-      <div><img src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" alt="Close up of hands holding and manicured nails"/></div>
-      <div><img src="https://images.unsplash.com/photo-1556229164-01c5e05a736e?auto=format&fit=crop&w=400&q=80" alt="Feet spa treatment with pedicure tools"/></div>
-      <div><img src="https://images.unsplash.com/photo-1588776814546-355f5ee3ba8f?auto=format&fit=crop&w=400&q=80" alt="Man getting professional shaving and face spa treatment"/></div>
+    
+    <section class="image-section" id="tiltedLogo" aria-label="Skinship Beauty Logo">
+      <canvas id="pixelCanvas" class="pixel-canvas"></canvas>
+      <div class="image-section-inner">
+        <img src="123transparent.png" alt="Skinship Beauty Logo" />
+      </div>
+      <div class="tilted-tooltip" id="logoTooltip">Skinship Beauty</div>
     </section>
   </main>
+
   <script>
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    // Dot Grid Animation
+    const canvas = document.getElementById('dotGridCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const particles = [];
+    const particleCount = 5;
+    
+    class Particle {
+      constructor() {
+        this.reset();
+        this.y = Math.random() * window.innerHeight;
+      }
+      
+      reset() {
+        this.x = Math.random() * window.innerWidth;
+        this.y = -50;
+        this.size = Math.random() * 100 + 50;
+        this.speedY = Math.random() * 0.5 + 0.2;
+        this.speedX = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.3 + 0.1;
+        this.color = ['#da5c73', '#e2798d', '#f7d4d0'][Math.floor(Math.random() * 3)];
+      }
+      
+      update() {
+        this.y += this.speedY;
+        this.x += this.speedX;
+        
+        if (this.y > window.innerHeight + 50) {
+          this.reset();
+        }
+        
+        if (this.x < -50 || this.x > window.innerWidth + 50) {
+          this.x = Math.random() * window.innerWidth;
+        }
+      }
+      
+      draw(ctx) {
+        const gradient = ctx.createRadialGradient(
+          this.x, this.y, 0,
+          this.x, this.y, this.size
+        );
+        
+        gradient.addColorStop(0, this.color + Math.floor(this.opacity * 255).toString(16).padStart(2, '0'));
+        gradient.addColorStop(1, this.color + '00');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(
+          this.x - this.size,
+          this.y - this.size,
+          this.size * 2,
+          this.size * 2
+        );
+      }
+    }
+    
+    for (let i = 0; i < particleCount; i++) {
+      particles.push(new Particle());
+    }
+    
+    let dots = [];
+    let pointer = { x: 0, y: 0, vx: 0, vy: 0, speed: 0, lastX: 0, lastY: 0, lastTime: 0 };
+    
+    // Configuration
+    const config = {
+      dotSize: 5,
+      gap: 30,
+      baseColor: '#da5c73',
+      activeColor: 'fffffff',
+      proximity: 120,
+      speedTrigger: 100,
+      shockRadius: 200,
+      shockStrength: 3,
+      maxSpeed: 5000,
+      resistance: 800,
+      returnDuration: 1200
+    };
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : { r: 0, g: 0, b: 0 };
+    }
+
+    const baseRgb = hexToRgb(config.baseColor);
+    const activeRgb = hexToRgb(config.activeColor);
+
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = window.innerWidth * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width = window.innerWidth + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(dpr, dpr);
+      buildGrid();
+    }
+
+    function buildGrid() {
+      dots = [];
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const cell = config.dotSize + config.gap;
+      const cols = Math.floor((width + config.gap) / cell);
+      const rows = Math.floor((height + config.gap) / cell);
+      
+      const gridW = cell * cols - config.gap;
+      const gridH = cell * rows - config.gap;
+      const startX = (width - gridW) / 2 + config.dotSize / 2;
+      const startY = (height - gridH) / 2 + config.dotSize / 2;
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          dots.push({
+            cx: startX + x * cell,
+            cy: startY + y * cell,
+            xOffset: 0,
+            yOffset: 0,
+            targetX: 0,
+            targetY: 0,
+            animating: false
+          });
+        }
+      }
+    }
+
+    function animate(dot, targetX, targetY, duration) {
+      const startX = dot.xOffset;
+      const startY = dot.yOffset;
+      const startTime = performance.now();
+
+      function update() {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Elastic easing out
+        const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+        
+        dot.xOffset = startX + (targetX - startX) * easeOut;
+        dot.yOffset = startY + (targetY - startY) * easeOut;
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+      
+      requestAnimationFrame(update);
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw floating particles
+      particles.forEach(particle => {
+        particle.update();
+        particle.draw(ctx);
+      });
+      
+      const proxSq = config.proximity * config.proximity;
+
+      for (const dot of dots) {
+        const ox = dot.cx + dot.xOffset;
+        const oy = dot.cy + dot.yOffset;
+        const dx = dot.cx - pointer.x;
+        const dy = dot.cy - pointer.y;
+        const dsq = dx * dx + dy * dy;
+
+        let color = config.baseColor;
+        if (dsq <= proxSq) {
+          const dist = Math.sqrt(dsq);
+          const t = 1 - dist / config.proximity;
+          const r = Math.round(baseRgb.r + (activeRgb.r - baseRgb.r) * t);
+          const g = Math.round(baseRgb.g + (activeRgb.g - baseRgb.g) * t);
+          const b = Math.round(baseRgb.b + (activeRgb.b - baseRgb.b) * t);
+          color = `rgb(${r},${g},${b})`;
+        }
+
+        ctx.beginPath();
+        ctx.arc(ox, oy, config.dotSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.fill();
+      }
+
+      requestAnimationFrame(draw);
+    }
+
+    let lastMoveTime = 0;
+    function onMouseMove(e) {
+      const now = performance.now();
+      if (now - lastMoveTime < 16) return; // Throttle to ~60fps
+      lastMoveTime = now;
+
+      const dt = pointer.lastTime ? now - pointer.lastTime : 16;
+      const dx = e.clientX - pointer.lastX;
+      const dy = e.clientY - pointer.lastY;
+      
+      pointer.vx = (dx / dt) * 1000;
+      pointer.vy = (dy / dt) * 1000;
+      pointer.speed = Math.hypot(pointer.vx, pointer.vy);
+      
+      if (pointer.speed > config.maxSpeed) {
+        const scale = config.maxSpeed / pointer.speed;
+        pointer.vx *= scale;
+        pointer.vy *= scale;
+        pointer.speed = config.maxSpeed;
+      }
+
+      pointer.lastTime = now;
+      pointer.lastX = e.clientX;
+      pointer.lastY = e.clientY;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY;
+
+      if (pointer.speed > config.speedTrigger) {
+        for (const dot of dots) {
+          const dist = Math.hypot(dot.cx - pointer.x, dot.cy - pointer.y);
+          if (dist < config.proximity && !dot.animating) {
+            const pushX = (dot.cx - pointer.x + pointer.vx * 0.003) * 0.3;
+            const pushY = (dot.cy - pointer.y + pointer.vy * 0.003) * 0.3;
+            
+            animate(dot, pushX, pushY, config.resistance);
+            setTimeout(() => {
+              animate(dot, 0, 0, config.returnDuration);
+            }, config.resistance);
+          }
+        }
+      }
+    }
+
+    function onClick(e) {
+      const cx = e.clientX;
+      const cy = e.clientY;
+
+      for (const dot of dots) {
+        const dist = Math.hypot(dot.cx - cx, dot.cy - cy);
+        if (dist < config.shockRadius && !dot.animating) {
+          const falloff = Math.max(0, 1 - dist / config.shockRadius);
+          const pushX = (dot.cx - cx) * config.shockStrength * falloff;
+          const pushY = (dot.cy - cy) * config.shockStrength * falloff;
+          
+          animate(dot, pushX, pushY, config.resistance);
+          setTimeout(() => {
+            animate(dot, 0, 0, config.returnDuration);
+          }, config.resistance);
+        }
+      }
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('click', onClick);
+
+    resizeCanvas();
+    draw();
+
+    // Particle visibility control - add data attribute to toggle
+    window.setParticlesVisible = (visible) => {
+      document.getElementById('dotGridCanvas').style.opacity = visible ? '1' : '0';
+    };
+
+    // Dot grid visibility control
+    window.setDotsVisible = (visible) => {
+      const dots = document.querySelectorAll('.pixel-canvas');
+      dots.forEach(canvas => {
+        canvas.style.opacity = visible ? '1' : '0';
+      });
+    };
+
+    // Form transparency control
+    window.setFormTransparent = (transparent) => {
+      const form = document.querySelector('.form-section');
+      if (form) {
+        if (transparent) {
+          form.classList.add('transparent');
+          form.style.setProperty('--form-bg-opacity', '0');
+        } else {
+          form.classList.remove('transparent');
+          form.style.setProperty('--form-bg-opacity', '0.95');
+        }
+      }
+    };
+  </script>
+
+  <script>
+    const tiltedLogo = document.getElementById('tiltedLogo');
+    const logoInner = tiltedLogo.querySelector('.image-section-inner');
+    const logoTooltip = document.getElementById('logoTooltip');
+    
+    let logoRotateX = 0;
+    let logoRotateY = 0;
+    let logoScale = 0;
+    let tooltipOpacity = 0;
+    let tooltipRotate = 0;
+    let lastLogoY = 0;
+
+    const rotateAmplitude = 12;
+    const scaleOnHover = 1;
+
+    function animateLogo() {
+      logoInner.style.transform = `rotateX(${logoRotateX}deg) rotateY(${logoRotateY}deg) scale(${logoScale})`;
+      logoTooltip.style.opacity = tooltipOpacity;
+      logoTooltip.style.transform = `translate(-50%, -50%) rotate(${tooltipRotate}deg)`;
+      
+      // Smooth interpolation
+      logoRotateX *= 0.85;
+      logoRotateY *= 0.85;
+      logoScale += (1 - logoScale) * 0.15;
+      tooltipOpacity *= 0.9;
+      tooltipRotate *= 0.85;
+      
+      requestAnimationFrame(animateLogo);
+    }
+
+    animateLogo();
+
+    tiltedLogo.addEventListener('mousemove', (e) => {
+      const rect = tiltedLogo.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left - rect.width / 2;
+      const offsetY = e.clientY - rect.top - rect.height / 2;
+
+      const rotationX = (offsetY / (rect.height / 2)) * -rotateAmplitude;
+      const rotationY = (offsetX / (rect.width / 2)) * rotateAmplitude;
+
+      logoRotateX = rotationX;
+      logoRotateY = rotationY;
+
+      // Tooltip position
+      logoTooltip.style.left = `${e.clientX - rect.left}px`;
+      logoTooltip.style.top = `${e.clientY - rect.top}px`;
+
+      // Tooltip rotation based on velocity
+      const velocityY = offsetY - lastLogoY;
+      tooltipRotate = -velocityY * 0.3;
+      lastLogoY = offsetY;
+    });
+
+    tiltedLogo.addEventListener('mouseenter', () => {
+      logoScale = scaleOnHover;
+      tooltipOpacity = 1;
+      logoTooltip.classList.add('show');
+    });
+
+    tiltedLogo.addEventListener('mouseleave', () => {
+      logoRotateX = 0;
+      logoRotateY = 0;
+      logoScale = 1;
+      tooltipOpacity = 0;
+      tooltipRotate = 0;
+      logoTooltip.classList.remove('show');
+    });
+  </script>
+  
+  <!-- EmailJS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    // Initialize EmailJS with your public key
+    emailjs.init("JcMrqAedryjLalsIq");
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.firebasestorage.app",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const loginForm = document.getElementById("loginForm");
+    const loginSection = document.getElementById("loginSection");
+    const twofaSection = document.getElementById("twofaSection");
+    const errorMsg = document.getElementById("loginError");
+    const warningMsg = document.getElementById("loginWarning");
+    const successMsg = document.getElementById("loginSuccess");
+    const submitBtn = loginForm.querySelector('button[type="submit"]');
+    const verifyBtn = document.getElementById("verifyBtn");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const rememberCheckbox = document.getElementById("remember");
+    const resendLink = document.getElementById("resendLink");
+    const backToLoginLink = document.getElementById("backToLoginLink");
+
+    let currentUser = null;
+    let generatedCode = null;
+    let userEmail = null;
+
+    const codeInputs = [
+      document.getElementById("code1"),
+      document.getElementById("code2"),
+      document.getElementById("code3"),
+      document.getElementById("code4"),
+      document.getElementById("code5"),
+      document.getElementById("code6")
+    ];
+
+    codeInputs.forEach((input, index) => {
+      input.addEventListener("input", (e) => {
+        if (e.target.value.length === 1 && index < 5) {
+          codeInputs[index + 1].focus();
+        }
+      });
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Backspace" && e.target.value === "" && index > 0) {
+          codeInputs[index - 1].focus();
+        }
+      });
+
+      input.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const pastedData = e.clipboardData.getData("text").slice(0, 6);
+        pastedData.split("").forEach((char, i) => {
+          if (codeInputs[i]) {
+            codeInputs[i].value = char;
+          }
+        });
+        if (pastedData.length === 6) {
+          codeInputs[5].focus();
+        }
+      });
+    });
+
+    function encodeData(str) {
+      return btoa(str);
+    }
+
+    function decodeData(str) {
+      try {
+        return atob(str);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function is2FAValid(uid) {
+      const twoFAData = sessionStorage.getItem(`2fa_${uid}`);
+      if (!twoFAData) return false;
+
+      try {
+        const data = JSON.parse(twoFAData);
+        const now = Date.now();
+        const twelveHours = 12 * 60 * 60 * 1000;
+        
+        return (now - data.timestamp) < twelveHours;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function mark2FAValidated(uid) {
+      const data = {
+        timestamp: Date.now(),
+        validated: true
+      };
+      sessionStorage.setItem(`2fa_${uid}`, JSON.stringify(data));
+    }
+
+    function generateCode() {
+      return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    async function sendVerificationCode(email, code) {
+      try {
+        await setDoc(doc(db, "verificationCodes", email), {
+          code: code,
+          timestamp: Date.now(),
+          expiresAt: Date.now() + (10 * 60 * 1000)
+        });
+
+        const templateParams = {
+          to_email: email,
+          verification_code: code,
+          user_email: email
+        };
+
+        await emailjs.send(
+          'service_s0oyzpd',
+          'template_bzyzwxf',
+          templateParams
+        );
+
+        return true;
+      } catch (error) {
+        console.error("Error sending code:", error);
+        return false;
+      }
+    }
+
+    function loadRememberedCredentials() {
+      const savedEmail = sessionStorage.getItem('rememberedEmail');
+      const savedPassword = sessionStorage.getItem('rememberedPassword');
+      const wasRemembered = sessionStorage.getItem('rememberMe') === 'true';
+
+      if (wasRemembered && savedEmail && savedPassword) {
+        const decodedEmail = decodeData(savedEmail);
+        const decodedPassword = decodeData(savedPassword);
+        
+        if (decodedEmail && decodedPassword) {
+          emailInput.value = decodedEmail;
+          passwordInput.value = decodedPassword;
+          rememberCheckbox.checked = true;
+        }
+      }
+    }
+
+    function saveCredentials(email, password, remember) {
+      if (remember) {
+        sessionStorage.setItem('rememberedEmail', encodeData(email));
+        sessionStorage.setItem('rememberedPassword', encodeData(password));
+        sessionStorage.setItem('rememberMe', 'true');
+      } else {
+        sessionStorage.removeItem('rememberedEmail');
+        sessionStorage.removeItem('rememberedPassword');
+        sessionStorage.removeItem('rememberMe');
+      }
+    }
+
+    rememberCheckbox.addEventListener('change', (e) => {
+      if (!e.target.checked) {
+        sessionStorage.removeItem('rememberedEmail');
+        sessionStorage.removeItem('rememberedPassword');
+        sessionStorage.removeItem('rememberMe');
+      }
+    });
+
+    loadRememberedCredentials();
+
+    function showError(message) {
+      errorMsg.textContent = message;
+      errorMsg.classList.add("show");
+      warningMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+      setTimeout(() => {
+        errorMsg.classList.remove("show");
+      }, 6000);
+    }
+
+    function showWarning(message) {
+      warningMsg.textContent = message;
+      warningMsg.classList.add("show");
+      errorMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+    }
+
+    function showSuccess(message) {
+      successMsg.textContent = message;
+      successMsg.classList.add("show");
+      errorMsg.classList.remove("show");
+      warningMsg.classList.remove("show");
+      setTimeout(() => {
+        successMsg.classList.remove("show");
+      }, 4000);
+    }
+
+    function switchTo2FA() {
+      loginSection.classList.add("hidden");
+      twofaSection.classList.add("show");
+      codeInputs[0].focus();
+    }
+
+    function switchToLogin() {
+      twofaSection.classList.remove("show");
+      loginSection.classList.remove("hidden");
+      codeInputs.forEach(input => input.value = "");
+    }
+
+    backToLoginLink.addEventListener("click", switchToLogin);
+
+    async function sendCode() {
+      generatedCode = generateCode();
+      const sent = await sendVerificationCode(userEmail, generatedCode);
+      
+      if (sent) {
+        showSuccess(`✅ Verification code sent to ${userEmail}`);
+      } else {
+        showError("Failed to send verification code. Please try again.");
+      }
+    }
+
+    resendLink.addEventListener("click", async () => {
+      resendLink.style.pointerEvents = "none";
+      resendLink.textContent = "Sending...";
+      
+      await sendCode();
+      
+      setTimeout(() => {
+        resendLink.style.pointerEvents = "auto";
+        resendLink.textContent = "Resend Code";
+      }, 3000);
+    });
+
+    loginForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      window.location.href = 'Skinship-Beauty-System/dashboard.html';
+      
+      errorMsg.classList.remove("show");
+      warningMsg.classList.remove("show");
+      successMsg.classList.remove("show");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "SIGNING IN...";
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const remember = rememberCheckbox.checked;
+
+      try {
+        const userCred = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCred.user;
+
+        if (!user.emailVerified) {
+          await auth.signOut();
+          showWarning("⚠️ Please verify your email before logging in. Check your inbox for the verification link.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
+
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (!userDoc.exists()) {
+          await auth.signOut();
+          showError("❌ No role assigned. Contact system admin.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
+
+        const role = (userDoc.data().role || "").toLowerCase();
+        if (!role || (role !== "admin" && role !== "staff")) {
+          await auth.signOut();
+          showError("❌ No valid role assigned. Contact system admin.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "SIGN IN";
+          return;
+        }
+
+        if (is2FAValid(user.uid)) {
+          saveCredentials(email, password, remember);
+          const userData = userDoc.data();
+          localStorage.setItem("currentUserEmail", email);
+          localStorage.setItem("currentUserRole", role);
+          localStorage.setItem("currentUsername", userData.username || "");
+          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
+          window.location.href = "dashboard.html";
+          return;
+        }
+
+        currentUser = user;
+        userEmail = email;
+        
+        await sendCode();
+        
+        submitBtn.disabled = false;
+        submitBtn.textContent = "SIGN IN";
+        
+        switchTo2FA();
+
+      } catch (error) {
+        let errorMessage = "Login failed: ";
+        
+        switch (error.code) {
+          case 'auth/invalid-email':
+            errorMessage += "Invalid email address.";
+            break;
+          case 'auth/user-disabled':
+            errorMessage += "This account has been disabled.";
+            break;
+          case 'auth/user-not-found':
+            errorMessage += "No account found with this email.";
+            break;
+          case 'auth/wrong-password':
+            errorMessage += "Incorrect password.";
+            break;
+          case 'auth/invalid-credential':
+            errorMessage += "Invalid email or password.";
+            break;
+          default:
+            errorMessage += error.message;
+        }
+        
+        showError(errorMessage);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "SIGN IN";
+      }
+    });
+
+    verifyBtn.addEventListener("click", async () => {
+      const enteredCode = codeInputs.map(input => input.value).join("");
+      
+      if (enteredCode.length !== 6) {
+        showError("Please enter all 6 digits.");
+        return;
+      }
+
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = "VERIFYING...";
+
+      try {
+        const codeDoc = await getDoc(doc(db, "verificationCodes", userEmail));
+        
+        if (!codeDoc.exists()) {
+          showError("Verification code expired. Please request a new one.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          return;
+        }
+
+        const codeData = codeDoc.data();
+        const now = Date.now();
+        
+        if (now > codeData.expiresAt) {
+          showError("Verification code expired. Please request a new one.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          return;
+        }
+
+        if (enteredCode === codeData.code) {
+          showSuccess("✅ Verification successful! Redirecting...");
+          
+          mark2FAValidated(currentUser.uid);
+          
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          const role = (userDoc.data().role || "").toLowerCase();
+          
+          saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
+          const userData = userDoc.data();
+          localStorage.setItem("currentUserEmail", userEmail);
+          localStorage.setItem("currentUserRole", role);
+          localStorage.setItem("currentUsername", userData.username || "");
+          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
+          
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1500);
+        } else {
+          showError("❌ Invalid verification code. Please try again.");
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = "VERIFY CODE";
+          codeInputs.forEach(input => input.value = "");
+          codeInputs[0].focus();
+        }
+      } catch (error) {
+        showError("Verification failed: " + error.message);
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = "VERIFY CODE";
+      }
     });
   </script>
 </body>

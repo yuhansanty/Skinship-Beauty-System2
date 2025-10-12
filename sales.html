@@ -664,7 +664,7 @@
         await signOut(auth);
         
         // Redirect to login page
-        window.location.href = "Login.html";
+        window.location.href = "index.html";
       } catch (error) {
         console.error("Logout error:", error);
         
@@ -676,7 +676,7 @@
         
         // Force sign out even if there's an error
         await signOut(auth);
-        window.location.href = "Login.html";
+        window.location.href = "index.html";
       }
     }
 
@@ -714,7 +714,7 @@
           console.error("Error fetching user document:", err);
         }
       } else {
-        window.location.href = 'Login.html';
+        window.location.href = 'index.html';
       }
     });
 

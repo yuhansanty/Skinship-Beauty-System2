@@ -503,7 +503,7 @@ async function handleClockOut() {
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
     return;
   }
   
@@ -610,7 +610,7 @@ window.confirmLogout = async function() {
     await signOut(auth);
     
     // Redirect to login page
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
     
@@ -622,7 +622,7 @@ window.confirmLogout = async function() {
     
     // Force sign out even if there's an error
     await signOut(auth);
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   }
 }
 

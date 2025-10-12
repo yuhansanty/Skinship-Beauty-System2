@@ -13,7 +13,7 @@ Write-Host "=== Skinship Beauty System Server ===" -ForegroundColor Green
 Write-Host "Server started at: http://localhost:$Port/" -ForegroundColor Yellow
 Write-Host "Available pages:" -ForegroundColor Cyan
 Write-Host "  - Main: http://localhost:$Port/index.html" -ForegroundColor White
-Write-Host "  - Login: http://localhost:$Port/Login.html" -ForegroundColor White
+Write-Host "  - Landing Page: http://localhost:$Port/LandingPage.html" -ForegroundColor White
 Write-Host "  - Dashboard: http://localhost:$Port/dashboard.html" -ForegroundColor White
 Write-Host "  - Customer: http://localhost:$Port/customer.html" -ForegroundColor White
 Write-Host "  - Staff: http://localhost:$Port/staff.html" -ForegroundColor White
@@ -41,6 +41,21 @@ try {
         if (Test-Path $filePath -PathType Leaf) {
             $content = Get-Content $filePath -Raw -Encoding UTF8
             $buffer = [System.Text.Encoding]::UTF8.GetBytes($content)
+            
+            # Set Content-Type based on file extension
+            $extension = [System.IO.Path]::GetExtension($filePath).ToLower()
+            switch ($extension) {
+                ".html" { $response.ContentType = "text/html; charset=utf-8" }
+                ".css"  { $response.ContentType = "text/css; charset=utf-8" }
+                ".js"   { $response.ContentType = "application/javascript; charset=utf-8" }
+                ".json" { $response.ContentType = "application/json; charset=utf-8" }
+                ".png"  { $response.ContentType = "image/png" }
+                ".jpg"  { $response.ContentType = "image/jpeg" }
+                ".jpeg" { $response.ContentType = "image/jpeg" }
+                ".gif"  { $response.ContentType = "image/gif" }
+                ".svg"  { $response.ContentType = "image/svg+xml" }
+                default { $response.ContentType = "text/plain; charset=utf-8" }
+            }
             
             $response.ContentLength64 = $buffer.Length
             $response.OutputStream.Write($buffer, 0, $buffer.Length)

@@ -922,14 +922,14 @@ html.staff-loaded .sidebar-btn[title="Staff"] {
       try {
         await handleClockOut();
         await signOut(auth);
-        window.location.href = "Login.html";
+        window.location.href = "index.html";
       } catch (error) {
         console.error("Logout error:", error);
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
         alert("An error occurred during logout. Please try again.");
         await signOut(auth);
-        window.location.href = "Login.html";
+        window.location.href = "index.html";
       }
     }
 
@@ -1007,7 +1007,7 @@ html.staff-loaded .sidebar-btn[title="Staff"] {
           document.documentElement.classList.remove('admin-loaded');
         }
       } else {
-        window.location.href = 'Login.html';
+        window.location.href = 'index.html';
       }
     });
 

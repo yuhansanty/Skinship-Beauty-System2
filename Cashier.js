@@ -142,7 +142,7 @@ async function confirmLogout() {
     localStorage.removeItem('currentUsername');
     localStorage.removeItem('currentUserFullName');
     
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
     
@@ -151,7 +151,7 @@ async function confirmLogout() {
     
     alert("An error occurred during logout. Please try again.");
     
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   }
 }
 

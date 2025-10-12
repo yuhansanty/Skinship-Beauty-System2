@@ -72,7 +72,7 @@ async function loadCurrentUserName() {
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
       }
     } else {
-      window.location.href = 'Login.html';
+      window.location.href = 'index.html';
     }
   });
 }
@@ -139,14 +139,14 @@ async function confirmLogout() {
     if (inventoryListener) inventoryListener();
     
     await auth.signOut();
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     alert("An error occurred during logout. Please try again.");
     await auth.signOut();
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   }
 }
 

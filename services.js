@@ -78,7 +78,7 @@ window.confirmLogout = async function() {
     await auth.signOut();
     
     // Redirect to login page
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
     
@@ -90,7 +90,7 @@ window.confirmLogout = async function() {
     
     // Force sign out even if there's an error
     await auth.signOut();
-    window.location.href = "Login.html";
+    window.location.href = "index.html";
   }
 }
 
@@ -681,7 +681,7 @@ async function loadCurrentUserName() {
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
       }
     } else {
-      window.location.href = 'Login.html';
+      window.location.href = 'index.html';
     }
   });
 }
