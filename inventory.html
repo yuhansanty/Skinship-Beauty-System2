@@ -13,6 +13,37 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="inventory.css">
   <style>
+    /* Sidebar Bubble Notification Styles */
+    .sidebar-bubble {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      animation: bubble-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes bubble-pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+    }
+
     /* Responsive Sidebar */
     @media (max-width: 768px) {
       aside {
@@ -27,6 +58,14 @@
         width: 40px;
         height: 40px;
         font-size: 16px;
+      }
+      
+      .sidebar-bubble {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+        top: -3px;
+        right: -3px;
       }
     }
     
@@ -346,26 +385,6 @@
         </div>
         
         <div class="flex items-center gap-3 md:gap-4 w-full lg:w-auto justify-end">
-          <!-- Notification Bell -->
-          <div class="relative">
-            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-lg md:text-xl cursor-pointer text-white"></i>
-              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-            </button>
-            
-            <!-- Notification Dropdown -->
-            <div id="notificationDropdown" class="notification-dropdown">
-              <div class="notification-header">
-                <h3 class="font-bold text-gray-800 text-sm md:text-base">Notifications</h3>
-                <div class="flex gap-2">
-                  <button onclick="markAllRead()" class="text-xs md:text-sm text-[#da5c73] hover:underline">Mark all read</button>
-                  <button onclick="clearAllNotifications()" class="text-xs md:text-sm text-[#da5c73] hover:underline">Clear all</button>
-                </div>
-              </div>
-              <div id="notificationList"></div>
-            </div>
-          </div>
-          
           <!-- User Menu -->
           <span class="font-semibold text-sm md:text-lg text-white truncate max-w-[120px] md:max-w-none" id="userDisplayName">Loading...</span>
           <div class="relative">
@@ -646,14 +665,6 @@
     <div class="modal-content" style="max-width: 500px;">
       <span class="modal-close" onclick="closeEditHistoryModal()">&times;</span>
       <div id="editHistoryBody"></div>
-    </div>
-  </div>
-
-  <!-- Notification Details Modal -->
-  <div id="notificationModal" class="add-product-modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
     </div>
   </div>
 

@@ -50,26 +50,6 @@
         </div>
         
         <div class="flex items-center gap-4">
-          <!-- Notification Bell -->
-          <div class="relative">
-            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
-              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-            </button>
-            
-            <!-- Notification Dropdown -->
-            <div id="notificationDropdown" class="notification-dropdown">
-              <div class="notification-header">
-                <h3 class="font-bold text-gray-800">Notifications</h3>
-                <div class="flex gap-2">
-                  <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
-                  <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
-                </div>
-              </div>
-              <div id="notificationList"></div>
-            </div>
-          </div>
-
           <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
           
           <div class="relative">
@@ -146,51 +126,41 @@
   </div>
 
   <!-- Logout Confirmation Modal -->
-<div class="modal-overlay" id="logoutModal">
-  <div class="logout-modal">
-    <div class="logout-modal-header">
-      <div class="logout-icon">
-        <i class="fa-solid fa-right-from-bracket"></i>
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
       </div>
-      <h2>Confirm Logout</h2>
-      <p>Are you sure you want to sign out?</p>
-    </div>
 
-    <div class="logout-modal-body">
-      <div class="logout-info-item">
-        <i class="fa-solid fa-user"></i>
-        <span id="logoutUsername">Loading...</span>
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
       </div>
-      <div class="logout-info-item">
-        <i class="fa-solid fa-clock"></i>
-        <span>Your session will be ended</span>
-      </div>
-      <div class="logout-info-item">
-        <i class="fa-solid fa-shield-halved"></i>
-        <span>You will be clocked out automatically</span>
-      </div>
-    </div>
 
-    <div class="logout-modal-actions">
-      <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
-        <i class="fa-solid fa-xmark"></i>
-        Cancel
-      </button>
-      <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
-        <i class="fa-solid fa-right-from-bracket"></i>
-        Logout
-      </button>
-    </div>
-  </div>
-</div>
-
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="modal-overlay">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeNotificationModal()">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-      <div id="modalBody"></div>
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
     </div>
   </div>
 

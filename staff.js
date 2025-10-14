@@ -45,147 +45,83 @@ const entriesPerPage = 10;
 let allHistoryData = [];
 let currentStaffId = null;
 let currentStaffName = null;
+let notificationListener = null;
 
-// ==================== NOTIFICATION SYSTEM ====================
+// ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
 
 function loadNotifications() {
-  const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notificationList = document.getElementById('notificationList');
-  const badge = document.getElementById('notificationBadge');
+  if (notificationListener) {
+    notificationListener();
+  }
+
+  notificationListener = onSnapshot(
+    query(collection(db, "notifications"), orderBy("timestamp", "desc")),
+    (snapshot) => {
+      const notifications = [];
+      
+      snapshot.forEach(doc => {
+        notifications.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      updateSidebarBubbles(notifications);
+    },
+    (error) => {
+      console.error("Error loading notifications:", error);
+    }
+  );
+}
+
+function updateSidebarBubbles(notifications) {
+  // Count unread notifications by type
+  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
+  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
+  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
   
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Update calendar bubble (appointments) - RED
+  updateBubble('calendarBubble', appointmentCount, '#dc2626');
   
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
+  // Update purchase order bubble - PURPLE
+  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
+  
+  // Update inventory bubble (low stock) - YELLOW/ORANGE
+  updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
+}
+
+function updateBubble(bubbleId, count, color) {
+  let bubble = document.getElementById(bubbleId);
+  
+  if (!bubble) {
+    const button = getBubbleButton(bubbleId);
+    if (button) {
+      bubble = document.createElement('span');
+      bubble.id = bubbleId;
+      bubble.className = 'sidebar-bubble';
+      button.style.position = 'relative';
+      button.appendChild(bubble);
+    }
   }
   
-  if (notifications.length === 0) {
-    notificationList.innerHTML = `
-      <div class="notification-empty">
-        <i class="fa-solid fa-bell-slash"></i>
-        <p>No notifications yet</p>
-      </div>
-    `;
-    return;
+  if (bubble) {
+    if (count > 0) {
+      bubble.textContent = count > 99 ? '99+' : count;
+      bubble.style.backgroundColor = color;
+      bubble.style.display = 'flex';
+    } else {
+      bubble.style.display = 'none';
+    }
   }
-  
-  notificationList.innerHTML = '';
-  
-  notifications.forEach(notification => {
-    const item = document.createElement('div');
-    item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-    item.onclick = () => viewNotification(notification.id);
-    
-    const time = new Date(notification.timestamp);
-    const timeStr = time.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    });
-    
-    item.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
-        <strong style="color: var(--primary);">${notification.message}</strong>
-        ${!notification.read ? '<span style="width: 8px; height: 8px; background: #ef4444; border-radius: 50%;"></span>' : ''}
-      </div>
-      <p style="font-size: 0.875rem; color: var(--text-secondary);">
-        ${notification.details.service} - ${notification.details.date} at ${notification.details.time}
-      </p>
-      <p style="font-size: 0.75rem; color: #9ca3af; margin-top: 0.5rem;">${timeStr}</p>
-    `;
-    
-    notificationList.appendChild(item);
-  });
 }
 
-window.toggleNotifications = function() {
-  const dropdown = document.getElementById('notificationDropdown');
-  dropdown.classList.toggle('show');
-  loadNotifications();
-}
-
-function viewNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notification = notifications.find(n => n.id === id);
-  
-  if (!notification) return;
-  
-  notification.read = true;
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  
-  const modal = document.getElementById('notificationModal');
-  const modalBody = document.getElementById('modalBody');
-  
-  const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-    dateStyle: 'full', 
-    timeStyle: 'short' 
-  });
-  
-  modalBody.innerHTML = `
-    <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--primary); margin-bottom: 1.5rem;">
-      <i class="fa-solid fa-calendar-check"></i> Appointment Request
-    </h2>
-    <div style="display: grid; gap: 1rem;">
-      <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-      <div><strong>Email:</strong> ${notification.details.email}</div>
-      <div><strong>Phone:</strong> ${notification.details.phone}</div>
-      <div><strong>Service:</strong> ${notification.details.service}</div>
-      <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-      <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-      ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-      <div style="font-size: 0.875rem; color: var(--text-secondary);"><strong>Submitted:</strong> ${time}</div>
-    </div>
-    <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-      <button onclick="approveAppointment(${id})" class="btn" style="flex: 1; background: #10b981; color: white;">
-        <i class="fa-solid fa-check"></i> Approve
-      </button>
-      <button onclick="rejectAppointment(${id})" class="btn" style="flex: 1; background: #ef4444; color: white;">
-        <i class="fa-solid fa-times"></i> Decline
-      </button>
-    </div>
-  `;
-  
-  modal.classList.add('show');
-  loadNotifications();
-}
-
-window.closeNotificationModal = function() {
-  document.getElementById('notificationModal').classList.remove('show');
-}
-
-window.markAllRead = function() {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications.forEach(n => n.read = true);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
-}
-
-window.clearAllNotifications = function() {
-  localStorage.setItem('skinshipNotifications', '[]');
-  loadNotifications();
-}
-
-window.approveAppointment = function(id) {
-  alert('Appointment approved!');
-  closeNotificationModal();
-  deleteNotification(id);
-}
-
-window.rejectAppointment = function(id) {
-  alert('Appointment declined!');
-  closeNotificationModal();
-  deleteNotification(id);
-}
-
-function deleteNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications = notifications.filter(n => n.id !== id);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
+function getBubbleButton(bubbleId) {
+  const buttonMap = {
+    'calendarBubble': document.querySelector('button[title="Reservations"]'),
+    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
+    'inventoryBubble': document.querySelector('button[title="Inventory"]')
+  };
+  return buttonMap[bubbleId];
 }
 
 // ==================== HISTORY MODAL ====================
@@ -285,7 +221,6 @@ function renderPagination(totalPages, container) {
   
   if (totalPages <= 1) return;
   
-  // Previous button
   const prevBtn = createPaginationButton(
     '<i class="fa-solid fa-chevron-left"></i>',
     currentPage === 1,
@@ -298,7 +233,6 @@ function renderPagination(totalPages, container) {
   );
   container.appendChild(prevBtn);
   
-  // Page numbers
   const startPage = Math.max(1, currentPage - 2);
   const endPage = Math.min(totalPages, currentPage + 2);
   
@@ -339,7 +273,6 @@ function renderPagination(totalPages, container) {
     }));
   }
   
-  // Next button
   const nextBtn = createPaginationButton(
     '<i class="fa-solid fa-chevron-right"></i>',
     currentPage === totalPages,
@@ -372,7 +305,6 @@ window.closeHistory = function() {
 // ==================== STAFF DISPLAY ====================
 
 function displayStaffCards(staffData) {
-  // Clear the grid first
   staffGrid.innerHTML = '';
   
   if (staffData.length === 0) {
@@ -459,7 +391,6 @@ searchInput.addEventListener('input', (e) => {
            staff.mobile.toLowerCase().includes(searchTerm);
   });
   
-  // Clear grid before displaying filtered results
   staffGrid.innerHTML = '';
   displayStaffCards(filteredData);
 });
@@ -486,7 +417,6 @@ async function handleClockOut() {
       }
     }
 
-    // Set user as unavailable in real-time
     const staffRef = doc(db, "users", user.uid);
     await updateDoc(staffRef, { 
       availability: false,
@@ -507,14 +437,11 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   
-  // Get current user's full name from database
   const userDoc = await getDoc(doc(db, "users", user.uid));
-const currentUserFullName = userDoc.exists() ? userDoc.data().fullName : user.email;
-usernameSpan.textContent = currentUserFullName;
-// Add this line:
-document.getElementById('logoutUsername').textContent = currentUserFullName;
+  const currentUserFullName = userDoc.exists() ? userDoc.data().fullName : user.email;
+  usernameSpan.textContent = currentUserFullName;
+  document.getElementById('logoutUsername').textContent = currentUserFullName;
 
-  // Handle clock in for current user
   const today = new Date().toLocaleDateString();
   const logsRef = collection(db, "staffLogs", user.uid, "history");
   
@@ -538,14 +465,12 @@ document.getElementById('logoutUsername').textContent = currentUserFullName;
     });
   }
 
-  // Set user as available with real-time update
   const staffRef = doc(db, "users", user.uid);
   await updateDoc(staffRef, { 
     availability: true,
     lastUpdated: serverTimestamp()
   });
 
-  // Listen to all staff members in REAL-TIME
   onSnapshot(collection(db, "users"), async (snapshot) => {
     const promises = snapshot.docs.map(async (docSnap) => {
       const staff = docSnap.data();
@@ -560,8 +485,6 @@ document.getElementById('logoutUsername').textContent = currentUserFullName;
       const latest = logsSnap.docs[0]?.data() || {};
       
       const isClockedIn = latest.clockIn && !latest.clockOut;
-      
-      // Use the availability field from the user document for real-time status
       const isAvailable = staff.availability === true && isClockedIn;
 
       return {
@@ -576,19 +499,16 @@ document.getElementById('logoutUsername').textContent = currentUserFullName;
     });
 
     const results = await Promise.all(promises);
-    
-    // Update allStaffData with new results
     allStaffData = results;
-    
-    // Sort by availability (available first)
     allStaffData.sort((a, b) => b.isAvailable - a.isAvailable);
-    
-    // Update display
     displayStaffCards(allStaffData);
   });
+
+  // Load notifications for sidebar bubbles
+  loadNotifications();
 });
 
-// Logout handler with real-time availability update
+// Logout handler
 logoutBtn.addEventListener("click", () => {
   showLogoutModal();
 });
@@ -603,37 +523,30 @@ window.confirmLogout = async function() {
   confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
   try {
-    // Clock out and set unavailable
     await handleClockOut();
     
-    // Sign out
-    await signOut(auth);
+    if (notificationListener) {
+      notificationListener();
+    }
     
-    // Redirect to login page
+    await signOut(auth);
     window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
-    
-    // Reset button state
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    
     alert("An error occurred during logout. Please try again.");
-    
-    // Force sign out even if there's an error
     await signOut(auth);
     window.location.href = "index.html";
   }
 }
 
-// Close modal on overlay click
 document.getElementById('logoutModal')?.addEventListener('click', function(e) {
   if (e.target === this) {
     hideLogoutModal();
   }
 });
 
-// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     const modal = document.getElementById('logoutModal');
@@ -646,12 +559,11 @@ document.addEventListener('keydown', function(e) {
 window.showLogoutModal = function() {
   document.getElementById('logoutModal').classList.add('show');
 }
-// Handle page unload (closing browser/tab or navigating away)
+
 window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
 
-// Close dropdowns on outside click
 window.addEventListener('click', (e) => {
   const userMenu = document.getElementById('userMenu');
   const btn = document.getElementById('userMenuButton');
@@ -659,12 +571,4 @@ window.addEventListener('click', (e) => {
   if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
     userMenu.classList.add('hidden');
   }
-
-  if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-    document.getElementById('notificationDropdown').classList.remove('show');
-  }
 });
-
-// Initialize notifications
-loadNotifications();
-setInterval(loadNotifications, 5000);

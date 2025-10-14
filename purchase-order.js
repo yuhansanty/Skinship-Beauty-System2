@@ -1850,32 +1850,76 @@ function deleteNotification(id) {
 
 async function initializeNotificationSystem() {
   try {
-
-    db.collection("appointments")
-      .where("status", "==", "pending")
-      .onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const data = change.doc.data();
+    // Use window.db which is set in the module script
+    const { collection, query, where, onSnapshot, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
+    
+    // Listen for appointment notifications
+    const appointmentsQuery = query(
+      collection(window.db, "notifiocations"),
+      where("status", "==", "pending")
+    );
+    
+    onSnapshot(appointmentsQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const data = change.doc.data();
+          const notification = {
+            id: change.doc.id,
+            type: 'appointment',
+            read: false,
+            timestamp: new Date().toISOString(),
+            details: {
+              fullName: data.fullName || data.name,
+              email: data.email,
+              phone: data.phone,
+              service: data.service,
+              date: data.date,
+              time: data.time,
+              message: data.message || ''
+            }
+          };
+          addNotification(notification);
+        }
+      });
+    });
+    
+    // Listen for purchase order notifications from Firebase
+    const notificationsQuery = query(
+      collection(window.db, "notifications"),
+      where("type", "==", "purchase_order"),
+      orderBy("timestamp", "desc"),
+      limit(20)
+    );
+    
+    onSnapshot(notificationsQuery, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          const data = change.doc.data();
+          
+          // Check if already in localStorage
+          const existingNotifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+          const exists = existingNotifications.find(n => n.id === change.doc.id);
+          
+          if (!exists) {
             const notification = {
               id: change.doc.id,
-              type: 'appointment',
+              type: 'purchase_order',
               read: false,
-              timestamp: new Date().toISOString(),
+              timestamp: data.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
               details: {
-                fullName: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone,
-                service: data.service,
-                date: data.date,
-                time: data.time,
-                message: data.message || ''
+                poNumber: data.details?.poNumber || '',
+                productName: data.details?.productName || '',
+                quantity: data.details?.quantity || 0,
+                supplier: data.details?.supplier || '',
+                totalValue: data.details?.totalValue || 0,
+                createdBy: data.details?.createdBy || 'Unknown'
               }
             };
             addNotification(notification);
           }
-        });
+        }
       });
+    });
     
     checkLowStock();
     setInterval(checkLowStock, 5000);
