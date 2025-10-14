@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Purchase Order | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
@@ -89,9 +88,9 @@
     
     .notification-badge {
       position: absolute;
-      top: -5px;
-      right: -5px;
-      background: #ef4444;
+      top: -8px;
+      right: -8px;
+      background: #dc2626;
       color: white;
       border-radius: 50%;
       width: 20px;
@@ -99,27 +98,127 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: bold;
     }
     
     .notification-dropdown {
       display: none;
       position: absolute;
+      top: 50px;
       right: 0;
-      top: 100%;
-      margin-top: 8px;
-      width: 350px;
-      max-height: 400px;
-      overflow-y: auto;
       background: white;
       border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      width: 400px;
+      max-height: 500px;
+      overflow-y: auto;
+      z-index: 1000;
     }
     
     .notification-dropdown.show {
       display: block;
+      animation: slideDown 0.3s ease;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .notification-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .notification-header h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+    }
+    
+    .notification-header-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+    
+    .notification-header-actions button {
+      background: none;
+      border: none;
+      color: #d97588;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 0;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .notification-header-actions button:hover {
+      color: #c05d73;
+      text-decoration: none;
+    }
+    
+    .notification-item {
+      padding: 16px 24px;
+      border-bottom: 1px solid #f3f4f6;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .notification-item:hover {
+      background: #f9fafb;
+    }
+    
+    .notification-item.unread {
+      background: #fef5f7;
+    }
+    
+    .notification-empty {
+      padding: 60px 24px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    
+    .notification-empty i {
+      font-size: 48px;
+      color: #d1d5db;
+      margin-bottom: 16px;
+      display: block;
+    }
+    
+    .notification-empty p {
+      font-size: 15px;
+      color: #9ca3af;
+      margin: 0;
+    }
+    
+    .notification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notification-modal.show {
+      display: flex;
     }
     
     .info-box {
@@ -147,7 +246,6 @@
       color: white;
     }
 
-    /* Logout Modal Styles */
     .modal-overlay {
       position: fixed;
       top: 0;
@@ -327,6 +425,23 @@
       display: flex !important;
     }
 
+    .notification-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .notification-modal.show {
+      display: flex;
+    }
+
     @media (max-width: 768px) {
       .logout-modal {
         padding: 1.5rem;
@@ -339,11 +454,84 @@
       .logout-btn {
         width: 100%;
       }
+      
+      main {
+        margin-left: 0;
+        padding: 1rem;
+      }
+      
+      aside {
+        display: none;
+      }
+      
+      .dashboard-container {
+        padding: 1rem;
+      }
+      
+      h1 {
+        font-size: 1.5rem !important;
+      }
+      
+      .stat-card {
+        padding: 1rem;
+      }
+      
+      .notification-dropdown {
+        width: 300px;
+        right: -50px;
+      }
+      
+      .filter-btn {
+        font-size: 12px;
+        padding: 6px 12px;
+      }
+      
+      #searchInput {
+        width: 100% !important;
+        margin-bottom: 0.5rem;
+      }
+      
+      .flex.items-center.gap-4 {
+        flex-wrap: wrap;
+      }
+      
+      .modal-content {
+        width: 95%;
+        max-width: 95%;
+        padding: 15px;
+        margin: 2% auto;
+      }
+      
+      .grid.grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+      
+      table {
+        font-size: 12px;
+      }
+      
+      th, td {
+        padding: 8px 4px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .stat-card p {
+        font-size: 0.75rem;
+      }
+      
+      .stat-card .text-2xl {
+        font-size: 1.25rem;
+      }
+      
+      .filter-btn {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
     }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
-  <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
@@ -361,35 +549,35 @@
     <button class="sidebar-btn active" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
   </aside>
 
-  <!-- Main Content -->
   <main class="flex-1 p-6 w-full ml-20">
     <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
-      <!-- Header Section -->
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-4">
           <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">PURCHASE ORDER</h1>
+          <input type="text" id="searchInput" placeholder="Search purchase orders..." class="rounded-lg px-4 py-2 border border-white bg-white focus:outline-none focus:ring-2 focus:ring-white w-80" />
           <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="openNewPOModal()">
             <i class="fa-solid fa-plus mr-2"></i>New Purchase Order
           </button>
         </div>
         <div class="flex items-center gap-4">
-          <!-- Notification Bell -->
           <div class="relative">
-            <button id="notificationBtn" class="relative">
+            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
               <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
               <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
             </button>
             <div id="notificationDropdown" class="notification-dropdown">
-              <div class="p-3 border-b">
-                <h3 class="font-bold text-gray-800">Notifications</h3>
+              <div class="notification-header">
+                <h3>Notifications</h3>
+                <div class="notification-header-actions">
+                  <button onclick="clearAllNotifications()">Clear all</button>
+                  <button onclick="markAllRead()">Mark all read</button>
+                </div>
               </div>
-              <div id="notificationList" class="p-2">
-                <p class="text-gray-500 text-sm text-center py-4">No notifications</p>
+              <div id="notificationList">
               </div>
             </div>
           </div>
           
-          <!-- User Menu -->
           <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
@@ -405,7 +593,6 @@
         </div>
       </div>
 
-      <!-- Stats Summary -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div class="stat-card">
           <div class="flex items-center justify-between">
@@ -445,11 +632,7 @@
         </div>
       </div>
 
-      <!-- Filters -->
       <div class="flex gap-3 mb-6 flex-wrap items-center">
-        <!-- Search Bar -->
-        <input type="text" id="searchInput" placeholder="Search purchase orders..." class="rounded-lg px-4 py-2 border border-white bg-white focus:outline-none focus:ring-2 focus:ring-white w-80" />
-        
         <button class="filter-btn active" onclick="filterByStatus('all')">All Orders</button>
         <button class="filter-btn" onclick="filterByStatus('pending')">Pending</button>
         <button class="filter-btn" onclick="filterByStatus('received')">Received</button>
@@ -460,7 +643,6 @@
         </button>
       </div>
 
-      <!-- Purchase Orders Table -->
       <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
         <div class="flex-1 overflow-auto">
           <table class="w-full text-sm" id="poTable">
@@ -488,7 +670,6 @@
     </div>
   </main>
 
-  <!-- New/Edit PO Modal -->
   <div id="poModal" class="modal">
     <div class="modal-content">
       <div class="flex justify-between items-center mb-4">
@@ -514,15 +695,9 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
           <select id="supplier" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" required>
             <option value="">Select Supplier</option>
-            <option value="Beauty Supplies Inc.">Beauty Supplies Inc.</option>
-            <option value="Cosmetic World">Cosmetic World</option>
-            <option value="Hair Care Solutions">Hair Care Solutions</option>
-            <option value="Nail Art Supplies">Nail Art Supplies</option>
-            <option value="Skincare Essentials">Skincare Essentials</option>
           </select>
         </div>
 
-        <!-- Product Selection Mode -->
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-2">Product Source</label>
           <div class="grid grid-cols-2 gap-2">
@@ -535,7 +710,6 @@
           </div>
         </div>
 
-        <!-- Existing Product Selection -->
         <div id="existingProductSection">
           <label class="block text-sm font-medium text-gray-700 mb-1">Select Product from Inventory</label>
           <select id="existingProduct" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" onchange="loadProductDetails()">
@@ -552,7 +726,6 @@
           </div>
         </div>
 
-        <!-- New Product Section -->
         <div id="newProductSection" style="display: none;">
           <div class="info-box bg-amber-50 border-amber-500">
             <div class="flex items-start gap-2">
@@ -616,7 +789,6 @@
     </div>
   </div>
 
-  <!-- Add Category Modal -->
   <div id="addCategoryModal" class="add-category-modal">
     <div class="modal-content" style="max-width: 400px;">
       <div class="flex justify-between items-center mb-6">
@@ -642,7 +814,6 @@
     </div>
   </div>
 
-  <!-- Manage Categories Modal -->
   <div id="manageCategoriesModal" class="add-category-modal">
     <div class="modal-content" style="max-width: 600px;">
       <div class="flex justify-between items-center mb-6">
@@ -664,7 +835,6 @@
       </div>
 
       <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
-        <!-- Categories will be loaded here -->
       </div>
 
       <div class="mt-6">
@@ -675,7 +845,6 @@
     </div>
   </div>
 
-  <!-- Add Supplier Modal -->
   <div id="addSupplierModal" class="add-category-modal">
     <div class="modal-content" style="max-width: 400px;">
       <div class="flex justify-between items-center mb-6">
@@ -701,7 +870,6 @@
     </div>
   </div>
 
-  <!-- Manage Suppliers Modal -->
   <div id="manageSuppliersModal" class="add-category-modal">
     <div class="modal-content" style="max-width: 600px;">
       <div class="flex justify-between items-center mb-6">
@@ -723,7 +891,6 @@
       </div>
 
       <div id="manageSuppliersList" class="space-y-2 max-h-96 overflow-y-auto">
-        <!-- Suppliers will be loaded here -->
       </div>
 
       <div class="mt-6">
@@ -734,7 +901,13 @@
     </div>
   </div>
 
-  <!-- Logout Confirmation Modal -->
+  <div id="notificationModal" class="notification-modal">
+    <div class="modal-content">
+      <span class="text-gray-400 hover:text-gray-600 cursor-pointer float-right text-2xl" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
   <div class="modal-overlay" id="logoutModal">
     <div class="logout-modal">
       <div class="logout-modal-header">

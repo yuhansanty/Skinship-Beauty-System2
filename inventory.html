@@ -12,8 +12,120 @@
  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="inventory.css">
-  <script src="shared-inventory.js"></script>
   <style>
+    /* Responsive Sidebar */
+    @media (max-width: 768px) {
+      aside {
+        width: 60px;
+      }
+      
+      main {
+        margin-left: 60px;
+      }
+      
+      .sidebar-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+    }
+    
+    /* Responsive Stats Grid */
+    @media (max-width: 1024px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    /* Responsive Header */
+    @media (max-width: 1024px) {
+      .header-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+      
+      .header-title {
+        font-size: 2rem;
+      }
+      
+      #searchInput {
+        width: 100%;
+        max-width: 300px;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 1.5rem;
+      }
+      
+      .header-actions button {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+      }
+      
+      #searchInput {
+        max-width: 200px;
+      }
+    }
+    
+    /* Responsive Table */
+    @media (max-width: 1024px) {
+      table {
+        font-size: 0.875rem;
+      }
+      
+      th, td {
+        padding: 0.5rem !important;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      table {
+        font-size: 0.75rem;
+      }
+      
+      th, td {
+        padding: 0.375rem !important;
+      }
+      
+      .table-container {
+        overflow-x: auto;
+      }
+    }
+    
+    /* Responsive Filters */
+    @media (max-width: 768px) {
+      .filter-container {
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+      
+      .filter-btn {
+        font-size: 0.75rem;
+        padding: 0.5rem 0.75rem;
+      }
+    }
+    
+    /* Responsive Modals */
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95% !important;
+        max-width: none !important;
+        margin: 1rem;
+      }
+      
+      .logout-modal {
+        width: 90% !important;
+      }
+    }
+    
     /* Logout Modal Styles */
     .modal-overlay {
       position: fixed;
@@ -194,7 +306,7 @@
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
   <!-- Sidebar -->
-  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
+  <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto z-50">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
@@ -212,53 +324,57 @@
   </aside>
 
   <!-- Main Content -->
-  <main class="flex-1 p-6 w-full ml-20">
-    <div class="bg-[#b97b8b] rounded-3xl p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 48px);">
+  <main class="flex-1 p-3 md:p-6 w-full ml-16 md:ml-20">
+    <div class="bg-[#b97b8b] rounded-3xl p-3 md:p-6 shadow-lg w-full flex flex-col" style="height: calc(100vh - 24px); min-height: 600px;">
       <!-- Header Section -->
-      <div class="flex justify-between items-center mb-6">
-        <div class="flex items-center gap-4">
-          <h1 class="text-4xl font-bold tracking-widest text-white drop-shadow-lg">INVENTORY</h1>
+      <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 md:mb-6 gap-4">
+        <div class="flex flex-col lg:flex-row items-start lg:items-center gap-2 md:gap-4 w-full lg:w-auto header-actions">
+          <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold tracking-widest text-white drop-shadow-lg header-title">INVENTORY</h1>
           
           <!-- Search Bar -->
-          <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-80" />
+          <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-3 md:px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-full lg:w-80 text-sm md:text-base" />
           
           <!-- Action Buttons -->
-          <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="addNewItem()">
-            <i class="fa-solid fa-plus mr-2"></i>Add Item
-          </button>
-          <button class="bg-white text-[#da5c73] px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md" onclick="enableEditMode()" id="editModeBtn">
-            <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Item
-          </button>
+          <div class="flex gap-2 w-full lg:w-auto">
+            <button class="bg-white text-[#da5c73] px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md text-xs md:text-sm flex-1 lg:flex-none" onclick="addNewItem()">
+              <i class="fa-solid fa-plus mr-1 md:mr-2"></i>Add Item
+            </button>
+            <button class="bg-white text-[#da5c73] px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md text-xs md:text-sm flex-1 lg:flex-none" onclick="enableEditMode()" id="editModeBtn">
+              <i class="fa-solid fa-pen-to-square mr-1 md:mr-2"></i>Edit Item
+            </button>
+          </div>
         </div>
         
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-3 md:gap-4 w-full lg:w-auto justify-end">
           <!-- Notification Bell -->
           <div class="relative">
             <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
+              <i class="fa-regular fa-bell text-lg md:text-xl cursor-pointer text-white"></i>
               <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
             </button>
             
             <!-- Notification Dropdown -->
             <div id="notificationDropdown" class="notification-dropdown">
               <div class="notification-header">
-                <h3 class="font-bold text-gray-800">Notifications</h3>
-                <button onclick="clearAllNotifications()" class="text-sm text-[#da5c73] hover:underline">Clear all</button>
-                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
+                <h3 class="font-bold text-gray-800 text-sm md:text-base">Notifications</h3>
+                <div class="flex gap-2">
+                  <button onclick="markAllRead()" class="text-xs md:text-sm text-[#da5c73] hover:underline">Mark all read</button>
+                  <button onclick="clearAllNotifications()" class="text-xs md:text-sm text-[#da5c73] hover:underline">Clear all</button>
+                </div>
               </div>
               <div id="notificationList"></div>
             </div>
           </div>
           
           <!-- User Menu -->
-          <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
+          <span class="font-semibold text-sm md:text-lg text-white truncate max-w-[120px] md:max-w-none" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
-              <i class="fa-solid fa-user-circle text-2xl text-white"></i>
+              <i class="fa-solid fa-user-circle text-xl md:text-2xl text-white"></i>
             </button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='LandingPage.html';document.getElementById('userMenu').classList.add('hidden');"><i class="fa fa-home mr-2"></i>Go to Home Page</button>
-              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
+            <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 md:w-48 bg-white rounded shadow z-50">
+              <button class="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm md:text-base" onclick="window.location.href='LandingPage.html';document.getElementById('userMenu').classList.add('hidden');"><i class="fa fa-home mr-2"></i>Go to Home Page</button>
+              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm md:text-base">
                 <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
               </button>
             </div>
@@ -267,47 +383,47 @@
       </div>
 
       <!-- Stats Summary -->
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6 stats-grid">
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Total Items</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">Total Items</p>
+              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
             </div>
-            <i class="fa-solid fa-boxes-stacked text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-boxes-stacked text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Total Value</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">Total Value</p>
+              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
             </div>
-            <i class="fa-solid fa-peso-sign text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-peso-sign text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Low Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="lowStock">0</p>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">Low Stock</p>
+              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="lowStock">0</p>
             </div>
-            <i class="fa-solid fa-triangle-exclamation text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-triangle-exclamation text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
-              <p class="text-gray-600 text-sm font-semibold">Out of Stock</p>
-              <p class="text-2xl font-bold text-[#da5c73]" id="outOfStock">0</p>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">Out of Stock</p>
+              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="outOfStock">0</p>
             </div>
-            <i class="fa-solid fa-circle-xmark text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-circle-xmark text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
       </div>
 
       <!-- Filters -->
-      <div class="flex gap-3 mb-6 flex-wrap">
+      <div class="flex gap-2 md:gap-3 mb-4 md:mb-6 flex-wrap filter-container overflow-x-auto pb-2">
         <button class="filter-btn active" onclick="filterByStatus('all')">All Items</button>
         <button class="filter-btn" onclick="filterByStatus('in-stock')">In Stock</button>
         <button class="filter-btn" onclick="filterByStatus('low-stock')">Low Stock</button>
@@ -316,24 +432,24 @@
           <option value="all">All Categories</option>
         </select>
         <button class="filter-btn" onclick="exportToCSV()">
-          <i class="fa-solid fa-download mr-2"></i>Export
+          <i class="fa-solid fa-download mr-1 md:mr-2"></i>Export
         </button>
       </div>
 
       <!-- Inventory Table -->
-      <div class="flex-1 bg-white rounded-2xl shadow-lg p-4 overflow-hidden flex flex-col">
+      <div class="flex-1 bg-white rounded-2xl shadow-lg p-2 md:p-4 overflow-hidden flex flex-col table-container">
         <div class="flex-1 overflow-auto">
-          <table class="w-full text-sm" id="inventoryTable">
+          <table class="w-full text-xs md:text-sm" id="inventoryTable">
             <thead class="sticky top-0 z-10 bg-[#f7d4d0]">
               <tr>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item ID</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Item Name</th>
-                <th class="py-3 px-4 text-left font-bold text-[#da5c73]">Category</th>
-                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Quantity(per-piece)</th>
-                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Unit Price</th>
-                <th class="py-3 px-4 text-right font-bold text-[#da5c73]">Total Value</th>
-                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Last Updated</th>
-                <th class="py-3 px-4 text-center font-bold text-[#da5c73]">Status</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-left font-bold text-[#da5c73]">Item ID</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-left font-bold text-[#da5c73]">Item Name</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-left font-bold text-[#da5c73]">Category</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-center font-bold text-[#da5c73]">Qty</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-right font-bold text-[#da5c73]">Price</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-right font-bold text-[#da5c73]">Total</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-center font-bold text-[#da5c73]">Updated</th>
+                <th class="py-2 md:py-3 px-2 md:px-4 text-center font-bold text-[#da5c73]">Status</th>
               </tr>
             </thead>
             <tbody id="inventoryTableBody">
@@ -349,7 +465,7 @@
   <div id="addProductModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 700px;">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
+        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
           <i class="fa-solid fa-plus-circle mr-2"></i>+ Add New Product
         </h2>
         <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
@@ -394,7 +510,7 @@
           <textarea id="itemDescription" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
         </div>
 
-        <div class="flex gap-3 mt-6">
+        <div class="flex flex-col md:flex-row gap-3 mt-6">
           <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
             <i class="fa-solid fa-check mr-2"></i>Add Product
           </button>
@@ -410,7 +526,7 @@
   <div id="editProductModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 700px;">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
+        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
           <i class="fa-solid fa-pen-to-square mr-2"></i>Edit Product
         </h2>
         <span class="modal-close" onclick="closeEditProductModal()">&times;</span>
@@ -452,7 +568,7 @@
           <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
         </div>
 
-        <div class="flex gap-3 mt-6">
+        <div class="flex flex-col md:flex-row gap-3 mt-6">
           <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
             <i class="fa-solid fa-save mr-2"></i>Save Changes
           </button>
@@ -471,7 +587,7 @@
   <div id="addCategoryModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 400px;">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
+        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
           <i class="fa-solid fa-tag mr-2"></i>Add New Category
         </h2>
         <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
@@ -482,7 +598,7 @@
           <input type="text" id="newCategoryName" class="form-input" placeholder="e.g., Facial Products" required />
         </div>
 
-        <div class="flex gap-3 mt-6">
+        <div class="flex flex-col md:flex-row gap-3 mt-6">
           <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
             <i class="fa-solid fa-check mr-2"></i>Add Category
           </button>
@@ -498,7 +614,7 @@
   <div id="manageCategoriesModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 600px;">
       <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-[#da5c73]">
+        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
           <i class="fa-solid fa-layer-group mr-2"></i>Manage Categories
         </h2>
         <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
@@ -533,11 +649,11 @@
     </div>
   </div>
 
-  <!-- Last Updated Item Modal -->
-  <div id="lastUpdatedModal" class="add-product-modal">
-    <div class="modal-content" style="max-width: 500px;">
-      <span class="modal-close" onclick="closeLastUpdatedModal()">&times;</span>
-      <div id="lastUpdatedBody"></div>
+  <!-- Notification Details Modal -->
+  <div id="notificationModal" class="add-product-modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
+      <div id="modalBody"></div>
     </div>
   </div>
 

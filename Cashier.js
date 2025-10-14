@@ -5,6 +5,85 @@ let currentUserData = null;
 let inventoryProducts = [];
 let servicesData = [];
 
+// Notification system for appointments
+let appointmentNotifications = [];
+
+// Initialize Firebase listener for appointments
+async function initializeNotificationSystem() {
+  try {
+    // Listen for new appointment requests
+    db.collection("appointments")
+      .where("status", "==", "pending")
+      .onSnapshot((snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const data = change.doc.data();
+            const notification = {
+              id: change.doc.id,
+              type: 'appointment',
+              read: false,
+              timestamp: new Date().toISOString(),
+              details: {
+                fullName: data.fullName || data.name,
+                email: data.email,
+                phone: data.phone,
+                service: data.service,
+                date: data.date,
+                time: data.time,
+                message: data.message || ''
+              }
+            };
+            addNotification(notification);
+          }
+        });
+      });
+    
+    // Check low stock on load and periodically
+    checkLowStock();
+    setInterval(checkLowStock, 30000); // Every 30 seconds
+  } catch (error) {
+  }
+}
+
+// Add notification to list
+function addNotification(notification) {
+  const notificationList = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+  notificationList.unshift(notification);
+  localStorage.setItem('skinshipNotifications', JSON.stringify(notificationList));
+  loadNotifications();
+}
+
+// Check for low stock items
+function checkLowStock() {
+  const lowStockThreshold = 5;
+  const existingNotifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+  
+  inventoryProducts.forEach(product => {
+    if (product.qty <= lowStockThreshold && product.qty > 0) {
+      // Check if notification already exists
+      const exists = existingNotifications.find(n => 
+        n.type === 'lowstock' && n.details?.productId === product.id
+      );
+      
+      if (!exists) {
+        const notification = {
+          id: `lowstock-${product.id}-${Date.now()}`,
+          type: 'lowstock',
+          read: false,
+          timestamp: new Date().toISOString(),
+          details: {
+            productId: product.id,
+            productName: product.name,
+            currentStock: product.qty,
+            category: product.category
+          }
+        };
+        addNotification(notification);
+      }
+    }
+  });
+}
+
 function validatePhoneNumber(input) {
   let value = input.value.replace(/\D/g, '');
   if (value.length > 11) {
@@ -114,7 +193,6 @@ async function handleClockOut() {
         await activeLog.ref.update({
           clockOut: new Date().toLocaleString()
         });
-        console.log("Clock out successful");
       }
     }
 
@@ -123,9 +201,7 @@ async function handleClockOut() {
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     });
     
-    console.log("User set to unavailable");
   } catch (error) {
-    console.error("Error during clock out:", error);
   }
 }
 
@@ -144,8 +220,7 @@ async function confirmLogout() {
     
     window.location.href = "index.html";
   } catch (error) {
-    console.error("Logout error:", error);
-    
+
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     
@@ -212,9 +287,6 @@ async function loadServicesFromFirebase() {
       value: cat
     }));
     
-    console.log('Loaded services:', servicesData);
-    console.log('Categories:', categories);
-    
   } catch (error) {
     console.error('Error loading services:', error);
   }
@@ -248,8 +320,6 @@ async function loadInventoryProducts() {
       value: cat
     }));
     
-    console.log('Loaded inventory products:', inventoryProducts);
-    console.log('Product categories:', productCategories);
     
   } catch (error) {
     console.error('Error loading inventory:', error);
@@ -257,17 +327,12 @@ async function loadInventoryProducts() {
 }
 
 async function loadUserInfo() {
-  console.log('=== Loading User Info ===');
-  console.log('All localStorage keys:', Object.keys(localStorage));
   
   const currentUserEmail = localStorage.getItem('currentUserEmail') || 
                           localStorage.getItem('userEmail') ||
                           localStorage.getItem('email');
   const currentUsername = localStorage.getItem('currentUsername') || 
                          localStorage.getItem('username');
-  
-  console.log('Current user email:', currentUserEmail);
-  console.log('Current username:', currentUsername);
   
   if (!currentUserEmail && !currentUsername) {
     console.warn("No user credentials found in localStorage");
@@ -279,42 +344,31 @@ async function loadUserInfo() {
   
   try {
     const userSnapshot = await db.collection("users").get();
-    console.log('Total users in database:', userSnapshot.size);
     
     let foundUser = null;
     
     userSnapshot.forEach(doc => {
       const data = doc.data();
-      console.log('Checking user doc:', {
-        id: doc.id,
-        email: data.email,
-        username: data.username,
-        fullName: data.fullName
-      });
+      
       
       if (currentUserEmail && data.email && 
           data.email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
         foundUser = data;
-        console.log('✓ Found user by email match');
       }
       else if (currentUsername && data.username && 
                data.username.toLowerCase().trim() === currentUsername.toLowerCase().trim()) {
         foundUser = data;
-        console.log('✓ Found user by username match');
       }
     });
     
     if (foundUser) {
       currentUserData = foundUser;
-      console.log('User data loaded:', currentUserData);
       
       const fullName = currentUserData.fullName || 
                       currentUserData.fullname || 
                       currentUserData.name || 
                       currentUserData.username || 
                       'User';
-      
-      console.log('Display name set to:', fullName);
       
       document.getElementById('usernameDisplay').textContent = fullName;
       document.getElementById('cashierName').value = fullName;
@@ -956,6 +1010,7 @@ async function generateReceipt() {
   await loadUserInfo();
   await loadServicesFromFirebase();
   await loadInventoryProducts();
+  await initializeNotificationSystem();
   currentView = 'services';
   currentCategory = 'all';
   renderServices(servicesData);

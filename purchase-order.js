@@ -17,26 +17,11 @@ let editingIndex = -1;
 let purchaseOrders = [];
 let inventoryItems = [];
 let categories = [];
-let categoryCounts = {}; // Cache category item counts
+let categoryCounts = {};
 let suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
 let currentUser = null;
 let currentProductMode = 'existing';
 let selectedProduct = null;
-
-// Debug: Track Firebase reads
-let totalReads = 0;
-const originalCollectionGet = firebase.firestore.Firestore.prototype.collection;
-firebase.firestore.Firestore.prototype.collection = function(path) {
-  const collection = originalCollectionGet.call(this, path);
-  const originalGet = collection.get;
-  collection.get = async function() {
-    const snapshot = await originalGet.call(this);
-    totalReads += snapshot.size || 1;
-    console.log(`📖 Read ${snapshot.size || 1} documents from '${path}' | Total reads: ${totalReads}`);
-    return snapshot;
-  };
-  return collection;
-};
 
 // Load current user
 auth.onAuthStateChanged(async (user) => {
@@ -62,7 +47,7 @@ auth.onAuthStateChanged(async (user) => {
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
+      // Silent error handling
     }
   } else {
     window.location.href = 'index.html';
@@ -90,16 +75,13 @@ async function handleClockOut() {
       }
     }
 
-    // Set user as unavailable
     const staffRef = db.collection('users').doc(user.uid);
     await staffRef.update({ 
       availability: false,
       lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
     });
-    
-    console.log("User clocked out and set to unavailable");
   } catch (error) {
-    console.error("Error during clock out:", error);
+    // Silent error handling
   }
 }
 
@@ -126,7 +108,6 @@ async function confirmLogout() {
     await auth.signOut();
     window.location.href = "index.html";
   } catch (error) {
-    console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     alert("An error occurred during logout. Please try again.");
@@ -135,18 +116,295 @@ async function confirmLogout() {
   }
 }
 
-// Initialize the page - OPTIMIZED
-document.addEventListener('DOMContentLoaded', async function() {
-  console.log('🚀 Page loading started...');
-  console.log('📊 Initial Firebase reads: 0');
+// Notification System - matching exact design
+function loadNotifications() {
+  const notificationList = document.getElementById('notificationList');
+  const badge = document.getElementById('notificationBadge');
   
-  // Single inventory load that populates both inventoryItems AND categories
+  db.collection('notifications')
+    .orderBy('timestamp', 'desc')
+    .limit(20)
+    .onSnapshot((snapshot) => {
+      let unreadCount = 0;
+      notificationList.innerHTML = '';
+      
+      if (snapshot.empty) {
+        notificationList.innerHTML = `
+          <div class="notification-empty">
+            <i class="fa-solid fa-bell-slash"></i>
+            <p>No notifications yet</p>
+          </div>
+        `;
+        badge.style.display = 'none';
+        return;
+      }
+      
+      snapshot.forEach((doc) => {
+        const notification = doc.data();
+        notification.id = doc.id;
+        
+        if (!notification.read) unreadCount++;
+        
+        const item = document.createElement('div');
+        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+        item.onclick = () => viewNotification(notification.id, notification);
+        
+        const time = notification.timestamp?.toDate?.() || new Date();
+        const timeStr = time.toLocaleString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          hour: 'numeric', 
+          minute: '2-digit' 
+        });
+        
+        let displayMessage = notification.title || 'Notification';
+        let displayDetails = notification.message || '';
+        
+        if (notification.type === 'appointment') {
+          displayMessage = 'New Appointment Request';
+          displayDetails = `${notification.details.service} - ${notification.details.date} at ${notification.details.time}`;
+        } else if (notification.type === 'purchase_order') {
+          displayMessage = 'New Purchase Order';
+          displayDetails = `${notification.details.productName} - Qty: ${notification.details.quantity}`;
+        } else if (notification.type === 'low_stock' || notification.type === 'out_of_stock') {
+          displayMessage = notification.type === 'out_of_stock' ? '⚠️ Out of Stock Alert' : '⚠️ Low Stock Alert';
+          displayDetails = `${notification.details.productName} - ${notification.details.quantity} units remaining`;
+        }
+        
+        item.innerHTML = `
+          <div class="flex justify-between items-start mb-1">
+            <strong class="text-[#da5c73]">${displayMessage}</strong>
+            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+          </div>
+          <p class="text-sm text-gray-600">${displayDetails}</p>
+          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+        `;
+        
+        notificationList.appendChild(item);
+      });
+      
+      if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    });
+}
+
+function toggleNotifications() {
+  const dropdown = document.getElementById('notificationDropdown');
+  dropdown.classList.toggle('show');
+}
+
+async function viewNotification(id, notification) {
+  await db.collection('notifications').doc(id).update({ read: true });
+  
+  const modal = document.getElementById('notificationModal');
+  const modalBody = document.getElementById('modalBody');
+  
+  if (notification.type === 'appointment') {
+    const time = notification.timestamp?.toDate?.() || new Date();
+    const timeStr = time.toLocaleString('en-US', { 
+      dateStyle: 'full', 
+      timeStyle: 'short' 
+    });
+    
+    modalBody.innerHTML = `
+      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
+      <div class="space-y-3">
+        <div><strong>Customer Name:</strong> ${notification.details.fullName || 'N/A'}</div>
+        <div><strong>Email:</strong> ${notification.details.email || 'N/A'}</div>
+        <div><strong>Phone:</strong> ${notification.details.phone || 'N/A'}</div>
+        <div><strong>Service:</strong> ${notification.details.service || 'N/A'}</div>
+        <div><strong>Preferred Date:</strong> ${notification.details.date || 'N/A'}</div>
+        <div><strong>Preferred Time:</strong> ${notification.details.time || 'N/A'}</div>
+        ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
+        <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${timeStr}</div>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button onclick="handleAppointmentAction('${id}', 'confirmed', ${JSON.stringify(notification.details).replace(/"/g, '&quot;')})" 
+                class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+          <i class="fa-solid fa-check mr-2"></i>Accept
+        </button>
+        <button onclick="handleAppointmentAction('${id}', 'pending', ${JSON.stringify(notification.details).replace(/"/g, '&quot;')})" 
+                class="flex-1 bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600">
+          <i class="fa-solid fa-clock mr-2"></i>Later
+        </button>
+        <button onclick="handleAppointmentAction('${id}', 'cancelled', ${JSON.stringify(notification.details).replace(/"/g, '&quot;')})" 
+                class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+          <i class="fa-solid fa-times mr-2"></i>Decline
+        </button>
+      </div>
+    `;
+  } else if (notification.type === 'purchase_order') {
+    const time = notification.timestamp?.toDate?.() || new Date();
+    const timeStr = time.toLocaleString('en-US', { 
+      dateStyle: 'full', 
+      timeStyle: 'short' 
+    });
+    
+    modalBody.innerHTML = `
+      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Purchase Order Created</h2>
+      <div class="space-y-3">
+        <div><strong>PO Number:</strong> ${notification.details.poNumber || 'N/A'}</div>
+        <div><strong>Product:</strong> ${notification.details.productName || 'N/A'}</div>
+        <div><strong>Quantity:</strong> ${notification.details.quantity || 'N/A'}</div>
+        <div><strong>Supplier:</strong> ${notification.details.supplier || 'N/A'}</div>
+        <div><strong>Total Value:</strong> ₱${(notification.details.totalValue || 0).toFixed(2)}</div>
+        <div><strong>Created By:</strong> ${notification.details.createdBy || 'N/A'}</div>
+        <div class="text-sm text-gray-500"><strong>Created:</strong> ${timeStr}</div>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button onclick="closeNotificationModal()" 
+                class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
+    `;
+  } else if (notification.type === 'low_stock' || notification.type === 'out_of_stock') {
+    const time = notification.timestamp?.toDate?.() || new Date();
+    const timeStr = time.toLocaleString('en-US', { 
+      dateStyle: 'full', 
+      timeStyle: 'short' 
+    });
+    
+    const isOutOfStock = notification.type === 'out_of_stock';
+    const alertColor = isOutOfStock ? 'text-red-600' : 'text-yellow-600';
+    const alertBg = isOutOfStock ? 'bg-red-50' : 'bg-yellow-50';
+    const alertBorder = isOutOfStock ? 'border-red-200' : 'border-yellow-200';
+    
+    modalBody.innerHTML = `
+      <h2 class="text-2xl font-bold ${alertColor} mb-4">
+        <i class="fa-solid fa-triangle-exclamation mr-2"></i>${isOutOfStock ? 'Out of Stock Alert' : 'Low Stock Alert'}
+      </h2>
+      <div class="${alertBg} border ${alertBorder} rounded-lg p-4 mb-4">
+        <p class="font-semibold ${alertColor}">
+          ${isOutOfStock ? 'This item is completely out of stock!' : 'This item is running low on stock!'}
+        </p>
+      </div>
+      <div class="space-y-3">
+        <div><strong>Product Name:</strong> ${notification.details.productName || 'N/A'}</div>
+        <div><strong>Product ID:</strong> ${notification.details.productId || 'N/A'}</div>
+        <div><strong>Category:</strong> ${notification.details.category || 'N/A'}</div>
+        <div><strong>Current Quantity:</strong> <span class="${alertColor} font-bold">${notification.details.quantity || 0} units</span></div>
+        <div><strong>Minimum Stock Level:</strong> ${notification.details.minStock || 10} units</div>
+        ${notification.details.supplier ? `<div><strong>Supplier:</strong> ${notification.details.supplier}</div>` : ''}
+        <div class="text-sm text-gray-500"><strong>Alert Time:</strong> ${timeStr}</div>
+      </div>
+      <div class="mt-6 flex gap-3">
+        <button onclick="createPOFromNotification('${notification.details.productId}')" 
+                class="flex-1 bg-[#da5c73] text-white px-4 py-2 rounded hover:bg-[#c54d63]">
+          <i class="fa-solid fa-plus mr-2"></i>Create Purchase Order
+        </button>
+        <button onclick="closeNotificationModal()" 
+                class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+          <i class="fa-solid fa-times mr-2"></i>Close
+        </button>
+      </div>
+    `;
+  } else {
+    modalBody.innerHTML = `
+      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">${notification.title || 'Notification'}</h2>
+      <p class="mb-4">${notification.message}</p>
+      <button onclick="closeNotificationModal()" 
+              class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+        Close
+      </button>
+    `;
+  }
+  
+  modal.classList.add('show');
+}
+
+async function handleAppointmentAction(notificationId, status, details) {
+  try {
+    const statusMessages = {
+      confirmed: 'Appointment accepted successfully!',
+      pending: 'Appointment marked as pending.',
+      cancelled: 'Appointment declined.'
+    };
+    
+    // Find customer by email or phone
+    const customersRef = db.collection('customers');
+    let customerQuery = customersRef.where('email', '==', details.email);
+    let customerSnap = await customerQuery.get();
+    
+    if (customerSnap.empty && details.phone) {
+      customerQuery = customersRef.where('phone', '==', details.phone);
+      customerSnap = await customerQuery.get();
+    }
+    
+    if (!customerSnap.empty) {
+      // Update existing customer
+      const customerDoc = customerSnap.docs[0];
+      await customerDoc.ref.update({ status: status });
+    } else {
+      // Create new customer if not exists
+      await customersRef.add({
+        name: details.fullName,
+        email: details.email,
+        phone: details.phone,
+        service: details.service,
+        date: details.date,
+        time: details.time,
+        appointment: `${details.date} ${details.time}`,
+        status: status,
+        staff: 'Unassigned',
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        archived: false
+      });
+    }
+    
+    // Delete notification if confirmed or cancelled
+    if (status !== 'pending') {
+      await db.collection('notifications').doc(notificationId).delete();
+    } else {
+      await db.collection('notifications').doc(notificationId).update({ read: true });
+    }
+    
+    closeNotificationModal();
+    alert(statusMessages[status]);
+  } catch (error) {
+    alert('Error processing appointment. Please try again.');
+  }
+}
+
+function closeNotificationModal() {
+  document.getElementById('notificationModal').classList.remove('show');
+}
+
+function markAllRead() {
+  db.collection('notifications').get().then((snapshot) => {
+    const batch = db.batch();
+    snapshot.docs.forEach((doc) => {
+      batch.update(doc.ref, { read: true });
+    });
+    return batch.commit();
+  });
+}
+
+function clearAllNotifications() {
+  if (confirm('Clear all notifications?')) {
+    db.collection('notifications').get().then((snapshot) => {
+      const batch = db.batch();
+      snapshot.docs.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+      return batch.commit();
+    });
+  }
+}
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', async function() {
   await loadInventoryItemsAndCategories();
   await loadPurchaseOrders();
   updateStats();
   renderTable();
   generatePONumber();
   updateSupplierDropdown();
+  loadNotifications();
   
   document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
   
@@ -155,34 +413,28 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
-  
-  console.log('✅ Page loading complete!');
-  console.log(`📊 Final Firebase reads for this page load: ${totalReads}`);
 });
 
-// OPTIMIZED: Load inventory items AND extract categories in ONE read
+// Load inventory items and categories
 async function loadInventoryItemsAndCategories() {
   try {
-    console.log('📖 Loading inventory and categories (single read)...');
     const snapshot = await db.collection('inventory').get();
     
     inventoryItems = [];
     const categorySet = new Set();
-    categoryCounts = {}; // Reset counts
+    categoryCounts = {};
     
     snapshot.forEach(doc => {
       const item = doc.data();
       item.firebaseId = doc.id;
       inventoryItems.push(item);
       
-      // Extract categories while we're iterating
       if (item.category) {
         categorySet.add(item.category);
         categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
       }
     });
     
-    // Build categories array
     if (categorySet.size === 0) {
       const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
       categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
@@ -190,15 +442,11 @@ async function loadInventoryItemsAndCategories() {
       categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
     }
     
-    console.log(`✅ Loaded ${inventoryItems.length} items and ${categories.length} categories`);
-    console.log('📦 Category counts:', categoryCounts);
-    
-    // Update UI components
     populateProductDropdown();
     updateCategorySelects();
     
   } catch (error) {
-    console.error('Error loading inventory:', error);
+    // Silent error handling
   }
 }
 
@@ -263,7 +511,7 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// OPTIMIZED: Handle Add Category - update cache instead of re-reading
+// Handle Add Category
 async function handleAddCategory(event) {
   event.preventDefault();
   
@@ -301,8 +549,6 @@ async function handleAddCategory(event) {
     const docRef = await db.collection('inventory').add(placeholderItem);
     placeholderItem.firebaseId = docRef.id;
     
-    // Update local cache - NO FIREBASE READ! 🎉
-    console.log('✅ Adding category to local cache (no read needed)');
     inventoryItems.push(placeholderItem);
     categories.push({
       id: categoryName,
@@ -320,20 +566,16 @@ async function handleAddCategory(event) {
     alert(`Category "${categoryName}" added successfully!`);
     
   } catch (error) {
-    console.error('Error adding category:', error);
     alert('Error adding category. Please try again.');
   }
 }
 
 // Open/Close Manage Categories Modal
 async function openManageCategoriesModal() {
-  console.log('Opening manage categories modal');
   const modal = document.getElementById('manageCategoriesModal');
   if (modal) {
     modal.classList.add('show');
     await loadManageCategoriesList();
-  } else {
-    console.error('Manage categories modal not found');
   }
 }
 
@@ -344,9 +586,8 @@ function closeManageCategoriesModal() {
   }
 }
 
-// OPTIMIZED: Load categories list using cached counts - NO FIREBASE READ!
+// Load categories list
 async function loadManageCategoriesList() {
-  console.log('📦 Loading category list from cache (no Firebase read)');
   const listContainer = document.getElementById('manageCategoriesList');
   
   if (categories.length === 0) {
@@ -356,7 +597,6 @@ async function loadManageCategoriesList() {
   
   listContainer.innerHTML = '';
   
-  // Use cached categoryCounts - NO FIREBASE READ! 🎉
   categories.forEach(cat => {
     const categoryItem = document.createElement('div');
     categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
@@ -379,14 +619,10 @@ async function loadManageCategoriesList() {
     
     listContainer.appendChild(categoryItem);
   });
-  
-  console.log('✅ Category list loaded from cache');
 }
 
-// OPTIMIZED: Handle Delete Category - update cache after deletion
+// Handle Delete Category
 async function handleDeleteCategory(categoryName, itemCount) {
-  console.log('Deleting category:', categoryName, 'with', itemCount, 'items');
-  
   if (itemCount === 0) {
     if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
       return;
@@ -398,7 +634,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
   }
   
   try {
-    // Delete all items in this category from Firebase using batch
     const snapshot = await db.collection('inventory').where('category', '==', categoryName).get();
     
     const batches = [];
@@ -422,8 +657,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
     
     await Promise.all(batches);
     
-    // Update local cache - NO FIREBASE READ! 🎉
-    console.log('✅ Updating local cache after category deletion (no read needed)');
     categories = categories.filter(c => c.name !== categoryName);
     inventoryItems = inventoryItems.filter(i => i.category !== categoryName);
     delete categoryCounts[categoryName];
@@ -435,7 +668,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
     
     alert(`Category "${categoryName}" and its ${itemCount} item(s) have been deleted successfully!`);
   } catch (error) {
-    console.error('Error deleting category:', error);
     alert('Error deleting category. Please try again.');
   }
 }
@@ -444,6 +676,7 @@ async function handleDeleteCategory(categoryName, itemCount) {
 window.openManageCategoriesModal = openManageCategoriesModal;
 window.closeManageCategoriesModal = closeManageCategoriesModal;
 window.handleDeleteCategory = handleDeleteCategory;
+window.handleAppointmentAction = handleAppointmentAction;
 
 // Update supplier dropdown
 function updateSupplierDropdown() {
@@ -532,13 +765,10 @@ function handleAddSupplier(event) {
 
 // Open/Close Manage Suppliers Modal
 function openManageSuppliersModal() {
-  console.log('Opening manage suppliers modal');
   const modal = document.getElementById('manageSuppliersModal');
   if (modal) {
     modal.classList.add('show');
     loadManageSuppliersList();
-  } else {
-    console.error('Manage suppliers modal not found');
   }
 }
 
@@ -593,8 +823,6 @@ function loadManageSuppliersList() {
 
 // Handle Delete Supplier
 function handleDeleteSupplier(supplierName, usageCount) {
-  console.log('Deleting supplier:', supplierName, 'with', usageCount, 'orders');
-  
   if (usageCount === 0) {
     if (!confirm(`Are you sure you want to delete the supplier "${supplierName}"?`)) {
       return;
@@ -619,6 +847,61 @@ window.handleAddSupplier = handleAddSupplier;
 window.openManageSuppliersModal = openManageSuppliersModal;
 window.closeManageSuppliersModal = closeManageSuppliersModal;
 window.handleDeleteSupplier = handleDeleteSupplier;
+
+// Create Purchase Order from low stock notification
+async function createPOFromNotification(productId) {
+  try {
+    // Find the product in inventory
+    const product = inventoryItems.find(item => item.id === productId);
+    
+    if (!product) {
+      alert('Product not found in inventory.');
+      closeNotificationModal();
+      return;
+    }
+    
+    // Close notification modal
+    closeNotificationModal();
+    
+    // Open PO modal with pre-filled data
+    openNewPOModal();
+    
+    // Wait for modal to open and populate fields
+    setTimeout(() => {
+      // Switch to existing product mode
+      switchProductMode('existing');
+      
+      // Select the product
+      const productSelect = document.getElementById('existingProduct');
+      for (let i = 0; i < productSelect.options.length; i++) {
+        if (productSelect.options[i].value === productId) {
+          productSelect.selectedIndex = i;
+          loadProductDetails();
+          break;
+        }
+      }
+      
+      // Calculate suggested order quantity (2x minimum stock level)
+      const suggestedQty = Math.max(product.minStock * 2, 10);
+      document.getElementById('quantity').value = suggestedQty;
+      
+      // Pre-fill supplier if available
+      if (product.supplier) {
+        document.getElementById('supplier').value = product.supplier;
+      }
+      
+      calculateTotal();
+      
+      // Show info message
+      alert(`Purchase Order form opened for "${product.name}".\n\nSuggested quantity: ${suggestedQty} units (2x minimum stock level)`);
+    }, 300);
+    
+  } catch (error) {
+    alert('Error opening purchase order form. Please try again.');
+  }
+}
+
+window.createPOFromNotification = createPOFromNotification;
 
 // Populate product dropdown
 function populateProductDropdown() {
@@ -707,7 +990,7 @@ async function generateNewProductId() {
     const newId = `INV-${String(newNumber).padStart(3, '0')}`;
     document.getElementById('newProductId').value = newId;
   } catch (error) {
-    console.error('Error generating product ID:', error);
+    // Silent error handling
   }
 }
 
@@ -748,7 +1031,6 @@ function calculateTotal() {
 // Load purchase orders from Firebase
 async function loadPurchaseOrders() {
   try {
-    console.log('📖 Loading purchase orders...');
     const snapshot = await db.collection('purchaseOrders').orderBy('date', 'desc').get();
     purchaseOrders = [];
     
@@ -757,10 +1039,8 @@ async function loadPurchaseOrders() {
       po.firebaseId = doc.id;
       purchaseOrders.push(po);
     });
-    
-    console.log(`✅ Loaded ${purchaseOrders.length} purchase orders`);
   } catch (error) {
-    console.error('Error loading purchase orders:', error);
+    // Silent error handling
   }
 }
 
@@ -896,6 +1176,24 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
       const docRef = await db.collection('purchaseOrders').add(formData);
       formData.firebaseId = docRef.id;
       purchaseOrders.push(formData);
+      
+      // Create notification
+      await db.collection('notifications').add({
+        type: 'purchase_order',
+        title: 'New Purchase Order Created',
+        message: `PO ${formData.id} has been created for ${formData.productName}`,
+        details: {
+          poNumber: formData.id,
+          productName: formData.productName,
+          quantity: formData.quantity,
+          supplier: formData.supplier,
+          totalValue: formData.totalValue,
+          createdBy: formData.createdBy
+        },
+        read: false,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      
       alert('Purchase order created successfully!');
     } else {
       const po = purchaseOrders[editingIndex];
@@ -908,7 +1206,6 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     renderTable();
     closePOModal();
   } catch (error) {
-    console.error('Error saving purchase order:', error);
     alert('Error saving purchase order. Please try again.');
   }
 });
@@ -1026,7 +1323,7 @@ function determineStatus(qty, minStock) {
   return 'in-stock';
 }
 
-// OPTIMIZED: Receive order - update cache instead of re-reading
+// Receive order
 async function receiveOrder(index) {
   const po = purchaseOrders[index];
   
@@ -1040,7 +1337,6 @@ async function receiveOrder(index) {
       .get();
 
     if (!inventorySnapshot.empty) {
-      // Update existing product
       const doc = inventorySnapshot.docs[0];
       const existingProduct = doc.data();
       const newQty = existingProduct.qty + po.quantity;
@@ -1056,8 +1352,6 @@ async function receiveOrder(index) {
         supplier: po.supplier
       });
 
-      // Update local cache - NO FIREBASE READ! 🎉
-      console.log('✅ Updating inventory cache (no read needed)');
       const localItemIndex = inventoryItems.findIndex(item => item.firebaseId === doc.id);
       if (localItemIndex !== -1) {
         inventoryItems[localItemIndex].qty = newQty;
@@ -1071,7 +1365,6 @@ async function receiveOrder(index) {
 
       alert(`✅ Inventory updated!\n\n${po.productName} (${po.productId})\nPrevious Quantity: ${existingProduct.qty}\nAdded: ${po.quantity}\nNew Quantity: ${newQty}\n\nCategory: ${po.category}\nUnit Price: ₱ ${(po.unitPrice || 0).toFixed(2)}`);
     } else {
-      // Add new product
       if (po.isNewProduct) {
         const counterRef = db.collection('metadata').doc('inventoryCounter');
         await db.runTransaction(async (tx) => {
@@ -1108,11 +1401,8 @@ async function receiveOrder(index) {
         const docRef = await db.collection('inventory').add(newProduct);
         newProduct.firebaseId = docRef.id;
 
-        // Update local cache - NO FIREBASE READ! 🎉
-        console.log('✅ Adding new product to cache (no read needed)');
         inventoryItems.push(newProduct);
         
-        // Update category count if it's a new category
         if (!categoryCounts[po.category]) {
           categories.push({ id: po.category, name: po.category });
           categoryCounts[po.category] = 1;
@@ -1142,10 +1432,7 @@ async function receiveOrder(index) {
 
     updateStats();
     renderTable();
-    
-    console.log('✅ Order received successfully (no inventory re-read needed)');
   } catch (error) {
-    console.error('Error receiving order:', error);
     alert('Error processing the order. Please try again.');
   }
 }
@@ -1165,7 +1452,6 @@ async function deletePO(index) {
     renderTable();
     alert('Purchase order deleted successfully!');
   } catch (error) {
-    console.error('Error deleting purchase order:', error);
     alert('Error deleting purchase order. Please try again.');
   }
 }
@@ -1272,6 +1558,10 @@ document.addEventListener('click', function(event) {
   if (logoutModal && event.target === logoutModal) {
     hideLogoutModal();
   }
+  
+  if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+    document.getElementById('notificationDropdown').classList.remove('show');
+  }
 });
 
 // Close modal when clicking outside
@@ -1299,6 +1589,11 @@ window.onclick = function(event) {
   const manageSuppliersModal = document.getElementById('manageSuppliersModal');
   if (event.target === manageSuppliersModal) {
     closeManageSuppliersModal();
+  }
+  
+  const notificationModal = document.getElementById('notificationModal');
+  if (event.target === notificationModal) {
+    closeNotificationModal();
   }
 }
 

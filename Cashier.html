@@ -634,52 +634,68 @@
   
   <!-- Notification System Script -->
   <script>
-    function loadNotifications() {
-      const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notificationList = document.getElementById('notificationList');
-      const badge = document.getElementById('notificationBadge');
-      
-      const unreadCount = notifications.filter(n => !n.read).length;
-      
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-      
-      if (notifications.length === 0) {
-        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
-        return;
-      }
-      
-      notificationList.innerHTML = '';
-      
-      notifications.forEach(notification => {
-        const item = document.createElement('div');
-        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-        item.onclick = () => viewNotification(notification.id);
-        
-        const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
-        
-        item.innerHTML = `
-          <div class="flex justify-between items-start mb-1">
-            <strong class="text-[#da5c73]">${notification.message}</strong>
-            ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+ function loadNotifications() {
+  const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+  const notificationList = document.getElementById('notificationList');
+  const badge = document.getElementById('notificationBadge');
+  
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+  
+  if (notifications.length === 0) {
+    notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+    return;
+  }
+  
+  notificationList.innerHTML = '';
+  
+  notifications.forEach(notification => {
+    const item = document.createElement('div');
+    item.className = `notification-item ${notification.read ? '' : 'unread'}`;
+    item.onclick = () => viewNotification(notification.id);
+    
+    const time = new Date(notification.timestamp);
+    const timeStr = time.toLocaleString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric', 
+      minute: '2-digit' 
+    });
+    
+    if (notification.type === 'lowstock') {
+      item.innerHTML = `
+        <div class="flex justify-between items-start mb-1">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-box text-orange-600"></i>
+            <strong class="text-orange-600">Low Stock Alert</strong>
           </div>
-          <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-          <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-        `;
-        
-        notificationList.appendChild(item);
-      });
+          ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+        </div>
+        <p class="text-sm text-gray-600">${notification.details.productName}</p>
+        <p class="text-xs text-gray-500">Only ${notification.details.currentStock} left in stock</p>
+        <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+      `;
+    } else {
+      item.innerHTML = `
+        <div class="flex justify-between items-start mb-1">
+          <strong class="text-[#da5c73]">New Appointment</strong>
+          ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+        </div>
+        <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
+        <p class="text-xs text-gray-500">${notification.details.fullName}</p>
+        <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+      `;
     }
+    
+    notificationList.appendChild(item);
+  });
+}
 
     function toggleNotifications() {
       const dropdown = document.getElementById('notificationDropdown');
@@ -687,48 +703,89 @@
       loadNotifications();
     }
 
-    function viewNotification(id) {
-      let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      const notification = notifications.find(n => n.id === id);
-      
-      if (!notification) return;
-      
-      notification.read = true;
-      localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      const modal = document.getElementById('notificationModal');
-      const modalBody = document.getElementById('modalBody');
-      
-      const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-        dateStyle: 'full', 
-        timeStyle: 'short' 
-      });
-      
-      modalBody.innerHTML = `
-        <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-        <div class="space-y-3">
-          <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-          <div><strong>Email:</strong> ${notification.details.email}</div>
-          <div><strong>Phone:</strong> ${notification.details.phone}</div>
-          <div><strong>Service:</strong> ${notification.details.service}</div>
-          <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-          <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-          ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-          <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-        </div>
-        <div class="mt-6 flex gap-3">
-          <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-            <i class="fa-solid fa-check mr-2"></i>Approve
-          </button>
-          <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-            <i class="fa-solid fa-times mr-2"></i>Decline
-          </button>
-        </div>
-      `;
-      
-      modal.classList.add('show');
-      loadNotifications();
-    }
+   function viewNotification(id) {
+  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+  const notification = notifications.find(n => n.id === id);
+  
+  if (!notification) return;
+  
+  // Handle low stock notifications - redirect to inventory
+  if (notification.type === 'lowstock') {
+    window.location.href = 'inventory.html';
+    return;
+  }
+  
+  // Mark as read
+  notification.read = true;
+  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+  
+  const modal = document.getElementById('notificationModal');
+  const modalBody = document.getElementById('modalBody');
+  
+  const time = new Date(notification.timestamp).toLocaleString('en-US', { 
+    dateStyle: 'full', 
+    timeStyle: 'short' 
+  });
+  
+  modalBody.innerHTML = `
+    <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
+    <div class="space-y-3">
+      <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
+      <div><strong>Email:</strong> ${notification.details.email}</div>
+      <div><strong>Phone:</strong> ${notification.details.phone}</div>
+      <div><strong>Service:</strong> ${notification.details.service}</div>
+      <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
+      <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
+      ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
+      <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
+    </div>
+    <div class="mt-6 flex gap-3">
+      <button onclick="approveAppointment('${id}')" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+        <i class="fa-solid fa-check mr-2"></i>Approve
+      </button>
+      <button onclick="rejectAppointment('${id}')" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
+        <i class="fa-solid fa-times mr-2"></i>Decline
+      </button>
+    </div>
+  `;
+  
+  modal.classList.add('show');
+  loadNotifications();
+}
+
+async function approveAppointment(id) {
+  try {
+    // Update appointment status to confirmed
+    await db.collection("appointments").doc(id).update({
+      status: 'confirmed',
+      confirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      confirmedBy: currentUserData ? currentUserData.fullName : 'Admin'
+    });
+    
+    alert('Appointment approved successfully!');
+    deleteNotification(id);
+    closeNotificationModal();
+  } catch (error) {
+    alert('Failed to approve appointment. Please try again.');
+  }
+}
+
+async function rejectAppointment(id) {
+  try {
+    // Update appointment status to cancelled
+    await db.collection("appointments").doc(id).update({
+      status: 'cancelled',
+      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
+      cancelledBy: currentUserData ? currentUserData.fullName : 'Admin'
+    });
+    
+    alert('Appointment declined.');
+    deleteNotification(id);
+    closeNotificationModal();
+  } catch (error) {
+    alert('Failed to decline appointment. Please try again.');
+  }
+}
 
     function closeNotificationModal() {
       document.getElementById('notificationModal').classList.remove('show');
@@ -744,17 +801,6 @@
     function clearAllNotifications() {
       localStorage.setItem('skinshipNotifications', '[]');
       loadNotifications();
-    }
-    function approveAppointment(id) {
-      alert('Appointment approved!');
-      closeNotificationModal();
-      deleteNotification(id);
-    }
-
-    function rejectAppointment(id) {
-      alert('Appointment declined!');
-      closeNotificationModal();
-      deleteNotification(id);
     }
 
     function deleteNotification(id) {
