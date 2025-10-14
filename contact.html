@@ -33,6 +33,7 @@
     .form-group textarea { min-height: 150px; }
     .btn { background: var(--primary-pink); color: #fff; border: none; padding: 14px 32px; border-radius: 5px; font-size: 16px; cursor: pointer; transition: background 0.2s; }
     .btn:hover { background: var(--dark-pink); }
+    .btn:disabled { background: #ccc; cursor: not-allowed; }
     
     /* Success Modal Styles */
     .success-modal {
@@ -239,179 +240,12 @@
       </div>
       <form class="contact-form">
         <div class="form-group"><label for="name">Full Name</label><input type="text" id="name" placeholder="Enter your full name" required></div>
-        <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter your email address" required pattern="^[A-Za-z0-9._%+-]+@(gmail\.com|yahoo\.com(?:\.ph)?|hotmail\.com|outlook\.com(?:\.ph)?|live\.com|msn\.com|microsoft\.com)$" title="Use gmail.com, yahoo.com(.ph), hotmail.com, outlook.com(.ph), live.com, msn.com, or microsoft.com only"></div>
+        <div class="form-group"><label for="email">Email Address</label><input type="email" id="email" placeholder="Enter your email address" required></div>
         <div class="form-group"><label for="phone">Phone Number</label><input type="tel" id="phone" placeholder="e.g. 09XXXXXXXXX or +639XXXXXXXXX" required pattern="^(?:\+639|09)\d{9}$" title="Philippine mobile only: 09XXXXXXXXX or +639XXXXXXXXX"></div>
         <div class="form-group">
           <label for="service">Service Interested In</label>
           <select id="service" name="service" required>
-            <option value="">Select a service</option>
-            
-            <optgroup label="FLEEK EYELASH">
-              <option value="EYELASH NATURAL (1 SIZE) - P499">EYELASH NATURAL (1 SIZE) - P499</option>
-              <option value="EYELASH NATURAL VOLUME - P599">EYELASH NATURAL VOLUME - P599</option>
-              <option value="EYELASH DOLL EYE (2 SIZE) - P599">EYELASH DOLL EYE (2 SIZE) - P599</option>
-              <option value="EYELASH CAT EYE (3 SIZE) - P699">EYELASH CAT EYE (3 SIZE) - P699</option>
-              <option value="WISPY NATURAL - P699">WISPY NATURAL - P699</option>
-              <option value="WISPY VOLUME - P799">WISPY VOLUME - P799</option>
-              <option value="EYELASH REMOVAL IN - P100">EYELASH REMOVAL IN - P100</option>
-              <option value="EYELASH REMOVAL OUT - P200">EYELASH REMOVAL OUT - P200</option>
-              <option value="LASH LIFT - P499">LASH LIFT - P499</option>
-              <option value="LASH LIFT WITH TINT - P599">LASH LIFT WITH TINT - P599</option>
-            </optgroup>
-            
-            <optgroup label="BROWMAZING">
-              <option value="THREADING - P200">THREADING - P200</option>
-              <option value="SHAVING - P150">SHAVING - P150</option>
-              <option value="BROW LAMINATION - P499">BROW LAMINATION - P499</option>
-              <option value="BROW LAMINATION WITH TINT - P699">BROW LAMINATION WITH TINT - P699</option>
-              <option value="BROW WAXING - P249">BROW WAXING - P249</option>
-            </optgroup>
-            
-            <optgroup label="WOKE UP LIKE THIS">
-              <option value="MICROBLADING - P1,499 (2 SESSIONS)">MICROBLADING - P1,499 (2 SESSIONS)</option>
-              <option value="COMBI/OMBRE/COMBIBROWS - P2,499 (2 SESSIONS)">COMBI/OMBRE/COMBIBROWS - P2,499 (2 SESSIONS)</option>
-              <option value="TOP/LOWER EYELINER - P1,999 (2 SESSIONS)">TOP/LOWER EYELINER - P1,999 (2 SESSIONS)</option>
-              <option value="KOREAN BBGLOW - P1,499 (PER SESSION)">KOREAN BBGLOW - P1,499 (PER SESSION)</option>
-              <option value="LIP TATTOO/LIP PIGMENTATION - P2,999 (2 SESSIONS)">LIP TATTOO/LIP PIGMENTATION - P2,999 (2 SESSIONS)</option>
-            </optgroup>
-            
-            <optgroup label="EXPRESS OFFER (30 MINS.)">
-              <option value="BACK MASSAGE - P399">BACK MASSAGE - P399</option>
-              <option value="HEAD MASSAGE - P399">HEAD MASSAGE - P399</option>
-              <option value="FOOT MASSAGE - P399">FOOT MASSAGE - P399</option>
-              <option value="HAND MASSAGE - P399">HAND MASSAGE - P399</option>
-              <option value="FOOT REFLEX - P499">FOOT REFLEX - P499</option>
-              <option value="HAND REFLEX - P499">HAND REFLEX - P499</option>
-              <option value="HEAD MASSAGE + EAR CANDLING - P499">HEAD MASSAGE + EAR CANDLING - P499</option>
-              <option value="EAR CANDLING - P199">EAR CANDLING - P199</option>
-            </optgroup>
-            
-            <optgroup label="HAPPY NAILS - CLASSICS">
-              <option value="BASIC MANICURE - P120">BASIC MANICURE - P120</option>
-              <option value="BASIC PEDICURE - P170">BASIC PEDICURE - P170</option>
-              <option value="FOOTSPA - P300">FOOTSPA - P300</option>
-              <option value="HANDSPA - P300">HANDSPA - P300</option>
-              <option value="GEL REMOVAL IN - P100">GEL REMOVAL IN - P100</option>
-              <option value="GEL REMOVAL OUT - P200">GEL REMOVAL OUT - P200</option>
-              <option value="SOFT GEL REMOVAL IN - P200">SOFT GEL REMOVAL IN - P200</option>
-              <option value="SOFT GEL REMOVAL OUT - P300">SOFT GEL REMOVAL OUT - P300</option>
-              <option value="SOFTGEL NAIL EXTENSIONS - P1,700">SOFTGEL NAIL EXTENSIONS - P1,700</option>
-              <option value="GEL MANICURE - P550">GEL MANICURE - P550</option>
-              <option value="GEL PEDICURE - P650">GEL PEDICURE - P650</option>
-              <option value="FOOTSPA OR HANDSPA WITH WHITENING SCRUB - P400">FOOTSPA OR HANDSPA WITH WHITENING SCRUB - P400</option>
-              <option value="FOOTSPA OR HANDSPA WITH CALLUS REMOVAL - P450">FOOTSPA OR HANDSPA WITH CALLUS REMOVAL - P450</option>
-            </optgroup>
-            
-            <optgroup label="PROMO PACKAGES">
-              <option value="PACKAGE 1: UV GEL MANICURE + BASIC PEDICURE + CLASSIC FOOTSPA - P850">PACKAGE 1: UV GEL MANICURE + BASIC PEDICURE + CLASSIC FOOTSPA - P850</option>
-              <option value="PACKAGE 2: UV GEL MANICURE + BASIC PEDICURE + DELUXE FOOTSPA - P900">PACKAGE 2: UV GEL MANICURE + BASIC PEDICURE + DELUXE FOOTSPA - P900</option>
-              <option value="PACKAGE 3: UV GEL MANICURE + UV GEL PEDICURE + CLASSIC FOOTSPA - P1,300">PACKAGE 3: UV GEL MANICURE + UV GEL PEDICURE + CLASSIC FOOTSPA - P1,300</option>
-              <option value="PACKAGE 4: UV GEL MANICURE + UV GEL PEDICURE + DELUXE FOOTSPA WITH WHITENING SCRUB - P1,400">PACKAGE 4: UV GEL MANICURE + UV GEL PEDICURE + DELUXE FOOTSPA WITH WHITENING SCRUB - P1,400</option>
-              <option value="PACKAGE 5: CLASSIC FOOTSPA + BASIC PEDICURE + 30 MINS. FOOT MASSAGE - P750">PACKAGE 5: CLASSIC FOOTSPA + BASIC PEDICURE + 30 MINS. FOOT MASSAGE - P750</option>
-              <option value="PACKAGE 6: DELUXE FOOTSPA WITH WHITENING SCRUB + BASIC PEDICURE + 30 MINS. FOOT MASSAGE - P800">PACKAGE 6: DELUXE FOOTSPA WITH WHITENING SCRUB + BASIC PEDICURE + 30 MINS. FOOT MASSAGE - P800</option>
-              <option value="PACKAGE 7: NATURAL EYELASH OR LASH LIFT (ADD 100 FOR TINT) + UV GEL MANICURE - P950">PACKAGE 7: NATURAL EYELASH OR LASH LIFT (ADD 100 FOR TINT) + UV GEL MANICURE - P950</option>
-              <option value="PACKAGE 8: FOOTSPA + UV GEL PEDICURE - P850">PACKAGE 8: FOOTSPA + UV GEL PEDICURE - P850</option>
-              <option value="PACKAGE 9: FOOTSPA + BASIC PEDICURE + FOOT REFLEX - P850">PACKAGE 9: FOOTSPA + BASIC PEDICURE + FOOT REFLEX - P850</option>
-              <option value="PACKAGE 10: FOOTSPA + UV GEL PEDICURE + FOOT MASSAGE - P1,150">PACKAGE 10: FOOTSPA + UV GEL PEDICURE + FOOT MASSAGE - P1,150</option>
-            </optgroup>
-            
-            <optgroup label="THERAPEUTIC HEAT">
-              <option value="HAND PARAFFIN - P250">HAND PARAFFIN - P250</option>
-              <option value="FOOT PARAFFIN - P300">FOOT PARAFFIN - P300</option>
-              <option value="HAND PARAFFIN + HANDSPA - P550">HAND PARAFFIN + HANDSPA - P550</option>
-              <option value="FOOT PARAFFIN + FOOTSPA - P600">FOOT PARAFFIN + FOOTSPA - P600</option>
-              <option value="HAND PARAFFIN + HAND MASSAGE - P550">HAND PARAFFIN + HAND MASSAGE - P550</option>
-              <option value="FOOT PARAFFIN + FOOT MASSAGE - P600">FOOT PARAFFIN + FOOT MASSAGE - P600</option>
-            </optgroup>
-            
-            <optgroup label="WAX-OUT">
-              <option value="UNDER ARM (FEMALE) - P399">UNDER ARM (FEMALE) - P399</option>
-              <option value="UNDER ARM (MALE) - P499">UNDER ARM (MALE) - P499</option>
-              <option value="HALF LEGS (FEMALE) - P499">HALF LEGS (FEMALE) - P499</option>
-              <option value="HALF LEGS (MALE) - P599">HALF LEGS (MALE) - P599</option>
-              <option value="FULL LEGS (FEMALE) - P699">FULL LEGS (FEMALE) - P699</option>
-              <option value="FULL LEGS (MALE) - P799">FULL LEGS (MALE) - P799</option>
-              <option value="BRAZILIAN (FEMALE) - P999">BRAZILIAN (FEMALE) - P999</option>
-              <option value="BRAZILIAN (MALE) - P1,099">BRAZILIAN (MALE) - P1,099</option>
-              <option value="UPPER/LOWER LIP (FEMALE) - P299">UPPER/LOWER LIP (FEMALE) - P299</option>
-              <option value="UPPER/LOWER LIP (MALE) - P399">UPPER/LOWER LIP (MALE) - P399</option>
-              <option value="FULL FACE (FEMALE) - P899">FULL FACE (FEMALE) - P899</option>
-              <option value="FULL FACE (MALE) - P999">FULL FACE (MALE) - P999</option>
-              <option value="FULL ARMS (FEMALE) - P599">FULL ARMS (FEMALE) - P599</option>
-              <option value="FULL ARMS (MALE) - P699">FULL ARMS (MALE) - P699</option>
-            </optgroup>
-            
-            <optgroup label="ES-FACIALY FOR YOU">
-              <option value="HYDRAFACIAL WITH COLLAGEN MASK - P899">HYDRAFACIAL WITH COLLAGEN MASK - P899</option>
-              <option value="BLACK DOLL CARBON LASER - P1,999 (2 SESSIONS)">BLACK DOLL CARBON LASER - P1,999 (2 SESSIONS)</option>
-              <option value="BLACK DOLL CARBON LASER LAY-AWAY 4+1 SESSIONS - P4,500">BLACK DOLL CARBON LASER LAY-AWAY 4+1 SESSIONS - P4,500</option>
-              <option value="BLACK DOLL CARBON LASER LAY-AWAY 9+1 SESSIONS - P9,000">BLACK DOLL CARBON LASER LAY-AWAY 9+1 SESSIONS - P9,000</option>
-              <option value="FACIAL COMBO: HYDRAFACIAL + BLACK DOLL + EXILLIS/HIFU - P3,399">FACIAL COMBO: HYDRAFACIAL + BLACK DOLL + EXILLIS/HIFU - P3,399</option>
-              <option value="FACIAL COMBO: HYDRAFACIAL + BBGLOW + COLLAGEN PDT - P1,899">FACIAL COMBO: HYDRAFACIAL + BBGLOW + COLLAGEN PDT - P1,899</option>
-              <option value="FACIAL COMBO: BLACK DOLL + EXILLIS/HIFU + PDT - P2,499">FACIAL COMBO: BLACK DOLL + EXILLIS/HIFU + PDT - P2,499</option>
-              <option value="FACIAL COMBO: HYDRAFACIAL + BBGLOWBLUSH + PDT - P2,199">FACIAL COMBO: HYDRAFACIAL + BBGLOWBLUSH + PDT - P2,199</option>
-            </optgroup>
-            
-            <optgroup label="FACE AND BODY CONTOURING">
-              <option value="HIFU - P1,499 PER SESSION">HIFU - P1,499 PER SESSION</option>
-              <option value="EXILLIS - P1,499 PER SESSION 30 MINS">EXILLIS - P1,499 PER SESSION 30 MINS</option>
-              <option value="EMSLIM - P2,000 PER SESSION 30 MINS">EMSLIM - P2,000 PER SESSION 30 MINS</option>
-              <option value="CRYOLIPOLYSIS - P1,499 PER SESSION/BODY AREA">CRYOLIPOLYSIS - P1,499 PER SESSION/BODY AREA</option>
-              <option value="CRYOLIPOLYSIS CHIN AREA - P999">CRYOLIPOLYSIS CHIN AREA - P999</option>
-              <option value="SUPER TRIO COMBO - P3,499 (1 SESSION EACH)">SUPER TRIO COMBO - P3,499 (1 SESSION EACH)</option>
-              <option value="LAY-WAY PROMO - P7,499 (EXILLIS 6+1 & EMSLIM 5+1 SESSIONS)">LAY-WAY PROMO - P7,499 (EXILLIS 6+1 & EMSLIM 5+1 SESSIONS)</option>
-              <option value="POWERCOMBO EXISLIM - 3+3 SESSIONS">POWERCOMBO EXISLIM - 3+3 SESSIONS</option>
-            </optgroup>
-            
-            <optgroup label="LASER HAIR REMOVAL / WHITENING - DIODE LASER">
-              <option value="UNDERARM - P899 (1 SESSION)">UNDERARM - P899 (1 SESSION)</option>
-              <option value="UNDERARM - P1,499 (2 SESSIONS)">UNDERARM - P1,499 (2 SESSIONS)</option>
-              <option value="UNDERARM - P4,999 (10 SESSIONS LAY-AWAY)">UNDERARM - P4,999 (10 SESSIONS LAY-AWAY)</option>
-              <option value="BRAZILIAN - P1,999 (1 SESSION)">BRAZILIAN - P1,999 (1 SESSION)</option>
-              <option value="BRAZILIAN - P3,499 (2 SESSIONS)">BRAZILIAN - P3,499 (2 SESSIONS)</option>
-              <option value="BRAZILIAN - P10,499 (10 SESSIONS LAY-AWAY)">BRAZILIAN - P10,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="FULL ARMS - P1,499 (1 SESSION)">FULL ARMS - P1,499 (1 SESSION)</option>
-              <option value="FULL ARMS - P2,499 (2 SESSIONS)">FULL ARMS - P2,499 (2 SESSIONS)</option>
-              <option value="FULL ARMS - P8,499 (10 SESSIONS LAY-AWAY)">FULL ARMS - P8,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="LOWER/UPPER LEGS - P1,999 (1 SESSION)">LOWER/UPPER LEGS - P1,999 (1 SESSION)</option>
-              <option value="LOWER/UPPER LEGS - P3,499 (2 SESSIONS)">LOWER/UPPER LEGS - P3,499 (2 SESSIONS)</option>
-              <option value="LOWER/UPPER LEGS - P10,499 (10 SESSIONS LAY-AWAY)">LOWER/UPPER LEGS - P10,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="UPPER LIP - P599 (1 SESSION)">UPPER LIP - P599 (1 SESSION)</option>
-              <option value="UPPER LIP - P999 (2 SESSIONS)">UPPER LIP - P999 (2 SESSIONS)</option>
-              <option value="UPPER LIP - P3,999 (10 SESSIONS LAY-AWAY)">UPPER LIP - P3,999 (10 SESSIONS LAY-AWAY)</option>
-              <option value="LOWER LIP - P899 (1 SESSION)">LOWER LIP - P899 (1 SESSION)</option>
-              <option value="LOWER LIP - P1,499 (2 SESSIONS)">LOWER LIP - P1,499 (2 SESSIONS)</option>
-              <option value="LOWER LIP - P4,499 (10 SESSIONS LAY-AWAY)">LOWER LIP - P4,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="BIKINI LINE - P1,099 (1 SESSION)">BIKINI LINE - P1,099 (1 SESSION)</option>
-              <option value="BIKINI LINE - P1,999 (2 SESSIONS)">BIKINI LINE - P1,999 (2 SESSIONS)</option>
-              <option value="BIKINI LINE - P8,999 (10 SESSIONS LAY-AWAY)">BIKINI LINE - P8,999 (10 SESSIONS LAY-AWAY)</option>
-              <option value="FULL FACE MALE - P2,999 (1 SESSION)">FULL FACE MALE - P2,999 (1 SESSION)</option>
-              <option value="FULL FACE MALE - P5,499 (2 SESSIONS)">FULL FACE MALE - P5,499 (2 SESSIONS)</option>
-              <option value="FULL FACE MALE - P15,499 (10 SESSIONS LAY-AWAY)">FULL FACE MALE - P15,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="FULL FACE FEMALE - P1,999 (1 SESSION)">FULL FACE FEMALE - P1,999 (1 SESSION)</option>
-              <option value="FULL FACE FEMALE - P3,499 (2 SESSIONS)">FULL FACE FEMALE - P3,499 (2 SESSIONS)</option>
-              <option value="FULL FACE FEMALE - P10,499 (10 SESSIONS LAY-AWAY)">FULL FACE FEMALE - P10,499 (10 SESSIONS LAY-AWAY)</option>
-              <option value="ADD ON FOR WHITENING SCRUB - P200">ADD ON FOR WHITENING SCRUB - P200</option>
-            </optgroup>
-            
-            <optgroup label="PICOSURE LASER TREATMENT">
-              <option value="LIP - P999 (2 SESSIONS)">LIP - P999 (2 SESSIONS)</option>
-              <option value="KNEE/NECK/ELBOW/UNDERARM/FACE - P1,499 (2 SESSIONS)">KNEE/NECK/ELBOW/UNDERARM/FACE - P1,499 (2 SESSIONS)</option>
-              <option value="PICO MELASMA - P4,000 (2 SESSIONS)">PICO MELASMA - P4,000 (2 SESSIONS)</option>
-              <option value="TATTOO REMOVAL OR BIRTH 1-3 INCH - P3,000 (2 SESSIONS)">TATTOO REMOVAL OR BIRTH 1-3 INCH - P3,000 (2 SESSIONS)</option>
-              <option value="PROMO 4+1 SESSIONS ANY PART - P4,000">PROMO 4+1 SESSIONS ANY PART - P4,000</option>
-            </optgroup>
-            
-            <optgroup label="WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)">
-              <option value="FACE/NECK - P1,999">FACE/NECK - P1,999</option>
-              <option value="BACK - P2,999">BACK - P2,999</option>
-              <option value="FACE/NECK/BACK - P5,499">FACE/NECK/BACK - P5,499</option>
-              <option value="SKIN TAG BY AREA - P1,499">SKIN TAG BY AREA - P1,499</option>
-            </optgroup>
-            
-            <optgroup label="CO2 FRACTIONAL LASER LAY-AWAY">
-              <option value="3+2 SESSIONS - P7,997 (DOWN P3,999)">3+2 SESSIONS - P7,997 (DOWN P3,999)</option>
-            </optgroup>
+            <option value="">Loading services...</option>
           </select>
         </div>
         <div class="form-group">
@@ -448,7 +282,30 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
   <script>
+    // Initialize EmailJS with your public key
+    (function(){
+      emailjs.init("05pESgFVX7W6C_9dz"); // Replace with your actual EmailJS public key
+    })();
+
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    // Initialize Flatpickr
     flatpickr("#appointment", {
       enableTime: true,
       dateFormat: "F j, Y h:i K",
@@ -462,23 +319,60 @@
         }
       ]
     });
-  </script>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script>
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
-      authDomain: "skinship-1ff4b.firebaseapp.com",
-      projectId: "skinship-1ff4b",
-      storageBucket: "skinship-1ff4b.appspot.com",
-      messagingSenderId: "963752770497",
-      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+    // Load services dynamically from Firebase
+    async function loadServices() {
+      const serviceSelect = document.getElementById("service");
+      serviceSelect.innerHTML = `<option value="">Loading services...</option>`;
+      try {
+        const snapshot = await db.collection("services").orderBy("category").get();
+        if (!snapshot.empty) {
+          serviceSelect.innerHTML = `<option value="">Select a service</option>`;
+          
+          let currentCategory = null;
+          let optgroup = null;
+          
+          snapshot.forEach(doc => {
+            const service = doc.data();
+            const category = service.category || "Other";
+            const name = service.name || "Unnamed Service";
+            // Add peso sign if price exists and doesn't already have it
+            let price = "";
+            if (service.price) {
+              const priceStr = service.price.toString();
+              price = priceStr.includes('₱') || priceStr.includes('P') 
+                ? ` - ${priceStr}` 
+                : ` - ₱${priceStr}`;
+            }
+            
+            // Create new optgroup if category changed
+            if (category !== currentCategory) {
+              if (optgroup) {
+                serviceSelect.appendChild(optgroup);
+              }
+              optgroup = document.createElement("optgroup");
+              optgroup.label = category;
+              currentCategory = category;
+            }
+            
+            const option = document.createElement("option");
+            option.value = `${name}${price}`;
+            option.textContent = `${name}${price}`;
+            optgroup.appendChild(option);
+          });
+          
+          // Append last optgroup
+          if (optgroup) {
+            serviceSelect.appendChild(optgroup);
+          }
+        } else {
+          serviceSelect.innerHTML = `<option value="">No services available</option>`;
+        }
+      } catch (err) {
+        console.error("Error loading services: ", err);
+        serviceSelect.innerHTML = `<option value="">Error loading services</option>`;
+      }
+    }
 
     // Load staff dynamically
     async function loadStaff() {
@@ -500,6 +394,9 @@
         staffSelect.innerHTML = `<option value="">Error loading staff</option>`;
       }
     }
+    
+    // Load both services and staff
+    loadServices();
     loadStaff();
 
     // Show success modal function
@@ -550,9 +447,59 @@
       }
     });
 
+    // Send email using EmailJS
+    async function sendEmail(appointmentData) {
+      const templateParams = {
+        customer_name: appointmentData.name,
+        to_email: appointmentData.email,
+        customer_phone: appointmentData.phone,
+        service: appointmentData.service,
+        staff: appointmentData.staff,
+        appointment_date: appointmentData.date,
+        appointment_time: appointmentData.time,
+        message: appointmentData.notes || "",
+        booking_date: new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        website_link: "#"
+      };
+
+      console.log('Sending email with params:', templateParams); // Debug log
+
+      try {
+        const response = await emailjs.send(
+          'service_ehjfcod',        // Replace with your EmailJS service ID
+          'template_avbj0m7',
+          templateParams
+        );
+        console.log('Email sent successfully!', response.status, response.text);
+        return true;
+      } catch (error) {
+        console.error('Failed to send email. Error details:', error);
+        console.error('Error status:', error.status);
+        console.error('Error text:', error.text);
+        
+        // Show more helpful error message
+        if (error.status === 422) {
+          console.error('EmailJS 422 Error: Check that your template variables match the templateParams keys');
+        } else if (error.status === 400) {
+          console.error('EmailJS 400 Error: Check your Service ID and Template ID');
+        }
+        return false;
+      }
+    }
+
     // Handle form submit
     document.querySelector(".contact-form").addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      const submitBtn = e.target.querySelector('.btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Sending...';
 
       const name = document.getElementById("name").value.trim();
       const email = document.getElementById("email").value.trim();
@@ -564,6 +511,8 @@
 
       if (!name || !email || !phone || !service || !staff || !appointment) {
         alert("Please fill in all required fields.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
         return;
       }
 
@@ -571,6 +520,18 @@
       const phPhoneRegex = /^(?:\+639|09)\d{9}$/;
       if (!phPhoneRegex.test(phone)) {
         alert("Please enter a valid Philippine mobile number (09XXXXXXXXX or +639XXXXXXXXX).");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
+        return;
+      }
+
+      // Validate email domain
+      const allowedDomains = ['gmail.com', 'yahoo.com', 'yahoo.com.ph', 'hotmail.com', 'outlook.com', 'outlook.com.ph', 'live.com', 'msn.com', 'microsoft.com'];
+      const emailDomain = email.split('@')[1]?.toLowerCase();
+      if (!allowedDomains.includes(emailDomain)) {
+        alert("Please use a valid email from: gmail.com, yahoo.com(.ph), hotmail.com, outlook.com(.ph), live.com, msn.com, or microsoft.com.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
         return;
       }
 
@@ -578,15 +539,25 @@
       const allowedEmailRegex = /^[A-Za-z0-9._%+-]+@(gmail\.com|yahoo\.com(?:\.ph)?|hotmail\.com|outlook\.com(?:\.ph)?|live\.com|msn\.com|microsoft\.com)$/i;
       if (!allowedEmailRegex.test(email)) {
         alert("Please use a valid email from: gmail.com, yahoo.com(.ph), hotmail.com, outlook.com(.ph), live.com, msn.com, or microsoft.com.");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
         return;
       }
 
       const dateObj = new Date(appointment);
-      const formattedDate = dateObj.toISOString().split("T")[0];
-      const formattedTime = dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
+      const formattedDate = dateObj.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const formattedTime = dateObj.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        hour12: true 
+      });
 
-      // information
-      const notificationData = {
+      // Appointment data
+      const appointmentData = {
         name: name,
         email: email,
         phone: phone,
@@ -597,34 +568,24 @@
         notes: notes
       };
 
-      // existing notifications
+      // Save to localStorage for notifications
       let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-      
-      // Create notification object
       const notification = {
         id: Date.now(),
         type: 'appointment',
         message: `New appointment request from ${name}`,
-        details: notificationData,
+        details: appointmentData,
         read: false,
         timestamp: new Date().toISOString()
       };
-      
-      // Add to notifications array
       notifications.unshift(notification);
-      
-      // Keep only last 99 notifications
       if (notifications.length > 99) {
         notifications = notifications.slice(0, 99);
       }
-      
-      // Save to localStorage
       localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-      
-      console.log("Notification saved!", notification); // Debug log
 
-      // save to firebase
       try {
+        // Save to Firebase
         const newData = {
           name,
           email,
@@ -640,21 +601,28 @@
         };
 
         const batch = db.batch();
-
         const custRef = db.collection("customers").doc();
         batch.set(custRef, newData);
-
         const apptRef = db.collection("appointments").doc();
         batch.set(apptRef, { ...newData, customerRef: custRef.id });
-
         await batch.commit();
 
-        // Show success modal instead of alert
+        // Send email via EmailJS
+        const emailSent = await sendEmail(appointmentData);
+        
+        if (!emailSent) {
+          console.warn('Email notification failed, but appointment was saved.');
+        }
+
+        // Show success modal
         showSuccessModal();
         e.target.reset();
       } catch (err) {
         console.error("Error adding document: ", err);
         alert("Something went wrong. Please try again.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Send Message';
       }
     });
   </script>

@@ -533,6 +533,81 @@ main {
   gap: 0.5rem;
 }
 
+/* Mobile Responsive Styles */
+@media (max-width: 640px) {
+  .sidebar {
+    width: 60px;
+  }
+  
+  main {
+    margin-left: 60px;
+  }
+  
+  .sidebar-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+  
+  .glass-card {
+    padding: 1rem;
+  }
+  
+  .service-card {
+    padding: 0.75rem;
+  }
+  
+  .notification-dropdown {
+    width: 320px;
+    right: -100px;
+  }
+  
+  .menu-buttons-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .category-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  #servicesList {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .notification-dropdown {
+    width: 340px;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Prevent text selection for better mobile experience */
+.service-card, .cart-item, .category-btn {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Touch-friendly button sizes */
+@media (max-width: 640px) {
+  button, .sidebar-btn, .category-btn, .payment-method-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
 .logout-btn-cancel {
   background: #e5e7eb;
   color: #1f2937;
