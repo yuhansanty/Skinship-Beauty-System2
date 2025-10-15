@@ -1,88 +1,272 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  orderBy,
+  getDocs, 
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  increment,
+  serverTimestamp,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+// Firebase Configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+  authDomain: "skinship-1ff4b.firebaseapp.com",
+  projectId: "skinship-1ff4b",
+  storageBucket: "skinship-1ff4b.appspot.com",
+  messagingSenderId: "963752770497",
+  appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Global State
 let isCategoryMenuOpen = false;
 let isProductsMenuOpen = false;
 let selectedPaymentMethod = 'cash';
 let currentUserData = null;
 let inventoryProducts = [];
 let servicesData = [];
+let notificationListener = null;
+let categories = [];
+let currentView = 'services';
+let cart = [];
+let currentCategory = 'all';
+let productCategories = [];
+let currentUserId = null;
 
-// Notification system for appointments
-let appointmentNotifications = [];
+// ==================== AUTH & USER INFO ====================
 
-// Initialize Firebase listener for appointments
-async function initializeNotificationSystem() {
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
+  
+  currentUserId = user.uid;
+  await loadUserInfo(user);
+  await loadServicesFromFirebase();
+  await loadInventoryProducts();
+  await initializeNotificationSystem();
+  
+  currentView = 'services';
+  currentCategory = 'all';
+  renderServices(servicesData);
+  
+  document.getElementById('paymentInput').addEventListener('input', calculateChange);
+});
+
+async function loadUserInfo(user) {
   try {
-    // Listen for new appointment requests
-    db.collection("appointments")
-      .where("status", "==", "pending")
-      .onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const data = change.doc.data();
-            const notification = {
-              id: change.doc.id,
-              type: 'appointment',
-              read: false,
-              timestamp: new Date().toISOString(),
-              details: {
-                fullName: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone,
-                service: data.service,
-                date: data.date,
-                time: data.time,
-                message: data.message || ''
-              }
-            };
-            addNotification(notification);
-          }
-        });
-      });
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
     
-    // Check low stock on load and periodically
-    checkLowStock();
-    setInterval(checkLowStock, 30000); // Every 30 seconds
+    if (userSnap.exists()) {
+      currentUserData = userSnap.data();
+      
+      const fullName = currentUserData.fullName || 
+                      currentUserData.fullname || 
+                      currentUserData.name || 
+                      currentUserData.username || 
+                      'User';
+      
+      document.getElementById('usernameDisplay').textContent = fullName;
+      document.getElementById('cashierName').value = fullName;
+      document.getElementById('logoutUsername').textContent = fullName;
+    } else {
+      console.error('User document not found');
+      document.getElementById('usernameDisplay').textContent = 'User Not Found';
+      document.getElementById('cashierName').value = 'Unknown User';
+      document.getElementById('logoutUsername').textContent = 'User Not Found';
+    }
   } catch (error) {
+    console.error("Error loading user info:", error);
+    document.getElementById('usernameDisplay').textContent = 'Error Loading User';
+    document.getElementById('cashierName').value = 'Unknown User';
+    document.getElementById('logoutUsername').textContent = 'Error Loading User';
   }
 }
 
-// Add notification to list
-function addNotification(notification) {
-  const notificationList = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notificationList.unshift(notification);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notificationList));
-  loadNotifications();
+// ==================== DATA LOADING ====================
+
+async function loadServicesFromFirebase() {
+  try {
+    const snapshot = await getDocs(collection(db, 'services'));
+    servicesData = [];
+    const categorySet = new Set();
+    
+    snapshot.forEach(docSnap => {
+      const service = docSnap.data();
+      servicesData.push({
+        name: service.name,
+        price: service.price,
+        category: service.category,
+        id: service.id,
+        firebaseId: docSnap.id
+      });
+      
+      categorySet.add(service.category);
+    });
+    
+    categories = Array.from(categorySet).map(cat => ({
+      name: cat,
+      value: cat
+    }));
+    
+  } catch (error) {
+    console.error('Error loading services:', error);
+  }
 }
 
-// Check for low stock items
+async function loadInventoryProducts() {
+  try {
+    const snapshot = await getDocs(collection(db, 'inventory'));
+    inventoryProducts = [];
+    const categorySet = new Set();
+    
+    snapshot.forEach(docSnap => {
+      const product = docSnap.data();
+      
+      inventoryProducts.push({
+        name: product.name,
+        price: product.price,
+        category: product.category,
+        qty: product.qty || 0,
+        id: product.id,
+        firebaseId: docSnap.id
+      });
+      
+      categorySet.add(product.category);
+    });
+    
+    productCategories = Array.from(categorySet).map(cat => ({
+      name: cat,
+      value: cat
+    }));
+    
+  } catch (error) {
+    console.error('Error loading inventory:', error);
+  }
+}
+
+// ==================== NOTIFICATION SYSTEM ====================
+
+async function initializeNotificationSystem() {
+  try {
+    loadSidebarBubbles();
+    checkLowStock();
+    setInterval(checkLowStock, 30000);
+  } catch (error) {
+    console.error('Error initializing notification system:', error);
+  }
+}
+
 function checkLowStock() {
   const lowStockThreshold = 5;
-  const existingNotifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
   
   inventoryProducts.forEach(product => {
     if (product.qty <= lowStockThreshold && product.qty > 0) {
-      // Check if notification already exists
-      const exists = existingNotifications.find(n => 
-        n.type === 'lowstock' && n.details?.productId === product.id
+      const notifQuery = query(
+        collection(db, 'notifications'),
+        where('type', '==', 'low_stock'),
+        where('productId', '==', product.id),
+        where('read', '==', false)
       );
       
-      if (!exists) {
-        const notification = {
-          id: `lowstock-${product.id}-${Date.now()}`,
-          type: 'lowstock',
-          read: false,
-          timestamp: new Date().toISOString(),
-          details: {
+      getDocs(notifQuery).then(snapshot => {
+        if (snapshot.empty) {
+          addDoc(collection(db, 'notifications'), {
+            type: 'low_stock',
+            read: false,
+            timestamp: serverTimestamp(),
             productId: product.id,
             productName: product.name,
             currentStock: product.qty,
             category: product.category
-          }
-        };
-        addNotification(notification);
-      }
+          });
+        }
+      });
     }
   });
 }
+
+function loadSidebarBubbles() {
+  if (notificationListener) {
+    notificationListener();
+  }
+
+  const notifQuery = query(collection(db, 'notifications'), orderBy('timestamp', 'desc'));
+  
+  notificationListener = onSnapshot(notifQuery, (snapshot) => {
+    const notifications = [];
+    
+    snapshot.forEach(docSnap => {
+      notifications.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    updateSidebarBubbles(notifications);
+  });
+}
+
+function updateSidebarBubbles(notifications) {
+  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
+  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
+  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+  
+  updateBubble('calendarBubble', appointmentCount, '#dc2626');
+  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
+  updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
+}
+
+function updateBubble(bubbleId, count, color) {
+  let bubble = document.getElementById(bubbleId);
+  
+  if (!bubble) {
+    const button = getBubbleButton(bubbleId);
+    if (button) {
+      bubble = document.createElement('span');
+      bubble.id = bubbleId;
+      bubble.className = 'sidebar-bubble';
+      button.style.position = 'relative';
+      button.appendChild(bubble);
+    }
+  }
+  
+  if (bubble) {
+    if (count > 0) {
+      bubble.textContent = count > 99 ? '99+' : count;
+      bubble.style.backgroundColor = color;
+      bubble.style.display = 'flex';
+    } else {
+      bubble.style.display = 'none';
+    }
+  }
+}
+
+function getBubbleButton(bubbleId) {
+  const buttonMap = {
+    'calendarBubble': document.querySelector('button[title="Reservations"]'),
+    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
+    'inventoryBubble': document.querySelector('button[title="Inventory"]')
+  };
+  return buttonMap[bubbleId];
+}
+
+// ==================== UI FUNCTIONS ====================
 
 function validatePhoneNumber(input) {
   let value = input.value.replace(/\D/g, '');
@@ -162,46 +346,33 @@ function hideLogoutModal() {
 }
 
 async function handleClockOut() {
+  const user = auth.currentUser;
+  if (!user) return;
+
   try {
-    const currentUserEmail = localStorage.getItem('currentUserEmail');
-    if (!currentUserEmail) return;
-
-    const userSnapshot = await db.collection("users").get();
-    let userId = null;
-
-    userSnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.email && data.email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
-        userId = doc.id;
-      }
-    });
-
-    if (!userId) {
-      console.warn("User not found for clock out");
-      return;
-    }
-
     const today = new Date().toLocaleDateString();
-    const logsRef = db.collection("users").doc(userId).collection("staffLogs").doc("history").collection("entries");
+    const logsRef = collection(db, "staffLogs", user.uid, "history");
     
-    const todayQuery = logsRef.where("date", "==", today);
-    const todaySnap = await todayQuery.get();
+    const todayQuery = query(logsRef, where("date", "==", today));
+    const todaySnap = await getDocs(todayQuery);
     
     if (!todaySnap.empty) {
-      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+      const activeLog = todaySnap.docs.find(docSnap => !docSnap.data().clockOut);
       if (activeLog) {
-        await activeLog.ref.update({
+        await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
           clockOut: new Date().toLocaleString()
-        });
+        }, { merge: true });
       }
     }
 
-    await db.collection("users").doc(userId).update({ 
+    const staffRef = doc(db, "users", user.uid);
+    await updateDoc(staffRef, { 
       availability: false,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+      lastUpdated: serverTimestamp()
     });
     
   } catch (error) {
+    console.error('Clock out error:', error);
   }
 }
 
@@ -213,19 +384,17 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    localStorage.removeItem('currentUserEmail');
-    localStorage.removeItem('currentUserRole');
-    localStorage.removeItem('currentUsername');
-    localStorage.removeItem('currentUserFullName');
+    if (notificationListener) notificationListener();
     
+    await signOut(auth);
     window.location.href = "index.html";
   } catch (error) {
-
+    console.error('Logout error:', error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     
     alert("An error occurred during logout. Please try again.");
-    
+    await signOut(auth);
     window.location.href = "index.html";
   }
 }
@@ -247,147 +416,25 @@ window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
 
-let categories = [];
-let currentView = 'services';
-let cart = [];
-let currentCategory = 'all';
+// Make functions globally accessible
+window.validatePhoneNumber = validatePhoneNumber;
+window.selectPaymentMethod = selectPaymentMethod;
+window.toggleUserMenu = toggleUserMenu;
+window.showLogoutModal = showLogoutModal;
+window.hideLogoutModal = hideLogoutModal;
+window.confirmLogout = confirmLogout;
+window.logout = logout;
+window.toggleCategoryMenu = toggleCategoryMenu;
+window.toggleProductsMenu = toggleProductsMenu;
+window.showCategory = showCategory;
+window.showProductCategory = showProductCategory;
+window.filterServices = filterServices;
+window.addToCart = addToCart;
+window.removeFromCart = removeFromCart;
+window.clearCart = clearCart;
+window.checkout = checkout;
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
-  authDomain: "skinship-1ff4b.firebaseapp.com",
-  projectId: "skinship-1ff4b",
-  storageBucket: "skinship-1ff4b.appspot.com",
-  messagingSenderId: "963752770497",
-  appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-async function loadServicesFromFirebase() {
-  try {
-    const snapshot = await db.collection('services').get();
-    servicesData = [];
-    const categorySet = new Set();
-    
-    snapshot.forEach(doc => {
-      const service = doc.data();
-      servicesData.push({
-        name: service.name,
-        price: service.price,
-        category: service.category,
-        id: service.id,
-        firebaseId: doc.id
-      });
-      
-      categorySet.add(service.category);
-    });
-    
-    categories = Array.from(categorySet).map(cat => ({
-      name: cat,
-      value: cat
-    }));
-    
-  } catch (error) {
-    console.error('Error loading services:', error);
-  }
-}
-
-let productCategories = [];
-
-async function loadInventoryProducts() {
-  try {
-    const snapshot = await db.collection('inventory').get();
-    inventoryProducts = [];
-    const categorySet = new Set();
-    
-    snapshot.forEach(doc => {
-      const product = doc.data();
-      
-      inventoryProducts.push({
-        name: product.name,
-        price: product.price,
-        category: product.category,
-        qty: product.qty || 0,
-        id: product.id,
-        firebaseId: doc.id
-      });
-      
-      categorySet.add(product.category);
-    });
-    
-    productCategories = Array.from(categorySet).map(cat => ({
-      name: cat,
-      value: cat
-    }));
-    
-    
-  } catch (error) {
-    console.error('Error loading inventory:', error);
-  }
-}
-
-async function loadUserInfo() {
-  
-  const currentUserEmail = localStorage.getItem('currentUserEmail') || 
-                          localStorage.getItem('userEmail') ||
-                          localStorage.getItem('email');
-  const currentUsername = localStorage.getItem('currentUsername') || 
-                         localStorage.getItem('username');
-  
-  if (!currentUserEmail && !currentUsername) {
-    console.warn("No user credentials found in localStorage");
-    document.getElementById('usernameDisplay').textContent = 'Not logged in';
-    document.getElementById('cashierName').value = 'Unknown';
-    document.getElementById('logoutUsername').textContent = 'Not logged in';
-    return;
-  }
-  
-  try {
-    const userSnapshot = await db.collection("users").get();
-    
-    let foundUser = null;
-    
-    userSnapshot.forEach(doc => {
-      const data = doc.data();
-      
-      
-      if (currentUserEmail && data.email && 
-          data.email.toLowerCase().trim() === currentUserEmail.toLowerCase().trim()) {
-        foundUser = data;
-      }
-      else if (currentUsername && data.username && 
-               data.username.toLowerCase().trim() === currentUsername.toLowerCase().trim()) {
-        foundUser = data;
-      }
-    });
-    
-    if (foundUser) {
-      currentUserData = foundUser;
-      
-      const fullName = currentUserData.fullName || 
-                      currentUserData.fullname || 
-                      currentUserData.name || 
-                      currentUserData.username || 
-                      'User';
-      
-      document.getElementById('usernameDisplay').textContent = fullName;
-      document.getElementById('cashierName').value = fullName;
-      document.getElementById('logoutUsername').textContent = fullName;
-    } else {
-      console.error('❌ No matching user found');
-      console.error('Searched for email:', currentUserEmail);
-      console.error('Searched for username:', currentUsername);
-      document.getElementById('usernameDisplay').textContent = 'User Not Found';
-      document.getElementById('cashierName').value = 'Unknown User';
-      document.getElementById('logoutUsername').textContent = 'User Not Found';
-    }
-  } catch (error) {
-    console.error("Error loading user info:", error);
-    document.getElementById('usernameDisplay').textContent = 'Error Loading User';
-    document.getElementById('cashierName').value = 'Unknown User';
-    document.getElementById('logoutUsername').textContent = 'Error Loading User';
-  }
-}
+// ==================== CATEGORY & PRODUCT MENUS ====================
 
 function toggleCategoryMenu() {
   const dropdown = document.getElementById('categoryDropdown');
@@ -597,6 +644,8 @@ function filterServices() {
   renderServices(filtered);
 }
 
+// ==================== CART FUNCTIONS ====================
+
 function addToCart(item) {
   const existingItem = cart.find(cartItem => 
     cartItem.name.toLowerCase() === item.name.toLowerCase()
@@ -743,45 +792,6 @@ function checkout() {
   }
   
   generateReceipt();
-}
-
-async function sendEmailWithPDF(email, pdfBlob, receiptData) {
-  try {
-    const reader = new FileReader();
-    const base64PDF = await new Promise((resolve, reject) => {
-      reader.onloadend = () => resolve(reader.result.split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(pdfBlob);
-    });
-
-    const itemsList = receiptData.items.map(item => 
-      `${item.name} - ₱${item.price.toFixed(2)}`
-    ).join('\n');
-
-    const response = await emailjs.send(
-      'service_s0oyzpd',
-      'template_mqrbj1n',
-      {
-        to_email: email,
-        customer_name: receiptData.customerName,
-        receipt_number: receiptData.receiptNumber,
-        date: receiptData.date,
-        time: receiptData.time,
-        items: itemsList,
-        total: `₱${receiptData.subtotal.toFixed(2)}`,
-        payment: `₱${receiptData.payment.toFixed(2)}`,
-        change: `₱${receiptData.change.toFixed(2)}`,
-        payment_method: receiptData.paymentMethod,
-        cashier: receiptData.cashierName
-      }
-    );
-
-    console.log('Email sent successfully:', response);
-    return true;
-  } catch (error) {
-    console.error('Email sending failed:', error);
-    throw error;
-  }
 }
 
 async function generateReceipt() {
@@ -931,7 +941,7 @@ async function generateReceipt() {
     referenceNumber: referenceNumber || '',
     date: date,
     time: time,
-    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    timestamp: serverTimestamp(),
     createdAt: new Date().toISOString()
   };
   
@@ -939,30 +949,20 @@ async function generateReceipt() {
     const inventoryUpdates = [];
     for (const item of cart) {
       if (item.isInventoryProduct && item.firebaseId) {
+        const productRef = doc(db, 'inventory', item.firebaseId);
         inventoryUpdates.push(
-          db.collection('inventory').doc(item.firebaseId).update({
-            qty: firebase.firestore.FieldValue.increment(-1)
+          updateDoc(productRef, {
+            qty: increment(-1)
           })
         );
       }
     }
     
     await Promise.all(inventoryUpdates);
-    await db.collection("cashier_receipt").add(receiptData);
+    await addDoc(collection(db, "cashier_receipt"), receiptData);
     await loadInventoryProducts();
     
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
-    
-    let emailSent = false;
-    if (customerEmail) {
-      try {
-        const pdfBlob = doc.output('blob');
-        await sendEmailWithPDF(customerEmail, pdfBlob, receiptData);
-        emailSent = true;
-      } catch (emailError) {
-        console.error('Email sending failed:', emailError);
-      }
-    }
     
     doc.save(fileName);
     
@@ -972,13 +972,6 @@ async function generateReceipt() {
       let alertMessage = `Receipt generated successfully!\n\nReceipt No: ${receiptNumber}\nTotal: ₱${total.toFixed(2)}\nPayment: ₱${payment.toFixed(2)}`;
       if (selectedPaymentMethod === 'cash') {
         alertMessage += `\nChange: ₱${change.toFixed(2)}`;
-      }
-      if (customerEmail) {
-        if (emailSent) {
-          alertMessage += `\n\n✓ Receipt sent to ${customerEmail}`;
-        } else {
-          alertMessage += `\n\n✗ Failed to send email. Please check the email address.`;
-        }
       }
       alert(alertMessage);
       clearCart();
@@ -1005,14 +998,3 @@ async function generateReceipt() {
     }, 100);
   }
 }
-
-(async function init() {
-  await loadUserInfo();
-  await loadServicesFromFirebase();
-  await loadInventoryProducts();
-  await initializeNotificationSystem();
-  currentView = 'services';
-  currentCategory = 'all';
-  renderServices(servicesData);
-  document.getElementById('paymentInput').addEventListener('input', calculateChange);
-})();
