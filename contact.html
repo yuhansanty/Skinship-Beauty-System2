@@ -607,6 +607,29 @@
         batch.set(apptRef, { ...newData, customerRef: custRef.id });
         await batch.commit();
 
+        // Create local notification
+const notification = {
+  id: Date.now(),
+  type: 'appointment',
+  message: 'New Appointment Request',
+  details: {
+    fullName: name,
+    email: email,
+    phone: phone,
+    service: service,
+    staff: staff,
+    date: formattedDate,
+    time: formattedTime,
+    notes: notes
+  },
+  read: false,
+  timestamp: new Date().toISOString()
+};
+
+let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
+notifications.unshift(notification);
+localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
+
         // Send email via EmailJS
         const emailSent = await sendEmail(appointmentData);
         

@@ -538,10 +538,6 @@ document.addEventListener('click', function(event) {
     userMenu.classList.add('hidden');
   }
 
-  if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-    document.getElementById('notificationDropdown').classList.remove('show');
-  }
-
   const logoutModal = document.getElementById('logoutModal');
   if (logoutModal && event.target === logoutModal) {
     hideLogoutModal();
@@ -558,7 +554,7 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Notification System - FIREBASE BASED with Real-time Updates
+// Notification System - SIDEBAR BUBBLE NOTIFICATIONS
 function loadNotifications() {
   if (notificationListener) {
     notificationListener();
@@ -576,230 +572,96 @@ function loadNotifications() {
         });
       });
 
-      const notificationList = document.getElementById('notificationList');
-      const badge = document.getElementById('notificationBadge');
-      
-      const unreadCount = notifications.filter(n => !n.read).length;
-      
-      if (unreadCount > 0) {
-        badge.textContent = unreadCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
-      
-      if (notifications.length === 0) {
-        notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
-        return;
-      }
-      
-      notificationList.innerHTML = '';
-      
-      notifications.forEach(notification => {
-        const item = document.createElement('div');
-        item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-        
-        const time = new Date(notification.timestamp);
-        const timeStr = time.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: 'numeric', 
-          minute: '2-digit' 
-        });
-        
-        if (notification.type === 'appointment') {
-          item.onclick = () => viewNotification(notification.id);
-          item.innerHTML = `
-            <div class="flex justify-between items-start mb-1">
-              <strong class="text-[#da5c73]">${notification.message}</strong>
-              ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-            </div>
-            <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-            <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-          `;
-        } else if (notification.type === 'low-stock') {
-          item.onclick = () => viewLowStockNotification(notification.id);
-          item.innerHTML = `
-            <div class="flex justify-between items-start mb-1">
-              <strong class="text-[#da5c73]"><i class="fa-solid fa-triangle-exclamation mr-2"></i>${notification.message}</strong>
-              ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-            </div>
-            <p class="text-sm text-gray-600">${notification.details.itemName} - Only ${notification.details.quantity} left</p>
-            <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-          `;
-        }
-        
-        notificationList.appendChild(item);
-      });
+      // Update sidebar bubbles based on notification types
+      updateSidebarBubbles(notifications);
     });
 }
 
-function toggleNotifications() {
-  const dropdown = document.getElementById('notificationDropdown');
-  dropdown.classList.toggle('show');
-}
-
-async function viewNotification(id) {
-  try {
-    const notifDoc = await db.collection('notifications').doc(id).get();
-    
-    if (!notifDoc.exists) return;
-    
-    const notification = { id: notifDoc.id, ...notifDoc.data() };
-    
-    // Mark as read
-    await db.collection('notifications').doc(id).update({ read: true });
-    
-    const modal = document.getElementById('notificationModal');
-    const modalBody = document.getElementById('modalBody');
-    
-    const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-      dateStyle: 'full', 
-      timeStyle: 'short' 
-    });
-    
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-      <div class="space-y-3">
-        <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-        <div><strong>Email:</strong> ${notification.details.email}</div>
-        <div><strong>Phone:</strong> ${notification.details.phone}</div>
-        <div><strong>Service:</strong> ${notification.details.service}</div>
-        <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-        <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-        ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-        <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button onclick="approveAppointment('${id}', '${notification.details.appointmentId}')" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-          <i class="fa-solid fa-check mr-2"></i>Approve
-        </button>
-        <button onclick="rejectAppointment('${id}', '${notification.details.appointmentId}')" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-          <i class="fa-solid fa-times mr-2"></i>Decline
-        </button>
-      </div>
-    `;
-    
-    modal.classList.add('show');
-  } catch (error) {
-    console.error('Error viewing notification:', error);
-  }
-}
-
-async function viewLowStockNotification(id) {
-  try {
-    const notifDoc = await db.collection('notifications').doc(id).get();
-    
-    if (!notifDoc.exists) return;
-    
-    const notification = { id: notifDoc.id, ...notifDoc.data() };
-    
-    // Mark as read
-    await db.collection('notifications').doc(id).update({ read: true });
-    
-    // Close notification dropdown
-    document.getElementById('notificationDropdown').classList.remove('show');
-    
-    // Filter to show the low stock item
-    const searchInput = document.getElementById('searchInput');
-    searchInput.value = notification.details.itemName;
-    searchInput.dispatchEvent(new Event('input'));
-    
-    // Scroll to inventory table
-    document.getElementById('inventoryTable').scrollIntoView({ behavior: 'smooth' });
-  } catch (error) {
-    console.error('Error viewing low stock notification:', error);
-  }
-}
-
-function closeNotificationModal() {
-  document.getElementById('notificationModal').classList.remove('show');
-}
-
-async function markAllRead() {
-  try {
-    const snapshot = await db.collection('notifications').where('read', '==', false).get();
-    
-    const batch = db.batch();
-    snapshot.forEach(doc => {
-      batch.update(doc.ref, { read: true });
-    });
-    
-    await batch.commit();
-  } catch (error) {
-    console.error('Error marking all as read:', error);
-  }
-}
-
-async function clearAllNotifications() {
-  if (!confirm('Are you sure you want to clear all notifications?')) return;
+// Mark notifications as read for current page
+async function markCurrentPageNotificationsRead() {
+  const currentPage = window.location.pathname;
+  let notificationType = null;
   
-  try {
-    const snapshot = await db.collection('notifications').get();
-    
-    const batches = [];
-    let currentBatch = db.batch();
-    let operationCount = 0;
-    
-    snapshot.forEach(doc => {
-      currentBatch.delete(doc.ref);
-      operationCount++;
+  // Determine notification type based on current page
+  if (currentPage.includes('calendar.html')) {
+    notificationType = 'appointment';
+  } else if (currentPage.includes('purchase-order.html')) {
+    notificationType = 'purchase_order';
+  } else if (currentPage.includes('inventory.html')) {
+    notificationType = 'low_stock';
+  }
+  
+  // Mark notifications as read for this page
+  if (notificationType) {
+    try {
+      const snapshot = await db.collection('notifications')
+        .where('type', '==', notificationType)
+        .where('read', '==', false)
+        .get();
       
-      if (operationCount === 500) {
-        batches.push(currentBatch);
-        currentBatch = db.batch();
-        operationCount = 0;
+      if (!snapshot.empty) {
+        const batch = db.batch();
+        snapshot.forEach(doc => {
+          batch.update(doc.ref, { read: true });
+        });
+        await batch.commit();
+        console.log(`Marked ${notificationType} notifications as read`);
       }
-    });
-    
-    if (operationCount > 0) {
-      batches.push(currentBatch);
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
     }
-    
-    await Promise.all(batches.map(batch => batch.commit()));
-  } catch (error) {
-    console.error('Error clearing notifications:', error);
   }
 }
 
-async function approveAppointment(notificationId, appointmentId) {
-  try {
-    // Update appointment status in appointments collection
-    await db.collection('appointments').doc(appointmentId).update({
-      status: 'confirmed',
-      confirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      confirmedBy: currentUser ? currentUser.fullName : 'Unknown'
-    });
-    
-    // Delete notification
-    await db.collection('notifications').doc(notificationId).delete();
-    
-    closeNotificationModal();
-    alert('Appointment approved successfully!');
-  } catch (error) {
-    console.error('Error approving appointment:', error);
-    alert('Error approving appointment. Please try again.');
+function updateSidebarBubbles(notifications) {
+  // Count unread notifications by type
+  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
+  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
+  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+  
+  // Update calendar bubble (appointments)
+  updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
+  
+  // Update purchase order bubble
+  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
+  
+  // Update inventory bubble (low stock)
+  updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
+}
+
+function updateBubble(bubbleId, count, color) {
+  let bubble = document.getElementById(bubbleId);
+  
+  if (!bubble) {
+    // Create bubble if it doesn't exist
+    const button = getBubbleButton(bubbleId);
+    if (button) {
+      bubble = document.createElement('span');
+      bubble.id = bubbleId;
+      bubble.className = 'sidebar-bubble';
+      button.style.position = 'relative';
+      button.appendChild(bubble);
+    }
+  }
+  
+  if (bubble) {
+    if (count > 0) {
+      bubble.textContent = count > 99 ? '99+' : count;
+      bubble.style.backgroundColor = color;
+      bubble.style.display = 'flex';
+    } else {
+      bubble.style.display = 'none';
+    }
   }
 }
 
-async function rejectAppointment(notificationId, appointmentId) {
-  try {
-    // Update appointment status in appointments collection
-    await db.collection('appointments').doc(appointmentId).update({
-      status: 'cancelled',
-      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-      cancelledBy: currentUser ? currentUser.fullName : 'Unknown'
-    });
-    
-    // Delete notification
-    await db.collection('notifications').doc(notificationId).delete();
-    
-    closeNotificationModal();
-    alert('Appointment declined successfully!');
-  } catch (error) {
-    console.error('Error declining appointment:', error);
-    alert('Error declining appointment. Please try again.');
-  }
+function getBubbleButton(bubbleId) {
+  const buttonMap = {
+    'calendarBubble': document.querySelector('button[title="Reservations"]'),
+    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
+    'inventoryBubble': document.querySelector('button[title="Inventory"]')
+  };
+  return buttonMap[bubbleId];
 }
 
 // Generate next Item ID - from in-memory data
@@ -879,59 +741,76 @@ async function generateUniqueItemId() {
   }
 }
 
-// Check for low stock and create notifications
+// Check for low stock and create/update notifications in Firebase
 async function checkLowStock(product) {
-  if (product.status === 'low-stock' || product.status === 'out-of-stock') {
-    try {
-      // Check if notification already exists for this item
-      const existingNotif = await db.collection('notifications')
-        .where('type', '==', 'low-stock')
-        .where('details.itemId', '==', product.id)
+  if (!product || !product.firebaseId) return;
+
+  try {
+    const lowStockThreshold = product.minStock || 5;
+    
+    // Check if product is low stock or out of stock
+    const isLowStock = product.qty > 0 && product.qty <= lowStockThreshold;
+    const isOutOfStock = product.qty === 0;
+
+    if (isLowStock || isOutOfStock) {
+      // Check if notification already exists for this product
+      const existingQuery = await db.collection('notifications')
+        .where('type', '==', 'low_stock')
+        .where('details.productId', '==', product.id)
         .limit(1)
         .get();
-      
-      if (existingNotif.empty) {
-        // Create low stock notification
-        await db.collection('notifications').add({
-          type: 'low-stock',
-          message: product.status === 'out-of-stock' ? 'Out of Stock Alert' : 'Low Stock Alert',
+
+      if (existingQuery.empty) {
+        // Create new low stock notification
+        const notificationData = {
+          type: 'low_stock',
+          message: isOutOfStock ? 'Out of Stock Alert' : 'Low Stock Alert',
           details: {
-            itemId: product.id,
-            itemName: product.name,
+            productId: product.id,
+            productName: product.name,
             category: product.category,
-            quantity: product.qty,
-            minStock: product.minStock
+            currentStock: product.qty,
+            minStock: lowStockThreshold,
+            firebaseId: product.firebaseId
           },
-          timestamp: Date.now(),
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
           read: false
+        };
+
+        await db.collection('notifications').add(notificationData);
+        console.log(`Low stock notification created for: ${product.name}`);
+      } else {
+        // Update existing notification with current quantity
+        const existingDoc = existingQuery.docs[0];
+        await db.collection('notifications').doc(existingDoc.id).update({
+          'details.currentStock': product.qty,
+          'timestamp': firebase.firestore.FieldValue.serverTimestamp(),
+          'read': false
         });
+        console.log(`Low stock notification updated for: ${product.name}`);
       }
-    } catch (error) {
-      console.error('Error creating low stock notification:', error);
-    }
-  } else {
-    // Remove low stock notification if stock is replenished
-    try {
-      const existingNotif = await db.collection('notifications')
-        .where('type', '==', 'low-stock')
-        .where('details.itemId', '==', product.id)
+    } else {
+      // Product is back in stock - delete the low stock notification if it exists
+      const existingQuery = await db.collection('notifications')
+        .where('type', '==', 'low_stock')
+        .where('details.productId', '==', product.id)
         .get();
-      
-      const batch = db.batch();
-      existingNotif.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      
-      if (!existingNotif.empty) {
+
+      if (!existingQuery.empty) {
+        const batch = db.batch();
+        existingQuery.forEach(doc => {
+          batch.delete(doc.ref);
+        });
         await batch.commit();
+        console.log(`Low stock notification removed for: ${product.name}`);
       }
-    } catch (error) {
-      console.error('Error removing low stock notification:', error);
     }
+  } catch (error) {
+    console.error('Error checking low stock:', error);
   }
 }
 
-// Handle Add Product Form Submission
+// Handle Add Product Form Submission - WITH LOW STOCK CHECK
 async function handleAddProduct(event) {
   event.preventDefault();
   
@@ -979,7 +858,7 @@ async function handleAddProduct(event) {
     const docRef = await db.collection('inventory').add(newProduct);
     newProduct.firebaseId = docRef.id;
     
-    // Check for low stock and create notification if needed
+    // IMPORTANT: Check for low stock and create notification if needed
     await checkLowStock(newProduct);
     
     closeAddProductModal();
@@ -1045,7 +924,7 @@ function closeEditProductModal() {
   if (editMode) enableEditMode();
 }
 
-// Save edited product
+// Save edited product - WITH LOW STOCK CHECK
 async function handleEditProduct(e) {
   e.preventDefault();
 
@@ -1086,11 +965,12 @@ async function handleEditProduct(e) {
     if (id) {
       await db.collection('inventory').doc(id).update(updatedProduct);
       
-      // Get the product ID for notification check
+      // IMPORTANT: Get the product data and check for low stock
       const product = inventoryData.find(p => p.firebaseId === id);
       if (product) {
-        updatedProduct.id = product.id;
-        await checkLowStock(updatedProduct);
+        // Merge updated data with existing product data
+        const mergedProduct = { ...product, ...updatedProduct };
+        await checkLowStock(mergedProduct);
       }
 
       closeEditProductModal();
@@ -1266,8 +1146,8 @@ async function deleteProduct() {
       const product = inventoryData.find(p => p.firebaseId === id);
       if (product) {
         const notifSnapshot = await db.collection('notifications')
-          .where('type', '==', 'low-stock')
-          .where('details.itemId', '==', product.id)
+          .where('type', '==', 'low_stock')
+          .where('details.productId', '==', product.id)
           .get();
         
         const batch = db.batch();
@@ -1315,6 +1195,11 @@ document.addEventListener('DOMContentLoaded', function() {
   loadCurrentUserName();
   loadInventoryFromFirebase(); // This will also load categories
   loadNotifications();
+  
+  // Mark current page notifications as read after a short delay
+  setTimeout(() => {
+    markCurrentPageNotificationsRead();
+  }, 1000);
 
   // Setup logout button handler
   const logoutBtn = document.getElementById('logoutBtn');
@@ -1328,333 +1213,3 @@ document.addEventListener('DOMContentLoaded', function() {
   // Cleanup on page unload
   window.addEventListener('unload', cleanup);
 });
-
-// Notification System
-function loadNotifications() {
-  const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notificationList = document.getElementById('notificationList');
-  const badge = document.getElementById('notificationBadge');
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
-  
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-  
-  if (notifications.length === 0) {
-    notificationList.innerHTML = `
-      <div class="notification-empty">
-        <i class="fa-solid fa-bell-slash"></i>
-        <p>No notifications yet</p>
-      </div>
-    `;
-    return;
-  }
-  
-  notificationList.innerHTML = '';
-  
-  notifications.forEach(notification => {
-    const item = document.createElement('div');
-    item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-    item.onclick = () => viewNotification(notification.id);
-    
-    const time = new Date(notification.timestamp);
-    const timeStr = time.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    });
-    
-    let iconClass = 'fa-bell';
-    let iconColor = '#da5c73';
-    let displayMessage = 'Notification';
-    let displayDetails = '';
-    
-    // Handle different notification types
-    if (notification.type === 'lowstock') {
-      iconClass = 'fa-box';
-      iconColor = '#f59e0b';
-      displayMessage = 'Low Stock Alert';
-      displayDetails = `${notification.details.productName} - Only ${notification.details.currentStock} left`;
-    } else if (notification.type === 'appointment') {
-      iconClass = 'fa-calendar-check';
-      iconColor = '#da5c73';
-      displayMessage = 'New Appointment';
-      displayDetails = `${notification.details.service} - ${notification.details.date} at ${notification.details.time}`;
-    } else if (notification.type === 'purchase_order') {
-      iconClass = 'fa-receipt';
-      iconColor = '#8b5cf6';
-      displayMessage = 'New Purchase Order';
-      displayDetails = `${notification.details.productName} - Qty: ${notification.details.quantity}`;
-    } else if (notification.type === 'low_stock') {
-      iconClass = 'fa-triangle-exclamation';
-      iconColor = '#f59e0b';
-      displayMessage = 'Low Stock Alert';
-      displayDetails = `${notification.details.productName} - ${notification.details.quantity} units remaining`;
-    } else if (notification.type === 'out_of_stock') {
-      iconClass = 'fa-triangle-exclamation';
-      iconColor = '#dc2626';
-      displayMessage = 'Out of Stock Alert';
-      displayDetails = `${notification.details.productName} - Out of stock!`;
-    }
-    
-    item.innerHTML = `
-      <div class="flex justify-between items-start mb-1">
-        <div class="flex items-center gap-2">
-          <i class="${iconClass}" style="color: ${iconColor}"></i>
-          <strong class="text-[#da5c73]">${displayMessage}</strong>
-        </div>
-        ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-      </div>
-      <p class="text-sm text-gray-600">${displayDetails}</p>
-      <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-    `;
-    
-    notificationList.appendChild(item);
-  });
-}
-
-function toggleNotifications() {
-  const dropdown = document.getElementById('notificationDropdown');
-  dropdown.classList.toggle('show');
-  loadNotifications();
-}
-
-function viewNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notification = notifications.find(n => n.id === id);
-  
-  if (!notification) return;
-  
-  // Handle low stock notifications - redirect to inventory
-  if (notification.type === 'lowstock' || notification.type === 'low_stock' || notification.type === 'out_of_stock') {
-    window.location.href = 'inventory.html';
-    return;
-  }
-  
-  // Mark as read
-  notification.read = true;
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  
-  const modal = document.getElementById('notificationModal');
-  const modalBody = document.getElementById('modalBody');
-  
-  const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-    dateStyle: 'full', 
-    timeStyle: 'short' 
-  });
-  
-  // Handle Appointment Notifications
-  if (notification.type === 'appointment') {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-      <div class="space-y-3">
-        <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-        <div><strong>Email:</strong> ${notification.details.email}</div>
-        <div><strong>Phone:</strong> ${notification.details.phone}</div>
-        <div><strong>Service:</strong> ${notification.details.service}</div>
-        <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-        <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-        ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-        <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button onclick="approveAppointment('${id}')" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-          <i class="fa-solid fa-check mr-2"></i>Approve
-        </button>
-        <button onclick="rejectAppointment('${id}')" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-          <i class="fa-solid fa-times mr-2"></i>Decline
-        </button>
-      </div>
-    `;
-  } 
-  // Handle Purchase Order Notifications
-  else if (notification.type === 'purchase_order') {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Purchase Order Created</h2>
-      <div class="space-y-3">
-        <div><strong>PO Number:</strong> ${notification.details.poNumber || 'N/A'}</div>
-        <div><strong>Product:</strong> ${notification.details.productName || 'N/A'}</div>
-        <div><strong>Quantity:</strong> ${notification.details.quantity || 'N/A'}</div>
-        <div><strong>Supplier:</strong> ${notification.details.supplier || 'N/A'}</div>
-        <div><strong>Total Value:</strong> ₱${(notification.details.totalValue || 0).toFixed(2)}</div>
-        <div><strong>Created By:</strong> ${notification.details.createdBy || 'N/A'}</div>
-        <div class="text-sm text-gray-500"><strong>Created:</strong> ${time}</div>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button onclick="closeNotificationModal()" 
-                class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-          <i class="fa-solid fa-times mr-2"></i>Close
-        </button>
-      </div>
-    `;
-  }
-  else {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Notification</h2>
-      <p class="mb-4">${notification.message || 'No details available'}</p>
-      <button onclick="closeNotificationModal()" 
-              class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-        Close
-      </button>
-    `;
-  }
-  
-  modal.classList.add('show');
-  loadNotifications();
-}
-
-async function approveAppointment(id) {
-  try {
-    // Update appointment status to confirmed in Firebase
-    await db.collection("appointments").doc(id).update({
-      status: 'confirmed',
-      confirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      confirmedBy: currentUserData ? currentUserData.fullName : 'Admin'
-    });
-    
-    alert('Appointment approved successfully!');
-    deleteNotification(id);
-    closeNotificationModal();
-  } catch (error) {
-    alert('Failed to approve appointment. Please try again.');
-  }
-}
-
-async function rejectAppointment(id) {
-  try {
-    // Update appointment status to cancelled in Firebase
-    await db.collection("appointments").doc(id).update({
-      status: 'cancelled',
-      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-      cancelledBy: currentUserData ? currentUserData.fullName : 'Admin'
-    });
-    
-    alert('Appointment declined.');
-    deleteNotification(id);
-    closeNotificationModal();
-  } catch (error) {
-    alert('Failed to decline appointment. Please try again.');
-  }
-}
-
-function closeNotificationModal() {
-  document.getElementById('notificationModal').classList.remove('show');
-}
-
-function markAllRead() {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications.forEach(n => n.read = true);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
-}
-
-function clearAllNotifications() {
-  if (confirm('Are you sure you want to clear all notifications?')) {
-    localStorage.setItem('skinshipNotifications', '[]');
-    loadNotifications();
-  }
-}
-
-function deleteNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications = notifications.filter(n => n.id !== id);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
-}
-
-// Initialize Firebase listener for appointments (for Cashier page)
-async function initializeNotificationSystem() {
-  try {
-    // Listen for new appointment requests
-    db.collection("appointments")
-      .where("status", "==", "pending")
-      .onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const data = change.doc.data();
-            const notification = {
-              id: change.doc.id,
-              type: 'appointment',
-              read: false,
-              timestamp: new Date().toISOString(),
-              details: {
-                fullName: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone,
-                service: data.service,
-                date: data.date,
-                time: data.time,
-                message: data.message || ''
-              }
-            };
-            addNotification(notification);
-          }
-        });
-      });
-    
-    // Check low stock on load and periodically
-    checkLowStock();
-    setInterval(checkLowStock, 30000); // Every 30 seconds
-  } catch (error) {
-    console.error('Error initializing notification system:', error);
-  }
-}
-
-// Add notification to list
-function addNotification(notification) {
-  const notificationList = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notificationList.unshift(notification);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notificationList));
-  loadNotifications();
-}
-
-// Check for low stock items (for Cashier page)
-function checkLowStock() {
-  const lowStockThreshold = 5;
-  const existingNotifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  
-  if (typeof inventoryProducts !== 'undefined' && inventoryProducts) {
-    inventoryProducts.forEach(product => {
-      if (product.qty <= lowStockThreshold && product.qty > 0) {
-        // Check if notification already exists
-        const exists = existingNotifications.find(n => 
-          n.type === 'lowstock' && n.details?.productId === product.id
-        );
-        
-        if (!exists) {
-          const notification = {
-            id: `lowstock-${product.id}-${Date.now()}`,
-            type: 'lowstock',
-            read: false,
-            timestamp: new Date().toISOString(),
-            details: {
-              productId: product.id,
-              productName: product.name,
-              currentStock: product.qty,
-              category: product.category
-            }
-          };
-          addNotification(notification);
-        }
-      }
-    });
-  }
-}
-
-window.addEventListener('click', (e) => {
-  if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-    document.getElementById('notificationDropdown').classList.remove('show');
-  }
-});
-
-loadNotifications();
-setInterval(loadNotifications, 5000);
-
-if (typeof initializeNotificationSystem === 'function') {
-  initializeNotificationSystem();
-}

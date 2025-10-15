@@ -7,6 +7,37 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    /* Sidebar Bubble Notification Styles */
+    .sidebar-bubble {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      z-index: 10;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      animation: bubble-pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes bubble-pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+      50% {
+        transform: scale(1.1);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      }
+    }
+
     .sidebar-btn { 
       width:50px;
       height:50px;
@@ -19,7 +50,8 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      transition:.3s 
+      transition:.3s;
+      position: relative;
     }
     .sidebar-btn:hover { 
       background:#da5c73;
@@ -278,109 +310,6 @@
     .btn-delete:hover {
       background: #dc2626;
     }
-    
-    .notification-badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #dc2626;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    
-    .notification-dropdown {
-      position: absolute;
-      top: 50px;
-      right: 0;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      width: 400px;
-      max-height: 500px;
-      overflow-y: auto;
-      z-index: 1000;
-      display: none;
-    }
-    
-    .notification-dropdown.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-    
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
-    .notification-header {
-      padding: 16px 20px;
-      border-bottom: 2px solid #f3f4f6;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .notification-item {
-      padding: 16px 20px;
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .notification-item:hover {
-      background: #fef2f2;
-    }
-    
-    .notification-item.unread {
-      background: #fff7ed;
-    }
-    
-    .notification-empty {
-      padding: 40px 20px;
-      text-align: center;
-      color: #9ca3af;
-    }
-    
-    .notification-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .notification-modal.show {
-      display: flex;
-    }
-    
-    .modal-close {
-      float: right;
-      font-size: 24px;
-      cursor: pointer;
-      color: #9ca3af;
-    }
-    
-    .modal-close:hover {
-      color: #da5c73;
-    }
 
     /* Logout Modal Styles */
     .modal-overlay {
@@ -546,48 +475,58 @@
     }
 
     /* Pagination Styles */
-.pagination-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  margin-top: 20px;
-  padding: 20px 0;
-}
+    .pagination-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      margin-top: 20px;
+      padding: 20px 0;
+    }
 
-.pagination-btn {
-  padding: 8px 16px;
-  border: 1px solid #da5c73;
-  background: white;
-  color: #da5c73;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 14px;
-  font-weight: 500;
-}
+    .pagination-btn {
+      padding: 8px 16px;
+      border: 1px solid #da5c73;
+      background: white;
+      color: #da5c73;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+      font-weight: 500;
+    }
 
-.pagination-btn:hover:not(:disabled) {
-  background: #da5c73;
-  color: white;
-  transform: translateY(-2px);
-}
+    .pagination-btn:hover:not(:disabled) {
+      background: #da5c73;
+      color: white;
+      transform: translateY(-2px);
+    }
 
-.pagination-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
 
-.pagination-btn.active {
-  background: #da5c73;
-  color: white;
-}
+    .pagination-btn.active {
+      background: #da5c73;
+      color: white;
+    }
 
-.pagination-info {
-  color: #666;
-  font-size: 14px;
-  margin: 0 10px;
-}
+    .pagination-info {
+      color: #666;
+      font-size: 14px;
+      margin: 0 10px;
+    }
+
+    @media (max-width: 480px) {
+      .sidebar-bubble {
+        width: 16px;
+        height: 16px;
+        font-size: 8px;
+        top: -3px;
+        right: -3px;
+      }
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -639,24 +578,6 @@
       <div class="flex justify-between items-center mb-6">
         <input type="text" id="searchInput" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
-          <!-- Notification Bell -->
-          <div class="relative">
-            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-xl cursor-pointer"></i>
-              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-            </button>
-            
-            <!-- Notification Dropdown -->
-            <div id="notificationDropdown" class="notification-dropdown">
-              <div class="notification-header">
-                <h3 class="font-bold text-gray-800">Notifications</h3>
-                <button onclick="clearAllNotifications()"class="text-sm text-[#da5c73] hover:underline">Clear all</button>
-                <button onclick="markAllRead()" class="text-sm text-[#da5c73] hover:underline">Mark all read</button>
-              </div>
-              <div id="notificationList"></div>
-            </div>
-          </div>
-          
           <span class="font-semibold text-lg" id="usernameDisplay">Username</span>
           <div class="relative">
             <button id="userMenuButton" onclick="toggleUserMenu()">
@@ -693,7 +614,7 @@
         </div>
       </div>
       
-<!-- Table Container -->
+      <!-- Table Container -->
       <div class="overflow-x-auto">
         <table id="customerTable">
           <thead>
@@ -722,6 +643,8 @@
           </button>
         </div>
       </div>
+    </div>
+  </main>
 
   <!-- Edit Modal -->
   <div class="modal" id="editModal">
@@ -793,14 +716,6 @@
     </div>
   </div>
 
-  <!-- Notification Detail Modal -->
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="modal-close" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
-    </div>
-  </div>
-
   <!-- Logout Confirmation Modal -->
   <div class="modal-overlay" id="logoutModal">
     <div class="logout-modal">
@@ -855,7 +770,9 @@
       updateDoc,
       deleteDoc,
       serverTimestamp,
-      setDoc
+      setDoc,
+      onSnapshot,
+      orderBy
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -872,6 +789,117 @@
     const db = getFirestore(app);
     let currentUserId = null;
     let currentUserFullName = "";
+    let notificationListener = null;
+
+    // Notification System - SIDEBAR BUBBLE NOTIFICATIONS
+    function loadNotifications() {
+      if (notificationListener) {
+        notificationListener();
+      }
+
+      const notificationsRef = collection(db, 'notifications');
+      const q = query(notificationsRef, orderBy('timestamp', 'desc'));
+      
+      notificationListener = onSnapshot(q, (snapshot) => {
+        const notifications = [];
+        
+        snapshot.forEach(doc => {
+          notifications.push({
+            id: doc.id,
+            ...doc.data()
+          });
+        });
+
+        // Update sidebar bubbles based on notification types
+        updateSidebarBubbles(notifications);
+      });
+    }
+
+    // Mark notifications as read for current page
+    async function markCurrentPageNotificationsRead() {
+      const currentPage = window.location.pathname;
+      let notificationType = null;
+      
+      // Determine notification type based on current page
+      if (currentPage.includes('calendar.html')) {
+        notificationType = 'appointment';
+      } else if (currentPage.includes('purchase-order.html')) {
+        notificationType = 'purchase_order';
+      } else if (currentPage.includes('inventory.html')) {
+        notificationType = 'low_stock';
+      }
+      
+      // Mark notifications as read for this page
+      if (notificationType) {
+        try {
+          const notificationsRef = collection(db, 'notifications');
+          const q = query(notificationsRef, where('type', '==', notificationType), where('read', '==', false));
+          const snapshot = await getDocs(q);
+          
+          if (!snapshot.empty) {
+            const updates = [];
+            snapshot.forEach(doc => {
+              updates.push(updateDoc(doc.ref, { read: true }));
+            });
+            await Promise.all(updates);
+            console.log(`Marked ${notificationType} notifications as read`);
+          }
+        } catch (error) {
+          console.error('Error marking notifications as read:', error);
+        }
+      }
+    }
+
+    function updateSidebarBubbles(notifications) {
+      // Count unread notifications by type
+      const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
+      const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
+      const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+      
+      // Update calendar bubble (appointments)
+      updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
+      
+      // Update purchase order bubble
+      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
+      
+      // Update inventory bubble (low stock)
+      updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
+    }
+
+    function updateBubble(bubbleId, count, color) {
+      let bubble = document.getElementById(bubbleId);
+      
+      if (!bubble) {
+        // Create bubble if it doesn't exist
+        const button = getBubbleButton(bubbleId);
+        if (button) {
+          bubble = document.createElement('span');
+          bubble.id = bubbleId;
+          bubble.className = 'sidebar-bubble';
+          button.style.position = 'relative';
+          button.appendChild(bubble);
+        }
+      }
+      
+      if (bubble) {
+        if (count > 0) {
+          bubble.textContent = count > 99 ? '99+' : count;
+          bubble.style.backgroundColor = color;
+          bubble.style.display = 'flex';
+        } else {
+          bubble.style.display = 'none';
+        }
+      }
+    }
+
+    function getBubbleButton(bubbleId) {
+      const buttonMap = {
+        'calendarBubble': document.querySelector('button[title="Reservation"]'),
+        'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
+        'inventoryBubble': document.querySelector('button[title="Inventory"]')
+      };
+      return buttonMap[bubbleId];
+    }
 
     // Clock out function
     async function handleClockOut() {
@@ -924,6 +952,9 @@
       try {
         // Clock out and set unavailable
         await handleClockOut();
+        
+        // Detach notification listener
+        if (notificationListener) notificationListener();
         
         // Clear local storage
         localStorage.removeItem('currentUserEmail');
@@ -1005,6 +1036,9 @@
     // Make db available globally for the rest of the script
     window.db = db;
     window.currentUserId = currentUserId;
+
+    // Initialize notifications
+    loadNotifications();
   </script>
 
   <script>
@@ -1055,355 +1089,6 @@
     let currentPage = 1;
     const itemsPerPage = 15;
     let totalPages = 1;
-
-// Notification System - Firebase Integration
-    async function loadNotifications() {
-      try {
-        await new Promise(resolve => {
-          const checkDb = setInterval(() => {
-            if (window.db) {
-              clearInterval(checkDb);
-              resolve();
-            }
-          }, 100);
-        });
-
-        const { collection, query, orderBy, getDocs } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const notificationsRef = collection(window.db, "notifications");
-        const q = query(notificationsRef, orderBy("timestamp", "desc"));
-        const snapshot = await getDocs(q);
-        
-        const notifications = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        
-        const notificationList = document.getElementById('notificationList');
-        const badge = document.getElementById('notificationBadge');
-        
-        const unreadCount = notifications.filter(n => !n.read).length;
-        
-        if (unreadCount > 0) {
-          badge.textContent = unreadCount;
-          badge.style.display = 'flex';
-        } else {
-          badge.style.display = 'none';
-        }
-        
-        if (notifications.length === 0) {
-          notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
-          return;
-        }
-        
-        notificationList.innerHTML = '';
-        
-        notifications.forEach(notification => {
-          const item = document.createElement('div');
-          item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-          item.onclick = () => viewNotification(notification.id);
-          
-          const time = notification.timestamp?.toDate ? notification.timestamp.toDate() : new Date(notification.timestamp);
-          const timeStr = time.toLocaleString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: 'numeric', 
-            minute: '2-digit' 
-          });
-          
-          let icon = '';
-          let content = '';
-          
-          if (notification.type === 'appointment') {
-            icon = '<i class="fa-solid fa-calendar-check text-blue-500"></i>';
-            content = `
-              <div class="flex items-start gap-2">
-                ${icon}
-                <div class="flex-1">
-                  <div class="flex justify-between items-start mb-1">
-                    <strong class="text-[#da5c73]">${notification.message}</strong>
-                    ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-                  </div>
-                  <p class="text-sm text-gray-600">${notification.details?.service || 'N/A'} - ${notification.details?.date || 'N/A'} at ${notification.details?.time || 'N/A'}</p>
-                  <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-                </div>
-              </div>
-            `;
-          } else if (notification.type === 'low_stock') {
-            icon = '<i class="fa-solid fa-box-open text-orange-500"></i>';
-            content = `
-              <div class="flex items-start gap-2">
-                ${icon}
-                <div class="flex-1">
-                  <div class="flex justify-between items-start mb-1">
-                    <strong class="text-orange-600">${notification.message}</strong>
-                    ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-                  </div>
-                  <p class="text-sm text-gray-600">Product: ${notification.details?.productName || 'N/A'}</p>
-                  <p class="text-sm text-gray-600">Current Stock: ${notification.details?.currentStock || 0} ${notification.details?.unit || ''}</p>
-                  <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-                </div>
-              </div>
-            `;
-          } else {
-            content = `
-              <div class="flex justify-between items-start mb-1">
-                <strong class="text-[#da5c73]">${notification.message}</strong>
-                ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-              </div>
-              <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-            `;
-          }
-          
-          item.innerHTML = content;
-          notificationList.appendChild(item);
-        });
-      } catch (error) {
-        console.error("Error loading notifications:", error);
-      }
-    }
-
-    function toggleNotifications() {
-      const dropdown = document.getElementById('notificationDropdown');
-      dropdown.classList.toggle('show');
-      loadNotifications();
-    }
-
-async function viewNotification(id) {
-      try {
-        const { doc, getDoc, updateDoc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const notificationRef = doc(window.db, "notifications", id);
-        const notificationSnap = await getDoc(notificationRef);
-        
-        if (!notificationSnap.exists()) return;
-        
-        const notification = { id: notificationSnap.id, ...notificationSnap.data() };
-        
-        // Mark as read
-        await updateDoc(notificationRef, { read: true });
-        
-        // Handle different notification types
-        if (notification.type === 'low_stock') {
-          // Redirect to inventory page
-          window.location.href = 'inventory.html';
-          return;
-        }
-        
-        if (notification.type === 'appointment') {
-          const modal = document.getElementById('notificationModal');
-          const modalBody = document.getElementById('modalBody');
-          
-          const time = notification.timestamp?.toDate ? notification.timestamp.toDate() : new Date(notification.timestamp);
-          const timeStr = time.toLocaleString('en-US', { 
-            dateStyle: 'full', 
-            timeStyle: 'short' 
-          });
-          
-          modalBody.innerHTML = `
-            <h2 class="text-2xl font-bold text-[#da5c73] mb-4">
-              <i class="fa-solid fa-calendar-check mr-2"></i>Appointment Request
-            </h2>
-            <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-user text-[#da5c73]"></i>
-                <div><strong>Customer Name:</strong> ${notification.details?.fullName || 'N/A'}</div>
-              </div>
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-envelope text-[#da5c73]"></i>
-                <div><strong>Email:</strong> ${notification.details?.email || 'N/A'}</div>
-              </div>
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-phone text-[#da5c73]"></i>
-                <div><strong>Phone:</strong> ${notification.details?.phone || 'N/A'}</div>
-              </div>
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-scissors text-[#da5c73]"></i>
-                <div><strong>Service:</strong> ${notification.details?.service || 'N/A'}</div>
-              </div>
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-calendar text-[#da5c73]"></i>
-                <div><strong>Preferred Date:</strong> ${notification.details?.date || 'N/A'}</div>
-              </div>
-              <div class="flex items-center gap-3">
-                <i class="fa-solid fa-clock text-[#da5c73]"></i>
-                <div><strong>Preferred Time:</strong> ${notification.details?.time || 'N/A'}</div>
-              </div>
-              ${notification.details?.message ? `
-              <div class="flex items-start gap-3">
-                <i class="fa-solid fa-message text-[#da5c73] mt-1"></i>
-                <div><strong>Message:</strong> ${notification.details.message}</div>
-              </div>
-              ` : ''}
-              <div class="text-sm text-gray-500 pt-2 border-t">
-                <i class="fa-solid fa-clock mr-2"></i><strong>Submitted:</strong> ${timeStr}
-              </div>
-            </div>
-            ${notification.status === 'pending' ? `
-            <div class="mt-6 flex gap-3">
-              <button onclick="approveAppointment('${id}')" class="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-600 transition-all transform hover:scale-105 shadow-md">
-                <i class="fa-solid fa-check mr-2"></i>Approve & Confirm
-              </button>
-              <button onclick="rejectAppointment('${id}')" class="flex-1 bg-red-500 text-white px-4 py-3 rounded-lg hover:bg-red-600 transition-all transform hover:scale-105 shadow-md">
-                <i class="fa-solid fa-times mr-2"></i>Decline
-              </button>
-            </div>
-            ` : `
-            <div class="mt-4 p-3 rounded-lg ${
-              notification.status === 'approved' ? 'bg-green-100 text-green-800' : 
-              notification.status === 'rejected' ? 'bg-red-100 text-red-800' : 
-              'bg-gray-100 text-gray-800'
-            }">
-              <strong>Status:</strong> ${notification.status === 'approved' ? 'Approved & Confirmed' : notification.status === 'rejected' ? 'Declined' : notification.status || 'Pending'}
-            </div>
-            `}
-          `;
-          
-          modal.classList.add('show');
-        }
-        
-        loadNotifications();
-      } catch (error) {
-        console.error("Error viewing notification:", error);
-      }
-    }
-
-    function closeNotificationModal() {
-      document.getElementById('notificationModal').classList.remove('show');
-    }
-
-async function markAllRead() {
-      try {
-        const { collection, query, where, getDocs, updateDoc, doc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const notificationsRef = collection(window.db, "notifications");
-        const q = query(notificationsRef, where("read", "==", false));
-        const snapshot = await getDocs(q);
-        
-        const updatePromises = snapshot.docs.map(docSnap => 
-          updateDoc(doc(window.db, "notifications", docSnap.id), { read: true })
-        );
-        
-        await Promise.all(updatePromises);
-        loadNotifications();
-      } catch (error) {
-        console.error("Error marking all as read:", error);
-      }
-    }
-
-    async function clearAllNotifications() {
-      if (!confirm('Are you sure you want to clear all notifications?')) return;
-      
-      try {
-        const { collection, getDocs, deleteDoc, doc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const notificationsRef = collection(window.db, "notifications");
-        const snapshot = await getDocs(notificationsRef);
-        
-        const deletePromises = snapshot.docs.map(docSnap => 
-          deleteDoc(doc(window.db, "notifications", docSnap.id))
-        );
-        
-        await Promise.all(deletePromises);
-        loadNotifications();
-      } catch (error) {
-        console.error("Error clearing notifications:", error);
-      }
-    }
-
-async function approveAppointment(id) {
-      try {
-        const { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        
-        // Get notification details
-        const notificationRef = doc(window.db, "notifications", id);
-        const notificationSnap = await getDoc(notificationRef);
-        
-        if (!notificationSnap.exists()) {
-          alert('Notification not found');
-          return;
-        }
-        
-        const notification = notificationSnap.data();
-        
-        // Create customer with confirmed status
-        const customerData = {
-          name: notification.details?.fullName || '',
-          email: notification.details?.email || '',
-          phone: notification.details?.phone || '',
-          service: notification.details?.service || '',
-          date: notification.details?.date || '',
-          time: notification.details?.time || '',
-          appointment: `${notification.details?.date || ''} ${notification.details?.time || ''}`,
-          status: 'Confirmed',
-          staff: '',
-          archived: false,
-          createdAt: serverTimestamp()
-        };
-        
-        const customersRef = collection(window.db, "customers");
-        await addDoc(customersRef, customerData);
-        
-        // Update notification status
-        await updateDoc(notificationRef, { 
-          status: 'approved',
-          processedAt: serverTimestamp()
-        });
-        
-        alert('Appointment approved and customer added with Confirmed status!');
-        closeNotificationModal();
-        await fetchCustomers();
-        await loadNotifications();
-      } catch (error) {
-        console.error("Error approving appointment:", error);
-        alert('Failed to approve appointment. Please try again.');
-      }
-    }
-
-    async function rejectAppointment(id) {
-      try {
-        const { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        
-        // Get notification details
-        const notificationRef = doc(window.db, "notifications", id);
-        const notificationSnap = await getDoc(notificationRef);
-        
-        if (!notificationSnap.exists()) {
-          alert('Notification not found');
-          return;
-        }
-        
-        const notification = notificationSnap.data();
-        
-        // Create customer with cancelled status
-        const customerData = {
-          name: notification.details?.fullName || '',
-          email: notification.details?.email || '',
-          phone: notification.details?.phone || '',
-          service: notification.details?.service || '',
-          date: notification.details?.date || '',
-          time: notification.details?.time || '',
-          appointment: `${notification.details?.date || ''} ${notification.details?.time || ''}`,
-          status: 'Cancelled',
-          staff: '',
-          archived: false,
-          createdAt: serverTimestamp()
-        };
-        
-        const customersRef = collection(window.db, "customers");
-        await addDoc(customersRef, customerData);
-        
-        // Update notification status
-        await updateDoc(notificationRef, { 
-          status: 'rejected',
-          processedAt: serverTimestamp()
-        });
-        
-        alert('Appointment declined and customer added with Cancelled status!');
-        closeNotificationModal();
-        await fetchCustomers();
-        await loadNotifications();
-      } catch (error) {
-        console.error("Error rejecting appointment:", error);
-        alert('Failed to decline appointment. Please try again.');
-      }
-    }
 
     function updateEditButton() {
       const checkboxes = document.querySelectorAll('.customer-checkbox:checked');
@@ -1600,10 +1285,6 @@ async function approveAppointment(id) {
       if (!event.target.matches('#userMenuButton') && !event.target.matches('#userMenuButton *')) {
         document.getElementById('userMenu').classList.add('hidden');
       }
-
-      if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
-        document.getElementById('notificationDropdown').classList.remove('show');
-      }
     }
 
     async function fetchStaff() {
@@ -1683,13 +1364,26 @@ async function approveAppointment(id) {
         return matchesService && matchesSearch;
       });
 
-      if (filtered.length === 0) {
+      // Calculate pagination
+      totalPages = Math.ceil(filtered.length / itemsPerPage);
+      if (currentPage > totalPages) currentPage = 1;
+      
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedCustomers = filtered.slice(startIndex, endIndex);
+
+      // Update pagination info
+      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1} (${filtered.length} total)`;
+      document.getElementById('prevBtn').disabled = currentPage === 1;
+      document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
+
+      if (paginatedCustomers.length === 0) {
         customerTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-500 py-8">No customers found</td></tr>`;
         updateEditButton();
         return;
       }
 
-      filtered.forEach(c => {
+      paginatedCustomers.forEach(c => {
         const tr = document.createElement('tr');
         
         let displayService = c.service;
@@ -1724,6 +1418,20 @@ async function approveAppointment(id) {
       });
       
       updateEditButton();
+    }
+
+    function previousPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    }
+
+    function nextPage() {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
     }
 
     function validateEmail(email) {
@@ -1908,94 +1616,6 @@ async function approveAppointment(id) {
       fetchStaff();
       fetchCustomers();
     }, 1000);
-    
-    loadNotifications();
-    setInterval(loadNotifications, 5000);
-
-    function renderTable() {
-      customerTableBody.innerHTML = '';
-      const searchTerm = searchInput.value.toLowerCase();
-
-      const filtered = allCustomers.filter(c => {
-        let matchesService = activeService === "All Services";
-        if (!matchesService) {
-          const serviceSlug = serviceMap[activeService];
-          matchesService = c.service === activeService || c.service === serviceSlug;
-        }
-        
-        const matchesSearch = Object.values(c).some(v => String(v).toLowerCase().includes(searchTerm));
-        return matchesService && matchesSearch;
-      });
-
-      // Calculate pagination
-      totalPages = Math.ceil(filtered.length / itemsPerPage);
-      if (currentPage > totalPages) currentPage = 1;
-      
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedCustomers = filtered.slice(startIndex, endIndex);
-
-      // Update pagination info
-      document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1} (${filtered.length} total)`;
-      document.getElementById('prevBtn').disabled = currentPage === 1;
-      document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
-
-      if (paginatedCustomers.length === 0) {
-        customerTableBody.innerHTML = `<tr><td colspan="8" class="text-center text-gray-500 py-8">No customers found</td></tr>`;
-        updateEditButton();
-        return;
-      }
-
-      paginatedCustomers.forEach(c => {
-        const tr = document.createElement('tr');
-        
-        let displayService = c.service;
-        const foundService = Object.keys(serviceMap).find(key => serviceMap[key] === c.service);
-        if (foundService) {
-          displayService = foundService;
-        }
-        
-        tr.innerHTML = `
-          <td>
-            <input type="checkbox" class="customer-checkbox" value="${c.id}" onchange="updateEditButton()" style="cursor: pointer;">
-          </td>
-          <td>${c.name || '-'}</td>
-          <td>${c.email || '-'}</td>
-          <td>${displayService || '-'}</td>
-          <td>
-            <span class="px-2 py-1 text-xs rounded-full ${
-              c.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 
-              c.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
-              c.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-              c.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
-              'bg-gray-100 text-gray-800'
-            }">
-              ${c.status || 'Pending'}
-            </span>
-          </td>
-          <td>${c.phone || '-'}</td>
-          <td>${c.staff || '-'}</td>
-          <td>${c.appointment || '-'}</td>
-        `;
-        customerTableBody.appendChild(tr);
-      });
-      
-      updateEditButton();
-    }
-
-    function previousPage() {
-      if (currentPage > 1) {
-        currentPage--;
-        renderTable();
-      }
-    }
-
-    function nextPage() {
-      if (currentPage < totalPages) {
-        currentPage++;
-        renderTable();
-      }
-    }
   </script>
 
 </body>

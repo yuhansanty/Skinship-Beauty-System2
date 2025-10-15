@@ -1,3 +1,4 @@
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
   authDomain: "skinship-1ff4b.firebaseapp.com",
@@ -5,253 +6,869 @@ const firebaseConfig = {
   storageBucket: "skinship-1ff4b.appspot.com",
   messagingSenderId: "963752770497",
   appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-}
+};
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
+// Global variables
 let servicesData = [];
 let editMode = false;
 let categories = [];
 let currentUser = null;
+let servicesListener = null;
+let notificationListener = null;
 
-// Logout Modal Functions
-window.showLogoutModal = function() {
-  document.getElementById('logoutModal').classList.add('show');
+// Cache for user data and categories
+let userDataCache = null;
+let categoriesCache = null;
+let lastCategoriesFetch = 0;
+const CACHE_DURATION = 300000; // 5 minutes
+
+// Load current user's full name - OPTIMIZED with caching
+async function loadCurrentUserName() {
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      try {
+        // Check cache first
+        if (userDataCache && userDataCache.uid === user.uid) {
+          currentUser = userDataCache;
+          document.getElementById('userDisplayName').textContent = currentUser.fullName;
+          document.getElementById('logoutUsername').textContent = currentUser.fullName;
+          return;
+        }
+
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          currentUser = {
+            uid: user.uid,
+            fullName: userData.fullName || userData.email || 'User',
+            email: userData.email || user.email
+          };
+        } else {
+          currentUser = {
+            uid: user.uid,
+            fullName: user.email || 'User',
+            email: user.email
+          };
+        }
+
+        // Cache user data
+        userDataCache = currentUser;
+        
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        currentUser = {
+          uid: user.uid,
+          fullName: user.email || 'User',
+          email: user.email
+        };
+        userDataCache = currentUser;
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
+      }
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
 }
 
-window.hideLogoutModal = function() {
-  document.getElementById('logoutModal').classList.remove('show');
-}
-
-// Clock out function
+// Clock out function - OPTIMIZED with batch write
 async function handleClockOut() {
   const user = auth.currentUser;
   if (!user) return;
   
   try {
     const today = new Date().toLocaleDateString();
-    const logsRef = db.collection("staffLogs").doc(user.uid).collection("history");
+    const logsRef = db.collection('staffLogs').doc(user.uid).collection('history');
     
-    const todayQuery = logsRef.where("date", "==", today);
+    // Use limit(1) to reduce reads
+    const todayQuery = logsRef.where('date', '==', today).limit(1);
     const todaySnap = await todayQuery.get();
     
     if (!todaySnap.empty) {
-      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-      if (activeLog) {
-        await db.collection("staffLogs").doc(user.uid).collection("history").doc(activeLog.id).set({
+      const activeLog = todaySnap.docs[0];
+      if (!activeLog.data().clockOut) {
+        const batch = db.batch();
+        
+        // Batch both updates together
+        batch.update(logsRef.doc(activeLog.id), {
           clockOut: new Date().toLocaleString()
-        }, { merge: true });
+        });
+        
+        batch.update(db.collection('users').doc(user.uid), {
+          availability: false,
+          lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        
+        await batch.commit();
+        console.log("User clocked out and set to unavailable");
       }
     }
-
-    // Set user as unavailable
-    const staffRef = db.collection("users").doc(user.uid);
-    await staffRef.update({ 
-      availability: false,
-      lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    
-    console.log("User clocked out and set to unavailable");
   } catch (error) {
     console.error("Error during clock out:", error);
   }
 }
 
-window.confirmLogout = async function() {
+// Logout modal functions
+function showLogoutModal() {
+  document.getElementById('logoutModal').classList.add('show');
+}
+
+function hideLogoutModal() {
+  document.getElementById('logoutModal').classList.remove('show');
+}
+
+async function confirmLogout() {
   const confirmBtn = document.getElementById('confirmLogoutBtn');
   confirmBtn.classList.add('loading');
   confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
   try {
-    // Clock out and set unavailable
     await handleClockOut();
     
-    // Clear local storage
-    localStorage.removeItem('currentUserEmail');
-    localStorage.removeItem('currentUserRole');
-    localStorage.removeItem('currentUsername');
-    localStorage.removeItem('currentUserFullName');
+    // Clear caches
+    userDataCache = null;
+    categoriesCache = null;
     
-    // Sign out
+    // Detach listeners
+    if (servicesListener) servicesListener();
+    if (notificationListener) notificationListener();
+    
     await auth.signOut();
-    
-    // Redirect to login page
     window.location.href = "index.html";
   } catch (error) {
     console.error("Logout error:", error);
-    
-    // Reset button state
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    
     alert("An error occurred during logout. Please try again.");
-    
-    // Force sign out even if there's an error
     await auth.signOut();
     window.location.href = "index.html";
   }
 }
 
-// Notification System
-function loadNotifications() {
-  const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notificationList = document.getElementById('notificationList');
-  const badge = document.getElementById('notificationBadge');
+// Load categories from memory first, then Firebase if needed - OPTIMIZED
+async function loadCategories() {
+  const now = Date.now();
   
-  const unreadCount = notifications.filter(n => !n.read).length;
-  
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
+  // Use cached categories if fresh
+  if (categoriesCache && (now - lastCategoriesFetch) < CACHE_DURATION) {
+    categories = categoriesCache;
+    updateCategorySelects();
+    return;
   }
+
+  try {
+    // Extract categories from already loaded services data
+    const categorySet = new Set();
+    const categoryOrder = [];
+    
+    servicesData.forEach(service => {
+      if (service.category && !categorySet.has(service.category)) {
+        categoryOrder.push(service.category);
+        categorySet.add(service.category);
+      }
+    });
+
+    categories = categoryOrder.map(cat => ({
+      id: cat,
+      name: cat
+    }));
+
+    // If no categories exist, add default ones
+    if (categories.length === 0) {
+      const defaultCategories = ['Hair Services', 'Nail Services', 'Facial Services', 'Lash Services', 'Massage'];
+      categories = defaultCategories.map(cat => ({
+        id: cat,
+        name: cat
+      }));
+    }
+
+    // Cache categories
+    categoriesCache = categories;
+    lastCategoriesFetch = now;
+
+    updateCategorySelects();
+  } catch (error) {
+    console.error('Error loading categories:', error);
+  }
+}
+
+// Update all category select elements
+function updateCategorySelects() {
+  const categorySelects = [
+    document.getElementById('serviceCategorySelect'),
+    document.getElementById('editServiceCategorySelect'),
+    document.getElementById('categoryFilter')
+  ];
+
+  categorySelects.forEach((select, index) => {
+    if (!select) return;
+    
+    const currentValue = select.value;
+    
+    if (index === 2) {
+      select.innerHTML = '<option value="all">All Categories</option>';
+    } else {
+      select.innerHTML = '<option value="">Select Category</option>';
+    }
+    
+    categories.forEach(cat => {
+      const option = document.createElement('option');
+      option.value = cat.name;
+      option.textContent = cat.name;
+      select.appendChild(option);
+    });
+    
+    if (index !== 2) {
+      const addOption = document.createElement('option');
+      addOption.value = '__ADD_NEW__';
+      addOption.textContent = '+ Add New Category';
+      addOption.style.fontWeight = 'bold';
+      addOption.style.color = '#da5c73';
+      select.appendChild(addOption);
+      
+      const manageOption = document.createElement('option');
+      manageOption.value = '__MANAGE__';
+      manageOption.textContent = '⚙️ Manage Categories';
+      manageOption.style.fontWeight = 'bold';
+      manageOption.style.color = '#da5c73';
+      select.appendChild(manageOption);
+    }
+    
+    if (currentValue && currentValue !== 'all' && currentValue !== '' && 
+        currentValue !== '__ADD_NEW__' && currentValue !== '__MANAGE__') {
+      select.value = currentValue;
+    }
+  });
   
-  if (notifications.length === 0) {
-    notificationList.innerHTML = '<div class="notification-empty"><i class="fa-solid fa-bell-slash text-3xl mb-2"></i><p>No notifications yet</p></div>';
+  const addCategorySelects = [
+    document.getElementById('serviceCategorySelect'),
+    document.getElementById('editServiceCategorySelect')
+  ];
+  
+  addCategorySelects.forEach(select => {
+    if (!select) return;
+    select.removeEventListener('change', handleCategorySelectChange);
+    select.addEventListener('change', handleCategorySelectChange);
+  });
+}
+
+// Handle category select change
+function handleCategorySelectChange(event) {
+  if (event.target.value === '__ADD_NEW__') {
+    event.target.dataset.triggerSelect = 'true';
+    openAddCategoryModal();
+    setTimeout(() => {
+      event.target.value = '';
+    }, 100);
+  } else if (event.target.value === '__MANAGE__') {
+    openManageCategoriesModal();
+    setTimeout(() => {
+      event.target.value = '';
+    }, 100);
+  }
+}
+
+// Open/Close Add Category Modal
+function openAddCategoryModal() {
+  document.getElementById('addCategoryModal').classList.add('show');
+}
+
+function closeAddCategoryModal() {
+  document.getElementById('addCategoryModal').classList.remove('show');
+  document.getElementById('addCategoryForm').reset();
+}
+
+// Handle Add Category - OPTIMIZED
+async function handleAddCategory(event) {
+  event.preventDefault();
+  
+  const categoryName = document.getElementById('newCategoryName').value.trim();
+  
+  if (!categoryName) {
+    alert('Category name cannot be empty!');
     return;
   }
   
-  notificationList.innerHTML = '';
+  if (categories.some(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
+    alert('This category already exists! Please choose a different name.');
+    return;
+  }
   
-  notifications.forEach(notification => {
-    const item = document.createElement('div');
-    item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-    item.onclick = () => viewNotification(notification.id);
+  try {
+    const placeholderService = {
+      id: await generateUniqueServiceId(),
+      name: `${categoryName} - Sample Service`,
+      category: categoryName,
+      price: 0,
+      date: getCurrentDate(),
+      createdBy: currentUser ? currentUser.fullName : 'Unknown',
+      createdDate: getCurrentDate(),
+      lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
+      isPlaceholder: true
+    };
+
+    const docRef = await db.collection('services').add(placeholderService);
+    placeholderService.firebaseId = docRef.id;
     
-    const time = new Date(notification.timestamp);
-    const timeStr = time.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit' 
+    // Update local data immediately (listener will update too)
+    servicesData.push(placeholderService);
+    
+    // Add to categories and clear cache
+    categories.push({
+      id: categoryName,
+      name: categoryName
     });
+    categoriesCache = categories;
     
-    item.innerHTML = `
-      <div class="flex justify-between items-start mb-1">
-        <strong class="text-[#da5c73]">${notification.message}</strong>
-        ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
+    updateCategorySelects();
+    closeAddCategoryModal();
+    
+    const addSelect = document.getElementById('serviceCategorySelect');
+    const editSelect = document.getElementById('editServiceCategorySelect');
+    const addModal = document.getElementById('addServiceModal');
+    const editModal = document.getElementById('editServiceModal');
+    
+    if (addModal && addModal.classList.contains('show')) {
+      addSelect.value = categoryName;
+    } else if (editModal && editModal.classList.contains('show')) {
+      editSelect.value = categoryName;
+    }
+    
+    alert(`Category "${categoryName}" added successfully!`);
+    
+  } catch (error) {
+    console.error('Error adding category:', error);
+    alert('Error adding category. Please try again.');
+  }
+}
+
+// Open/Close Manage Categories Modal
+function openManageCategoriesModal() {
+  document.getElementById('manageCategoriesModal').classList.add('show');
+  loadManageCategoriesList();
+}
+
+function closeManageCategoriesModal() {
+  document.getElementById('manageCategoriesModal').classList.remove('show');
+}
+
+// Load categories list for management - use in-memory data
+function loadManageCategoriesList() {
+  const listContainer = document.getElementById('manageCategoriesList');
+  
+  if (categories.length === 0) {
+    listContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No categories found.</p>';
+    return;
+  }
+  
+  listContainer.innerHTML = '';
+  
+  categories.forEach(cat => {
+    const categoryItem = document.createElement('div');
+    categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
+    
+    // Count from in-memory data
+    const serviceCount = servicesData.filter(s => s.category === cat.name).length;
+    
+    categoryItem.innerHTML = `
+      <div>
+        <span class="font-semibold text-gray-800">${cat.name}</span>
+        <span class="text-sm text-gray-500 ml-2">(${serviceCount} service${serviceCount !== 1 ? 's' : ''})</span>
       </div>
-      <p class="text-sm text-gray-600">${notification.details.service} - ${notification.details.date} at ${notification.details.time}</p>
-      <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
+      <button 
+        onclick="handleDeleteCategory('${cat.name.replace(/'/g, "\\'")}', ${serviceCount})" 
+        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
+        title="Delete category"
+      >
+        <i class="fa-solid fa-trash"></i> Delete
+      </button>
     `;
     
-    notificationList.appendChild(item);
+    listContainer.appendChild(categoryItem);
   });
+}
+
+// Handle Delete Category - OPTIMIZED with batch delete
+async function handleDeleteCategory(categoryName, serviceCount) {
+  const servicesInCategory = servicesData.filter(s => s.category === categoryName);
+  
+  if (servicesInCategory.length === 0) {
+    if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
+      return;
+    }
+  } else {
+    if (!confirm(`Warning: The category "${categoryName}" has ${servicesInCategory.length} service(s).\n\nDeleting this category will also delete all services in it. This action cannot be undone.\n\nAre you sure you want to continue?`)) {
+      return;
+    }
+  }
+  
+  try {
+    // Use batched deletes (max 500 per batch)
+    const batches = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+    
+    servicesInCategory.forEach(service => {
+      currentBatch.delete(db.collection('services').doc(service.firebaseId));
+      operationCount++;
+      
+      if (operationCount === 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
+      }
+    });
+    
+    if (operationCount > 0) {
+      batches.push(currentBatch);
+    }
+    
+    // Commit all batches
+    await Promise.all(batches.map(batch => batch.commit()));
+    
+    // Update local data
+    servicesData = servicesData.filter(s => s.category !== categoryName);
+    categories = categories.filter(c => c.name !== categoryName);
+    categoriesCache = categories;
+    
+    updateStats();
+    updateCategorySelects();
+    loadManageCategoriesList();
+    
+    alert(`Category "${categoryName}" and its ${servicesInCategory.length} service(s) have been deleted successfully!`);
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    alert('Error deleting category. Please try again.');
+  }
+}
+
+// Search functionality - debounced
+let searchTimeout;
+document.getElementById('searchInput').addEventListener('input', function(e) {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    const searchTerm = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('#servicesTableBody tr');
+    
+    rows.forEach(row => {
+      const text = row.textContent.toLowerCase();
+      row.style.display = text.includes(searchTerm) ? '' : 'none';
+    });
+  }, 300);
+});
+
+// Filter by category
+function filterByCategory(category) {
+  const rows = document.querySelectorAll('#servicesTableBody tr');
+  
+  rows.forEach(row => {
+    if(category === 'all') {
+      row.style.display = '';
+    } else {
+      const rowCategory = row.getAttribute('data-category');
+      row.style.display = rowCategory === category ? '' : 'none';
+    }
+  });
+}
+
+// Export to CSV - use in-memory data
+function exportToCSV() {
+  let csv = 'Service ID,Service Name,Category,Price,Last Updated,Last Edited By\n';
+  
+  servicesData.forEach(row => {
+    csv += `${row.id},${row.name},${row.category},${row.price},${row.date},${row.lastEditedBy || row.createdBy || 'Unknown'}\n`;
+  });
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `services_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const userMenu = document.getElementById('userMenu');
+  const userMenuButton = document.getElementById('userMenuButton');
+  
+  if (userMenuButton && !userMenuButton.contains(event.target) && !userMenu.contains(event.target)) {
+    userMenu.classList.add('hidden');
+  }
+
+  const logoutModal = document.getElementById('logoutModal');
+  if (logoutModal && event.target === logoutModal) {
+    hideLogoutModal();
+  }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('logoutModal');
+    if (modal && modal.classList.contains('show')) {
+      hideLogoutModal();
+    }
+  }
+});
+
+// Notification System - SIDEBAR BUBBLE NOTIFICATIONS
+function loadNotifications() {
+  if (notificationListener) {
+    notificationListener();
+  }
+
+  notificationListener = db.collection('notifications')
+    .orderBy('timestamp', 'desc')
+    .onSnapshot((snapshot) => {
+      const notifications = [];
+      
+      snapshot.forEach(doc => {
+        notifications.push({
+          id: doc.id,
+          ...doc.data()
+        });
+      });
+
+      // Update sidebar bubbles based on notification types
+      updateSidebarBubbles(notifications);
+    });
+}
+
+// Mark notifications as read for current page
+async function markCurrentPageNotificationsRead() {
+  const currentPage = window.location.pathname;
+  let notificationType = null;
+  
+  // Determine notification type based on current page
+  if (currentPage.includes('calendar.html')) {
+    notificationType = 'appointment';
+  } else if (currentPage.includes('purchase-order.html')) {
+    notificationType = 'purchase_order';
+  } else if (currentPage.includes('inventory.html')) {
+    notificationType = 'low_stock';
+  }
+  
+  // Mark notifications as read for this page
+  if (notificationType) {
+    try {
+      const snapshot = await db.collection('notifications')
+        .where('type', '==', notificationType)
+        .where('read', '==', false)
+        .get();
+      
+      if (!snapshot.empty) {
+        const batch = db.batch();
+        snapshot.forEach(doc => {
+          batch.update(doc.ref, { read: true });
+        });
+        await batch.commit();
+        console.log(`Marked ${notificationType} notifications as read`);
+      }
+    } catch (error) {
+      console.error('Error marking notifications as read:', error);
+    }
+  }
+}
+
+function updateSidebarBubbles(notifications) {
+  // Count unread notifications by type
+  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
+  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
+  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+  
+  // Update calendar bubble (appointments)
+  updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
+  
+  // Update purchase order bubble
+  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
+  
+  // Update inventory bubble (low stock)
+  updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
+}
+
+function updateBubble(bubbleId, count, color) {
+  let bubble = document.getElementById(bubbleId);
+  
+  if (!bubble) {
+    // Create bubble if it doesn't exist
+    const button = getBubbleButton(bubbleId);
+    if (button) {
+      bubble = document.createElement('span');
+      bubble.id = bubbleId;
+      bubble.className = 'sidebar-bubble';
+      button.style.position = 'relative';
+      button.appendChild(bubble);
+    }
+  }
+  
+  if (bubble) {
+    if (count > 0) {
+      bubble.textContent = count > 99 ? '99+' : count;
+      bubble.style.backgroundColor = color;
+      bubble.style.display = 'flex';
+    } else {
+      bubble.style.display = 'none';
+    }
+  }
+}
+
+function getBubbleButton(bubbleId) {
+  const buttonMap = {
+    'calendarBubble': document.querySelector('button[title="Reservations"]'),
+    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
+    'inventoryBubble': document.querySelector('button[title="Inventory"]')
+  };
+  return buttonMap[bubbleId];
 }
 
 function toggleNotifications() {
-  const dropdown = document.getElementById('notificationDropdown');
-  dropdown.classList.toggle('show');
-  loadNotifications();
+  // Removed - no longer needed
 }
 
-function viewNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notification = notifications.find(n => n.id === id);
-  
-  if (!notification) return;
-  
-  notification.read = true;
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  
-  const modal = document.getElementById('notificationModal');
-  const modalBody = document.getElementById('modalBody');
-  
-  const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-    dateStyle: 'full', 
-    timeStyle: 'short' 
-  });
-  
-  modalBody.innerHTML = `
-    <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-    <div class="space-y-3">
-      <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-      <div><strong>Email:</strong> ${notification.details.email}</div>
-      <div><strong>Phone:</strong> ${notification.details.phone}</div>
-      <div><strong>Service:</strong> ${notification.details.service}</div>
-      <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-      <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-      ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-      <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-    </div>
-    <div class="mt-6 flex gap-3">
-      <button onclick="approveAppointment(${id})" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-        <i class="fa-solid fa-check mr-2"></i>Approve
-      </button>
-      <button onclick="rejectAppointment(${id})" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-        <i class="fa-solid fa-times mr-2"></i>Decline
-      </button>
-    </div>
-  `;
-  
-  modal.classList.add('show');
-  loadNotifications();
+async function viewNotification(id) {
+  // Removed - no longer needed
+}
+
+async function viewLowStockNotification(id) {
+  // Removed - no longer needed
 }
 
 function closeNotificationModal() {
-  document.getElementById('notificationModal').classList.remove('show');
+  // Removed - no longer needed
 }
 
-function markAllRead() {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications.forEach(n => n.read = true);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
+async function markAllRead() {
+  // Removed - no longer needed
 }
 
-function clearAllNotifications() {
-  localStorage.setItem('skinshipNotifications', '[]');
-  loadNotifications();
+async function clearAllNotifications() {
+  // Removed - no longer needed
 }
 
-function approveAppointment(id) {
-  alert('Appointment approved!');
-  closeNotificationModal();
-  deleteNotification(id);
+async function approveAppointment(notificationId, appointmentId) {
+  // Removed - no longer needed
 }
 
-function rejectAppointment(id) {
-  alert('Appointment declined!');
-  closeNotificationModal();
-  deleteNotification(id);
+async function rejectAppointment(notificationId, appointmentId) {
+  // Removed - no longer needed
 }
 
-function deleteNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications = notifications.filter(n => n.id !== id);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
+// Generate next Service ID - from in-memory data
+function generateServiceId() {
+  const maxId = servicesData.reduce((max, service) => {
+    const num = parseInt(service.id.split('-')[1]);
+    return num > max ? num : max;
+  }, 0);
+  return `SRV-${String(maxId + 1).padStart(3, '0')}`;
 }
 
-// Generate unique service ID
-async function generateServiceId() {
-  const counterRef = db.collection('metadata').doc('servicesCounter');
-  let newNumber = 1;
-
-  await db.runTransaction(async (tx) => {
-    const docSnap = await tx.get(counterRef);
-    if (docSnap.exists) {
-      newNumber = (docSnap.data().last || 0) + 1;
-      tx.update(counterRef, { last: newNumber });
-    } else {
-      tx.set(counterRef, { last: 1 });
-      newNumber = 1;
-    }
-  });
-
-  return `SRV-${String(newNumber).padStart(3, '0')}`;
-}
-
+// Get current date
 function getCurrentDate() {
   const today = new Date();
   const options = { year: 'numeric', month: 'short', day: 'numeric' };
   return today.toLocaleDateString('en-US', options);
 }
 
-// Show edit history modal
+// Open Add Service Modal
+function openAddServiceModal() {
+  updateCategorySelects();
+  document.getElementById('addServiceModal').classList.add('show');
+}
+
+// Close Add Service Modal
+function closeAddServiceModal() {
+  document.getElementById('addServiceModal').classList.remove('show');
+  document.getElementById('addServiceForm').reset();
+}
+
+// Generate sequential unique ID - OPTIMIZED with caching
+let serviceCounterCache = null;
+let lastCounterFetch = 0;
+const COUNTER_CACHE_DURATION = 60000; // 1 minute
+
+async function generateUniqueServiceId() {
+  try {
+    const now = Date.now();
+    
+    // Use cached counter if recent
+    if (serviceCounterCache !== null && (now - lastCounterFetch) < COUNTER_CACHE_DURATION) {
+      serviceCounterCache++;
+      // Update in background
+      db.collection('metadata').doc('servicesCounter').update({ last: serviceCounterCache });
+      return `SRV-${String(serviceCounterCache).padStart(3, '0')}`;
+    }
+    
+    const counterRef = db.collection('metadata').doc('servicesCounter');
+    let newNumber = 1;
+
+    await db.runTransaction(async (tx) => {
+      const docSnap = await tx.get(counterRef);
+      if (docSnap.exists) {
+        newNumber = (docSnap.data().last || 0) + 1;
+        tx.update(counterRef, { last: newNumber });
+      } else {
+        tx.set(counterRef, { last: 1 });
+        newNumber = 1;
+      }
+    });
+
+    // Update cache
+    serviceCounterCache = newNumber;
+    lastCounterFetch = now;
+
+    return `SRV-${String(newNumber).padStart(3, '0')}`;
+  } catch (error) {
+    console.error('Error generating ID:', error);
+    return `SRV-${Date.now().toString().slice(-3)}`;
+  }
+}
+
+// Handle Add Service Form Submission
+async function handleAddService(event) {
+  event.preventDefault();
+  
+  const name = document.getElementById('serviceName').value.trim();
+  const category = document.getElementById('serviceCategorySelect').value;
+  const price = parseFloat(document.getElementById('servicePrice').value);
+  
+  if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
+    alert('Please select a valid category');
+    return;
+  }
+
+  const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
+  
+  if (!categoryExists) {
+    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
+    return;
+  }
+  
+  const newService = {
+    id: await generateUniqueServiceId(),
+    name: name,
+    category: category,
+    price: price,
+    date: getCurrentDate(),
+    createdBy: currentUser ? currentUser.fullName : 'Unknown',
+    createdDate: getCurrentDate(),
+    lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
+  };
+  
+  try {
+    const docRef = await db.collection('services').add(newService);
+    newService.firebaseId = docRef.id;
+    
+    closeAddServiceModal();
+    alert(`Service "${name}" added successfully!`);
+  } catch (error) {
+    console.error('Error adding service:', error);
+    alert('Error adding service. Please try again.');
+  }
+}
+
+// Toggle Edit Mode
+function toggleEditMode() {
+  editMode = !editMode;
+  const rows = document.querySelectorAll('#servicesTableBody tr');
+  const editBtn = document.getElementById('editModeBtn');
+
+  if (editMode) {
+    editBtn.classList.add('active');
+    editBtn.innerHTML = '<i class="fa-solid fa-xmark mr-2"></i>Cancel Edit';
+    rows.forEach(row => {
+      row.classList.add('edit-mode-active');
+      row.addEventListener('click', selectRowForEdit);
+    });
+  } else {
+    editBtn.classList.remove('active');
+    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i>Edit Service';
+    rows.forEach(row => {
+      row.classList.remove('edit-mode-active');
+      row.removeEventListener('click', selectRowForEdit);
+    });
+  }
+}
+
+// When a row is clicked in edit mode - use in-memory data
+function selectRowForEdit(event) {
+  if (!editMode) return;
+  
+  if (event.target.closest('td:nth-child(5)')) return;
+
+  const idCell = this.querySelector('td').textContent.trim();
+  const service = servicesData.find(s => s.id === idCell);
+  if (!service) return alert('Service not found.');
+
+  updateCategorySelects();
+  
+  setTimeout(() => {
+    document.getElementById('editFirebaseId').value = service.firebaseId;
+    document.getElementById('editServiceName').value = service.name;
+    document.getElementById('editServiceCategorySelect').value = service.category;
+    document.getElementById('editServicePrice').value = service.price;
+
+    document.getElementById('editServiceModal').classList.add('show');
+  }, 100);
+}
+
+// Close Edit Service Modal
+function closeEditServiceModal() {
+  document.getElementById('editServiceModal').classList.remove('show');
+  if (editMode) toggleEditMode();
+}
+
+// Save edited service
+async function handleEditService(e) {
+  e.preventDefault();
+
+  const id = document.getElementById('editFirebaseId').value;
+  const category = document.getElementById('editServiceCategorySelect').value;
+  
+  if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
+    alert('Please select a valid category');
+    return;
+  }
+
+  const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
+  
+  if (!categoryExists) {
+    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
+    return;
+  }
+  
+  const updatedService = {
+    name: document.getElementById('editServiceName').value.trim(),
+    category: category,
+    price: parseFloat(document.getElementById('editServicePrice').value),
+    date: getCurrentDate(),
+    lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
+  };
+
+  try {
+    if (id) {
+      await db.collection('services').doc(id).update(updatedService);
+
+      closeEditServiceModal();
+      alert('✅ Service updated successfully!');
+    } else {
+      alert('Error: Missing Firestore document ID.');
+    }
+  } catch (error) {
+    console.error('Error updating service:', error);
+    alert('Error updating service. Check console for details.');
+  }
+}
+
+// Show edit history modal - use in-memory data
 async function showEditHistory(firebaseId) {
   const service = servicesData.find(s => s.firebaseId === firebaseId);
   if (!service) return;
@@ -285,57 +902,13 @@ function closeEditHistoryModal() {
   document.getElementById('editHistoryModal').classList.remove('show');
 }
 
-// Load services from Firebase
-async function loadServicesFromFirebase() {
-  try {
-    const snapshot = await db.collection('services').get();
-    servicesData = [];
-    const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '';
-
-    if (snapshot.empty) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No services found. Click "Add Service" to get started.</td></tr>';
-    } else {
-      snapshot.forEach(doc => {
-        const service = doc.data();
-        service.firebaseId = doc.id;
-        servicesData.push(service);
-        addServiceToTable(service);
-      });
-    }
-
-    updateStats();
-    updateCategoryFilter();
-  } catch (error) {
-    console.error('Error loading services:', error);
-    const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error loading services. Please refresh the page.</td></tr>';
-  }
-}
-
-function addServiceToTable(service) {
-  const tbody = document.getElementById('servicesTableBody');
-  const row = document.createElement('tr');
-  row.className = 'border-b hover:bg-gray-50 transition';
-  row.setAttribute('data-category', service.category || '');
-
-  row.innerHTML = `
-    <td class="py-4 px-4 font-semibold">${service.id || 'N/A'}</td>
-    <td class="py-4 px-4">${service.name || 'N/A'}</td>
-    <td class="py-4 px-4">${service.category || 'N/A'}</td>
-    <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${(service.price || 0).toLocaleString()}</td>
-    <td class="py-4 px-4 text-center text-sm cursor-pointer hover:text-[#da5c73] hover:underline" onclick="showEditHistory('${service.firebaseId}')" title="Click to see edit history">${service.date || 'N/A'}</td>
-  `;
-
-  tbody.appendChild(row);
-}
-
+// Update statistics - calculate from in-memory data
 function updateStats() {
-  const total = servicesData.length;
+  const totalServices = servicesData.length;
   const uniqueCategories = [...new Set(servicesData.map(s => s.category))].length;
   const prices = servicesData.map(s => s.price || 0);
-  const avg = prices.length ? (prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
-
+  const avgPrice = prices.length ? (prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+  
   // Get last updated service
   let lastUpdatedService = 'N/A';
   let lastUpdatedServiceId = null;
@@ -348,10 +921,10 @@ function updateStats() {
     lastUpdatedService = sortedByDate[0].name || 'N/A';
     lastUpdatedServiceId = sortedByDate[0].firebaseId;
   }
-
-  document.getElementById('totalServices').textContent = total;
+  
+  document.getElementById('totalServices').textContent = totalServices;
   document.getElementById('totalCategories').textContent = uniqueCategories;
-  document.getElementById('avgPrice').textContent = `₱${Math.round(avg).toLocaleString()}`;
+  document.getElementById('avgPrice').textContent = `₱ ${Math.round(avgPrice).toLocaleString()}`;
   
   const lastUpdatedElement = document.getElementById('lastUpdatedService');
   lastUpdatedElement.textContent = lastUpdatedService;
@@ -401,185 +974,90 @@ function closeLastUpdatedModal() {
   document.getElementById('lastUpdatedModal').classList.remove('show');
 }
 
-function updateCategoryFilter() {
-  const uniqueCategories = [...new Set(servicesData.map(s => s.category))];
-  const select = document.getElementById('categoryFilter');
-  select.innerHTML = '<option value="all">Filter by Category</option>';
-  uniqueCategories.forEach(cat => {
-    const option = document.createElement('option');
-    option.value = cat;
-    option.textContent = cat;
-    select.appendChild(option);
+// Render table from in-memory data - optimized
+function renderServicesTable() {
+  const tbody = document.getElementById('servicesTableBody');
+  
+  if (servicesData.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No services found. Click "Add Service" to get started.</td></tr>';
+    return;
+  }
+  
+  // Use DocumentFragment for better performance
+  const fragment = document.createDocumentFragment();
+  
+  servicesData.forEach(service => {
+    const row = document.createElement('tr');
+    row.className = 'border-b hover:bg-gray-50 transition';
+    row.setAttribute('data-category', service.category || '');
+    row.setAttribute('data-firebase-id', service.firebaseId);
+    
+    const price = service.price || 0;
+    
+    row.innerHTML = `
+      <td class="py-4 px-4 font-semibold">${service.id || 'N/A'}</td>
+      <td class="py-4 px-4">${service.name || 'N/A'}</td>
+      <td class="py-4 px-4">${service.category || 'N/A'}</td>
+      <td class="py-4 px-4 text-right font-semibold text-[#da5c73]">₱ ${price.toLocaleString()}</td>
+      <td class="py-4 px-4 text-center text-sm cursor-pointer hover:text-[#da5c73] hover:underline" onclick="showEditHistory('${service.firebaseId}')" title="Click to see edit history">${service.date || 'N/A'}</td>
+    `;
+    
+    fragment.appendChild(row);
   });
-}
-
-// Add service
-function openAddServiceModal() {
-  // Reload categories to ensure dropdown is up to date
-  updateCategorySelects();
-  document.getElementById('addServiceModal').classList.add('show');
-}
-
-function closeAddServiceModal() {
-  document.getElementById('addServiceModal').classList.remove('show');
-  document.getElementById('addServiceForm').reset();
-}
-
-async function handleAddService(e) {
-  e.preventDefault();
-
-  const category = document.getElementById('serviceCategorySelect').value;
   
-  if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
-    alert('Please select a valid category');
-    return;
-  }
+  tbody.innerHTML = '';
+  tbody.appendChild(fragment);
+}
 
-  // Check if category exists in the database (case-insensitive)
-  const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
-  
-  if (!categoryExists) {
-    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
-    return;
-  }
-
-  const newService = {
-    id: await generateServiceId(),
-    name: document.getElementById('serviceName').value.trim(),
-    category: category,
-    price: parseFloat(document.getElementById('servicePrice').value),
-    date: getCurrentDate(),
-    createdBy: currentUser ? currentUser.fullName : 'Unknown',
-    createdDate: getCurrentDate(),
-    lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
-  };
-
+// Load services from Firebase - OPTIMIZED with real-time listener
+function loadServicesFromFirebase() {
   try {
-    const docRef = await db.collection('services').add(newService);
-    newService.firebaseId = docRef.id;
-    servicesData.push(newService);
-    addServiceToTable(newService);
+    // Use onSnapshot for real-time updates instead of repeated gets
+    servicesListener = db.collection('services')
+      .onSnapshot((snapshot) => {
+        // Process changes efficiently
+        snapshot.docChanges().forEach((change) => {
+          const service = change.doc.data();
+          service.firebaseId = change.doc.id;
+          
+          if (change.type === 'added') {
+            // Check if already exists to avoid duplicates
+            const exists = servicesData.find(s => s.firebaseId === service.firebaseId);
+            if (!exists) {
+              servicesData.push(service);
+            }
+          } else if (change.type === 'modified') {
+            const index = servicesData.findIndex(s => s.firebaseId === service.firebaseId);
+            if (index !== -1) {
+              servicesData[index] = service;
+            }
+          } else if (change.type === 'removed') {
+            const index = servicesData.findIndex(s => s.firebaseId === service.firebaseId);
+            if (index !== -1) {
+              servicesData.splice(index, 1);
+            }
+          }
+        });
+        
+        // Update UI
+        renderServicesTable();
+        updateStats();
+        loadCategories(); // Update categories from services data
+        
+      }, (error) => {
+        console.error('Error loading services:', error);
+        const tbody = document.getElementById('servicesTableBody');
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error loading services. Please refresh the page.</td></tr>';
+      });
     
-    // Reload categories to include any new category at the end
-    await loadCategories();
-    
-    updateStats();
-    updateCategoryFilter();
-    closeAddServiceModal();
-    alert('Service added successfully!');
   } catch (error) {
-    console.error('Error adding service:', error);
-    alert('Error adding service');
-  }
-}
-
-// Edit mode
-function toggleEditMode() {
-  editMode = !editMode;
-  const rows = document.querySelectorAll('#servicesTableBody tr');
-  const editBtn = document.getElementById('editModeBtn');
-
-  if (editMode) {
-    editBtn.classList.add('active');
-    editBtn.innerHTML = '<i class="fa-solid fa-xmark mr-2"></i>Cancel Edit';
-    rows.forEach(row => {
-      row.classList.add('edit-mode-active');
-      row.addEventListener('click', selectRowForEdit);
-    });
-  } else {
-    editBtn.classList.remove('active');
-    editBtn.innerHTML = '<i class="fa-solid fa-pen-to-square mr-2"></i>Edit Service';
-    rows.forEach(row => {
-      row.classList.remove('edit-mode-active');
-      row.removeEventListener('click', selectRowForEdit);
-    });
-  }
-}
-
-function selectRowForEdit(event) {
-  if (!editMode) return;
-  
-  // Don't trigger if clicking on the date column (which has its own click handler)
-  if (event.target.closest('td:last-child')) return;
-  
-  const idCell = this.querySelector('td').textContent.trim();
-  const service = servicesData.find(s => s.id === idCell);
-  if (!service) return;
-
-  // Ensure categories are loaded and update selects
-  updateCategorySelects();
-  
-  // Wait a bit for the select to be populated
-  setTimeout(() => {
-    document.getElementById('editFirebaseId').value = service.firebaseId;
-    document.getElementById('editServiceName').value = service.name;
-    document.getElementById('editServicePrice').value = service.price;
-    
-    // Set the category value
-    const editCategorySelect = document.getElementById('editServiceCategorySelect');
-    if (editCategorySelect && service.category) {
-      editCategorySelect.value = service.category;
-    }
-
-    document.getElementById('editServiceModal').classList.add('show');
-  }, 100);
-}
-
-function closeEditServiceModal() {
-  document.getElementById('editServiceModal').classList.remove('show');
-  if (editMode) toggleEditMode();
-}
-
-async function handleEditService(e) {
-  e.preventDefault();
-
-  const id = document.getElementById('editFirebaseId').value;
-  const category = document.getElementById('editServiceCategorySelect').value;
-  
-  if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
-    alert('Please select a valid category');
-    return;
-  }
-
-  // Check if category exists in the database (case-insensitive)
-  const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
-  
-  if (!categoryExists) {
-    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
-    return;
-  }
-
-  const updatedService = {
-    name: document.getElementById('editServiceName').value.trim(),
-    category: category,
-    price: parseFloat(document.getElementById('editServicePrice').value),
-    date: getCurrentDate(),
-    lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
-  };
-
-  try {
-    await db.collection('services').doc(id).update(updatedService);
-    const index = servicesData.findIndex(s => s.firebaseId === id);
-    if (index !== -1) servicesData[index] = { ...servicesData[index], ...updatedService };
-
+    console.error('Error setting up services listener:', error);
     const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '';
-    servicesData.forEach(s => addServiceToTable(s));
-    
-    // Reload categories to include any new category at the end
-    await loadCategories();
-    
-    updateStats();
-    updateCategoryFilter();
-    closeEditServiceModal();
-    alert('Service updated successfully!');
-  } catch (error) {
-    console.error('Error updating service:', error);
-    alert('Error updating service');
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-red-500">Error loading services. Please refresh the page.</td></tr>';
   }
 }
 
-// Delete service
+// Delete service function - OPTIMIZED
 async function handleDeleteService() {
   const id = document.getElementById('editFirebaseId').value;
   const serviceName = document.getElementById('editServiceName').value;
@@ -587,396 +1065,53 @@ async function handleDeleteService() {
   if (!confirm(`Are you sure you want to delete "${serviceName}"? This action cannot be undone.`)) {
     return;
   }
-
+  
   try {
-    await db.collection('services').doc(id).delete();
-    servicesData = servicesData.filter(s => s.firebaseId !== id);
-
-    const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '';
-    servicesData.forEach(s => addServiceToTable(s));
-    updateStats();
-    updateCategoryFilter();
-    
-    // Reload categories after deletion
-    await loadCategories();
-    
-    closeEditServiceModal();
-    alert('Service deleted successfully!');
+    if (id) {
+      await db.collection('services').doc(id).delete();
+      
+      closeEditServiceModal();
+      alert('Service deleted successfully!');
+    } else {
+      alert('Error: Missing service ID.');
+    }
   } catch (error) {
     console.error('Error deleting service:', error);
-    alert('Error deleting service');
+    alert('Error deleting service. Check console for details.');
   }
 }
 
-// Search
-document.getElementById('searchInput').addEventListener('input', function(e) {
-  const search = e.target.value.toLowerCase();
-  const rows = document.querySelectorAll('#servicesTableBody tr');
-  rows.forEach(row => {
-    const text = row.textContent.toLowerCase();
-    row.style.display = text.includes(search) ? '' : 'none';
-  });
+// Cleanup function
+function cleanup() {
+  if (servicesListener) servicesListener();
+  if (notificationListener) notificationListener();
+  userDataCache = null;
+  categoriesCache = null;
+  servicesData = [];
+  categories = [];
+}
+
+// Handle page unload
+window.addEventListener("beforeunload", async (e) => {
+  await handleClockOut();
 });
 
-// Filter by category
-function filterByCategory(category) {
-  const rows = document.querySelectorAll('#servicesTableBody tr');
-  rows.forEach(row => {
-    if (category === 'all') {
-      row.style.display = '';
-    } else {
-      const rowCategory = row.getAttribute('data-category');
-      row.style.display = rowCategory === category ? '' : 'none';
-    }
-  });
-}
-
-// Export
-function exportToCSV() {
-  let csv = 'Service ID,Service Name,Category,Price,Last Updated,Last Edited By\n';
-  servicesData.forEach(s => {
-    csv += `${s.id},${s.name},${s.category},${s.price},${s.date},${s.lastEditedBy || 'Unknown'}\n`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'services_report.csv';
-  a.click();
-}
-
-// Load current user's full name
-async function loadCurrentUserName() {
-  auth.onAuthStateChanged(async (user) => {
-    if (user) {
-      try {
-        const userDoc = await db.collection('users').doc(user.uid).get();
-        if (userDoc.exists) {
-          const userData = userDoc.data();
-          currentUser = {
-            uid: user.uid,
-            fullName: userData.fullName || userData.email || 'User',
-            email: userData.email || user.email
-          };
-          document.getElementById('userDisplayName').textContent = currentUser.fullName;
-          document.getElementById('logoutUsername').textContent = currentUser.fullName;
-        } else {
-          currentUser = {
-            uid: user.uid,
-            fullName: user.email || 'User',
-            email: user.email
-          };
-          document.getElementById('userDisplayName').textContent = currentUser.fullName;
-          document.getElementById('logoutUsername').textContent = currentUser.fullName;
-        }
-      } catch (error) {
-        console.error('Error loading user data:', error);
-        currentUser = {
-          uid: user.uid,
-          fullName: user.email || 'User',
-          email: user.email
-        };
-        document.getElementById('userDisplayName').textContent = currentUser.fullName;
-        document.getElementById('logoutUsername').textContent = currentUser.fullName;
-      }
-    } else {
-      window.location.href = 'index.html';
-    }
-  });
-}
-
-// Load categories from services collection
-async function loadCategories() {
-  try {
-    const snapshot = await db.collection('services').get();
-    const categoryOrder = [];
-    const categorySet = new Set();
-    
-    // Preserve order of appearance (first occurrence)
-    snapshot.forEach(doc => {
-      const service = doc.data();
-      if (service.category && !categorySet.has(service.category)) {
-        categoryOrder.push(service.category);
-        categorySet.add(service.category);
-      }
-    });
-
-    categories = categoryOrder.map(cat => ({
-      id: cat,
-      name: cat
-    }));
-
-    updateCategorySelects();
-  } catch (error) {
-    console.error('Error loading categories:', error);
-  }
-}
-
-// Update all category select elements
-function updateCategorySelects() {
-  const categorySelects = [
-    document.getElementById('serviceCategorySelect'),
-    document.getElementById('editServiceCategorySelect'),
-    document.getElementById('categoryFilter')
-  ];
-
-  categorySelects.forEach((select, index) => {
-    if (!select) return;
-    
-    const currentValue = select.value;
-    
-    if (index === 2) {
-      // Category filter
-      select.innerHTML = '<option value="all">Filter by Category</option>';
-    } else {
-      // Add/Edit modals
-      select.innerHTML = '<option value="">Select Category</option>';
-    }
-    
-    // Add category options (in order of appearance, not alphabetical)
-    categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.name;
-      option.textContent = cat.name;
-      select.appendChild(option);
-    });
-    
-    // Add "Add New Category..." option only for Add/Edit modals
-    if (index !== 2) {
-      const addOption = document.createElement('option');
-      addOption.value = '__ADD_NEW__';
-      addOption.textContent = '+ Add New Category';
-      addOption.style.fontWeight = 'bold';
-      addOption.style.color = '#da5c73';
-      select.appendChild(addOption);
-      
-      const manageOption = document.createElement('option');
-      manageOption.value = '__MANAGE__';
-      manageOption.textContent = '⚙️ Manage Categories';
-      manageOption.style.fontWeight = 'bold';
-      manageOption.style.color = '#da5c73';
-      select.appendChild(manageOption);
-    }
-    
-    // Restore previous value if it exists
-    if (currentValue && currentValue !== 'all' && currentValue !== '' && currentValue !== '__ADD_NEW__' && currentValue !== '__MANAGE__') {
-      select.value = currentValue;
-    }
-  });
-  
-  // Add event listeners
-  const addCategorySelects = [
-    document.getElementById('serviceCategorySelect'),
-    document.getElementById('editServiceCategorySelect')
-  ];
-  
-  addCategorySelects.forEach(select => {
-    if (!select) return;
-    select.removeEventListener('change', handleCategorySelectChange);
-    select.addEventListener('change', handleCategorySelectChange);
-  });
-}
-
-// Handle category select change
-function handleCategorySelectChange(event) {
-  if (event.target.value === '__ADD_NEW__') {
-    openAddCategoryModal();
-    setTimeout(() => {
-      event.target.value = '';
-    }, 100);
-  } else if (event.target.value === '__MANAGE__') {
-    openManageCategoriesModal();
-    setTimeout(() => {
-      event.target.value = '';
-    }, 100);
-  }
-}
-
-// Open/Close Add Category Modal
-function openAddCategoryModal() {
-  document.getElementById('addCategoryModal').classList.add('show');
-}
-
-function closeAddCategoryModal() {
-  document.getElementById('addCategoryModal').classList.remove('show');
-  document.getElementById('addCategoryForm').reset();
-}
-
-// Handle Add Category
-async function handleAddCategory(event) {
-  event.preventDefault();
-  
-  const categoryName = document.getElementById('newCategoryName').value.trim();
-  
-  // Check for empty category name
-  if (!categoryName) {
-    alert('Category name cannot be empty!');
-    return;
-  }
-  
-  // Check if category already exists (case-insensitive)
-  if (categories.some(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
-    alert('This category already exists! Please choose a different name.');
-    return;
-  }
-  
-  try {
-    // Create a placeholder service with the new category
-    const placeholderService = {
-      id: await generateServiceId(),
-      name: `${categoryName} - Sample Service`,
-      category: categoryName,
-      price: 0,
-      date: getCurrentDate(),
-      createdBy: currentUser ? currentUser.fullName : 'Unknown',
-      createdDate: getCurrentDate(),
-      lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
-      isPlaceholder: true
-    };
-
-    const docRef = await db.collection('services').add(placeholderService);
-    placeholderService.firebaseId = docRef.id;
-    servicesData.push(placeholderService);
-    
-    // Add new category to the array (will be at the end/bottom)
-    categories.push({
-      id: categoryName,
-      name: categoryName
-    });
-    
-    updateCategorySelects();
-    closeAddCategoryModal();
-    
-    // Auto-select the newly added category in whichever modal is open
-    const addSelect = document.getElementById('serviceCategorySelect');
-    const editSelect = document.getElementById('editServiceCategorySelect');
-    
-    // Check which modal is currently visible
-    const addModal = document.getElementById('addServiceModal');
-    const editModal = document.getElementById('editServiceModal');
-    
-    if (addModal && addModal.classList.contains('show')) {
-      addSelect.value = categoryName;
-    } else if (editModal && editModal.classList.contains('show')) {
-      editSelect.value = categoryName;
-    }
-    
-    alert(`Category "${categoryName}" added successfully! A placeholder service was created. You can edit or delete it later.`);
-    
-    // Refresh the table to show the new placeholder service
-    const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '';
-    servicesData.forEach(s => addServiceToTable(s));
-    updateStats();
-    
-  } catch (error) {
-    console.error('Error adding category:', error);
-    alert('Error adding category. Please try again.');
-  }
-}
-
-// Open/Close Manage Categories Modal
-function openManageCategoriesModal() {
-  document.getElementById('manageCategoriesModal').classList.add('show');
-  loadManageCategoriesList();
-}
-
-function closeManageCategoriesModal() {
-  document.getElementById('manageCategoriesModal').classList.remove('show');
-}
-
-// Load categories list for management
-function loadManageCategoriesList() {
-  const listContainer = document.getElementById('manageCategoriesList');
-  
-  if (categories.length === 0) {
-    listContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No categories found.</p>';
-    return;
-  }
-  
-  listContainer.innerHTML = '';
-  
-  categories.forEach(cat => {
-    const categoryItem = document.createElement('div');
-    categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
-    
-    // Count services in this category
-    const serviceCount = servicesData.filter(s => s.category === cat.name).length;
-    
-    categoryItem.innerHTML = `
-      <div>
-        <span class="font-semibold text-gray-800">${cat.name}</span>
-        <span class="text-sm text-gray-500 ml-2">(${serviceCount} service${serviceCount !== 1 ? 's' : ''})</span>
-      </div>
-      <button 
-        onclick="handleDeleteCategory('${cat.name.replace(/'/g, "\\'")}', ${serviceCount})" 
-        class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm"
-        title="Delete category"
-      >
-        <i class="fa-solid fa-trash"></i> Delete
-      </button>
-    `;
-    
-    listContainer.appendChild(categoryItem);
-  });
-}
-
-// Handle Delete Category
-async function handleDeleteCategory(categoryName, serviceCount) {
-  const servicesInCategory = servicesData.filter(s => s.category === categoryName);
-  
-  if (servicesInCategory.length === 0) {
-    if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
-      return;
-    }
-  } else {
-    if (!confirm(`Warning: The category "${categoryName}" has ${servicesInCategory.length} service(s).\n\nDeleting this category will also delete all services in it. This action cannot be undone.\n\nAre you sure you want to continue?`)) {
-      return;
-    }
-  }
-  
-  try {
-    // Delete all services in this category
-    const deletePromises = servicesInCategory.map(service => 
-      db.collection('services').doc(service.firebaseId).delete()
-    );
-    
-    await Promise.all(deletePromises);
-    
-    // Remove from local data
-    servicesData = servicesData.filter(s => s.category !== categoryName);
-    categories = categories.filter(c => c.name !== categoryName);
-    
-    // Update UI
-    const tbody = document.getElementById('servicesTableBody');
-    tbody.innerHTML = '';
-    servicesData.forEach(s => addServiceToTable(s));
-    
-    updateStats();
-    updateCategoryFilter();
-    updateCategorySelects();
-    loadManageCategoriesList();
-    
-    alert(`Category "${categoryName}" and its ${servicesInCategory.length} service(s) have been deleted successfully!`);
-  } catch (error) {
-    console.error('Error deleting category:', error);
-    alert('Error deleting category. Please try again.');
-  }
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Set loading state
   document.getElementById('userDisplayName').textContent = 'Loading...';
-  document.getElementById('servicesTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Loading services...</td></tr>';
+  document.getElementById('servicesTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Loading services data...</td></tr>';
   
   loadCurrentUserName();
-  loadCategories();
-  loadServicesFromFirebase();
+  loadServicesFromFirebase(); // This will also load categories
   loadNotifications();
-  setInterval(loadNotifications, 5000);
   
-  // Add logout button event listener
+  // Mark current page notifications as read after a short delay
+  setTimeout(() => {
+    markCurrentPageNotificationsRead();
+  }, 1000);
+
+  // Setup logout button handler
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
@@ -984,365 +1119,7 @@ document.addEventListener('DOMContentLoaded', () => {
       showLogoutModal();
     });
   }
+  
+  // Cleanup on page unload
+  window.addEventListener('unload', cleanup);
 });
-
-// Close dropdowns on outside click
-window.addEventListener('click', (e) => {
-  const userMenu = document.getElementById('userMenu');
-  const btn = document.getElementById('userMenuButton');
-  if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
-    userMenu.classList.add('hidden');
-  }
-
-  if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-    document.getElementById('notificationDropdown').classList.remove('show');
-  }
-  
-  // Close logout modal on overlay click
-  const logoutModal = document.getElementById('logoutModal');
-  if (e.target === logoutModal) {
-    hideLogoutModal();
-  }
-});
-
-// Close logout modal on Escape key
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    const modal = document.getElementById('logoutModal');
-    if (modal && modal.classList.contains('show')) {
-      hideLogoutModal();
-    }
-  }
-});
-
-// Handle page unload - clock out user
-window.addEventListener("beforeunload", async (e) => {
-  await handleClockOut();
-});
-
-// Notification System
-function loadNotifications() {
-  const notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notificationList = document.getElementById('notificationList');
-  const badge = document.getElementById('notificationBadge');
-  
-  const unreadCount = notifications.filter(n => !n.read).length;
-  
-  if (unreadCount > 0) {
-    badge.textContent = unreadCount;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-  
-  if (notifications.length === 0) {
-    notificationList.innerHTML = `
-      <div class="notification-empty">
-        <i class="fa-solid fa-bell-slash"></i>
-        <p>No notifications yet</p>
-      </div>
-    `;
-    return;
-  }
-  
-  notificationList.innerHTML = '';
-  
-  notifications.forEach(notification => {
-    const item = document.createElement('div');
-    item.className = `notification-item ${notification.read ? '' : 'unread'}`;
-    item.onclick = () => viewNotification(notification.id);
-    
-    const time = new Date(notification.timestamp);
-    const timeStr = time.toLocaleString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      hour: 'numeric', 
-      minute: '2-digit' 
-    });
-    
-    let iconClass = 'fa-bell';
-    let iconColor = '#da5c73';
-    let displayMessage = 'Notification';
-    let displayDetails = '';
-    
-    if (notification.type === 'lowstock') {
-      iconClass = 'fa-box';
-      iconColor = '#f59e0b';
-      displayMessage = 'Low Stock Alert';
-      displayDetails = `${notification.details.productName} - Only ${notification.details.currentStock} left`;
-    } else if (notification.type === 'appointment') {
-      iconClass = 'fa-calendar-check';
-      iconColor = '#da5c73';
-      displayMessage = 'New Appointment';
-      displayDetails = `${notification.details.service} - ${notification.details.date} at ${notification.details.time}`;
-    } else if (notification.type === 'purchase_order') {
-      iconClass = 'fa-receipt';
-      iconColor = '#8b5cf6';
-      displayMessage = 'New Purchase Order';
-      displayDetails = `${notification.details.productName} - Qty: ${notification.details.quantity}`;
-    } else if (notification.type === 'low_stock') {
-      iconClass = 'fa-triangle-exclamation';
-      iconColor = '#f59e0b';
-      displayMessage = 'Low Stock Alert';
-      displayDetails = `${notification.details.productName} - ${notification.details.quantity} units remaining`;
-    } else if (notification.type === 'out_of_stock') {
-      iconClass = 'fa-triangle-exclamation';
-      iconColor = '#dc2626';
-      displayMessage = 'Out of Stock Alert';
-      displayDetails = `${notification.details.productName} - Out of stock!`;
-    }
-    
-    item.innerHTML = `
-      <div class="flex justify-between items-start mb-1">
-        <div class="flex items-center gap-2">
-          <i class="${iconClass}" style="color: ${iconColor}"></i>
-          <strong class="text-[#da5c73]">${displayMessage}</strong>
-        </div>
-        ${!notification.read ? '<span class="w-2 h-2 bg-red-500 rounded-full"></span>' : ''}
-      </div>
-      <p class="text-sm text-gray-600">${displayDetails}</p>
-      <p class="text-xs text-gray-400 mt-1">${timeStr}</p>
-    `;
-    
-    notificationList.appendChild(item);
-  });
-}
-
-function toggleNotifications() {
-  const dropdown = document.getElementById('notificationDropdown');
-  dropdown.classList.toggle('show');
-  loadNotifications();
-}
-
-function viewNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  const notification = notifications.find(n => n.id === id);
-  
-  if (!notification) return;
-  
-  if (notification.type === 'lowstock' || notification.type === 'low_stock' || notification.type === 'out_of_stock') {
-    window.location.href = 'inventory.html';
-    return;
-  }
-  
-  // Mark as read
-  notification.read = true;
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  
-  const modal = document.getElementById('notificationModal');
-  const modalBody = document.getElementById('modalBody');
-  
-  const time = new Date(notification.timestamp).toLocaleString('en-US', { 
-    dateStyle: 'full', 
-    timeStyle: 'short' 
-  });
-  
-  if (notification.type === 'appointment') {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Appointment Request</h2>
-      <div class="space-y-3">
-        <div><strong>Customer Name:</strong> ${notification.details.fullName}</div>
-        <div><strong>Email:</strong> ${notification.details.email}</div>
-        <div><strong>Phone:</strong> ${notification.details.phone}</div>
-        <div><strong>Service:</strong> ${notification.details.service}</div>
-        <div><strong>Preferred Date:</strong> ${notification.details.date}</div>
-        <div><strong>Preferred Time:</strong> ${notification.details.time}</div>
-        ${notification.details.message ? `<div><strong>Message:</strong> ${notification.details.message}</div>` : ''}
-        <div class="text-sm text-gray-500"><strong>Submitted:</strong> ${time}</div>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button onclick="approveAppointment('${id}')" class="flex-1 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-          <i class="fa-solid fa-check mr-2"></i>Approve
-        </button>
-        <button onclick="rejectAppointment('${id}')" class="flex-1 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">
-          <i class="fa-solid fa-times mr-2"></i>Decline
-        </button>
-      </div>
-    `;
-  } 
-
-  else if (notification.type === 'purchase_order') {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Purchase Order Created</h2>
-      <div class="space-y-3">
-        <div><strong>PO Number:</strong> ${notification.details.poNumber || 'N/A'}</div>
-        <div><strong>Product:</strong> ${notification.details.productName || 'N/A'}</div>
-        <div><strong>Quantity:</strong> ${notification.details.quantity || 'N/A'}</div>
-        <div><strong>Supplier:</strong> ${notification.details.supplier || 'N/A'}</div>
-        <div><strong>Total Value:</strong> ₱${(notification.details.totalValue || 0).toFixed(2)}</div>
-        <div><strong>Created By:</strong> ${notification.details.createdBy || 'N/A'}</div>
-        <div class="text-sm text-gray-500"><strong>Created:</strong> ${time}</div>
-      </div>
-      <div class="mt-6 flex gap-3">
-        <button onclick="closeNotificationModal()" 
-                class="flex-1 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-          <i class="fa-solid fa-times mr-2"></i>Close
-        </button>
-      </div>
-    `;
-  }
-
-  else {
-    modalBody.innerHTML = `
-      <h2 class="text-2xl font-bold text-[#da5c73] mb-4">Notification</h2>
-      <p class="mb-4">${notification.message || 'No details available'}</p>
-      <button onclick="closeNotificationModal()" 
-              class="w-full bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
-        Close
-      </button>
-    `;
-  }
-  
-  modal.classList.add('show');
-  loadNotifications();
-}
-
-async function approveAppointment(id) {
-  try {
-
-    await db.collection("appointments").doc(id).update({
-      status: 'confirmed',
-      confirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      confirmedBy: currentUserData ? currentUserData.fullName : 'Admin'
-    });
-    
-    alert('Appointment approved successfully!');
-    deleteNotification(id);
-    closeNotificationModal();
-  } catch (error) {
-    alert('Failed to approve appointment. Please try again.');
-  }
-}
-
-async function rejectAppointment(id) {
-  try {
-
-    await db.collection("appointments").doc(id).update({
-      status: 'cancelled',
-      cancelledAt: firebase.firestore.FieldValue.serverTimestamp(),
-      cancelledBy: currentUserData ? currentUserData.fullName : 'Admin'
-    });
-    
-    alert('Appointment declined.');
-    deleteNotification(id);
-    closeNotificationModal();
-  } catch (error) {
-    alert('Failed to decline appointment. Please try again.');
-  }
-}
-
-function closeNotificationModal() {
-  document.getElementById('notificationModal').classList.remove('show');
-}
-
-function markAllRead() {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications.forEach(n => n.read = true);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
-}
-
-function clearAllNotifications() {
-  if (confirm('Are you sure you want to clear all notifications?')) {
-    localStorage.setItem('skinshipNotifications', '[]');
-    loadNotifications();
-  }
-}
-
-function deleteNotification(id) {
-  let notifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notifications = notifications.filter(n => n.id !== id);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notifications));
-  loadNotifications();
-}
-
-
-async function initializeNotificationSystem() {
-  try {
-
-    db.collection("appointments")
-      .where("status", "==", "pending")
-      .onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const data = change.doc.data();
-            const notification = {
-              id: change.doc.id,
-              type: 'appointment',
-              read: false,
-              timestamp: new Date().toISOString(),
-              details: {
-                fullName: data.fullName || data.name,
-                email: data.email,
-                phone: data.phone,
-                service: data.service,
-                date: data.date,
-                time: data.time,
-                message: data.message || ''
-              }
-            };
-            addNotification(notification);
-          }
-        });
-      });
-    
-    checkLowStock();
-    setInterval(checkLowStock, 5000);
-  } catch (error) {
-    console.error('Error initializing notification system:', error);
-  }
-}
-
-
-function addNotification(notification) {
-  const notificationList = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  notificationList.unshift(notification);
-  localStorage.setItem('skinshipNotifications', JSON.stringify(notificationList));
-  loadNotifications();
-}
-
-function checkLowStock() {
-  const lowStockThreshold = 5;
-  const existingNotifications = JSON.parse(localStorage.getItem('skinshipNotifications') || '[]');
-  
-  if (typeof inventoryProducts !== 'undefined' && inventoryProducts) {
-    inventoryProducts.forEach(product => {
-      if (product.qty <= lowStockThreshold && product.qty > 0) {
-
-        const exists = existingNotifications.find(n => 
-          n.type === 'lowstock' && n.details?.productId === product.id
-        );
-        
-        if (!exists) {
-          const notification = {
-            id: `lowstock-${product.id}-${Date.now()}`,
-            type: 'lowstock',
-            read: false,
-            timestamp: new Date().toISOString(),
-            details: {
-              productId: product.id,
-              productName: product.name,
-              currentStock: product.qty,
-              category: product.category
-            }
-          };
-          addNotification(notification);
-        }
-      }
-    });
-  }
-}
-
-window.addEventListener('click', (e) => {
-  if (!e.target.closest('#notificationBtn') && !e.target.closest('#notificationDropdown')) {
-    document.getElementById('notificationDropdown').classList.remove('show');
-  }
-});
-
-loadNotifications();
-setInterval(loadNotifications, 5000);
-
-
-if (typeof initializeNotificationSystem === 'function') {
-  initializeNotificationSystem();
-}
