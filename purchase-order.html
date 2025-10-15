@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -62,6 +63,8 @@
     .stat-card:hover {
       transform: translateY(-4px);
     }
+
+    
     .modal {
       display: none;
       position: fixed;
@@ -86,41 +89,6 @@
     .status-received { background-color: #d1fae5; color: #065f46; }
     .status-cancelled { background-color: #fee2e2; color: #991b1b; }
     
-    .notification-badge {
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      background: #dc2626;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 11px;
-      font-weight: bold;
-    }
-    
-    .notification-dropdown {
-      display: none;
-      position: absolute;
-      top: 50px;
-      right: 0;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      width: 400px;
-      max-height: 500px;
-      overflow-y: auto;
-      z-index: 1000;
-    }
-    
-    .notification-dropdown.show {
-      display: block;
-      animation: slideDown 0.3s ease;
-    }
-    
     @keyframes slideDown {
       from {
         opacity: 0;
@@ -132,94 +100,6 @@
       }
     }
     
-    .notification-header {
-      padding: 20px 24px;
-      border-bottom: 1px solid #e5e7eb;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .notification-header h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1f2937;
-      margin: 0;
-    }
-    
-    .notification-header-actions {
-      display: flex;
-      gap: 16px;
-      align-items: center;
-    }
-    
-    .notification-header-actions button {
-      background: none;
-      border: none;
-      color: #d97588;
-      font-size: 14px;
-      cursor: pointer;
-      padding: 0;
-      font-weight: 500;
-      transition: color 0.2s;
-    }
-    
-    .notification-header-actions button:hover {
-      color: #c05d73;
-      text-decoration: none;
-    }
-    
-    .notification-item {
-      padding: 16px 24px;
-      border-bottom: 1px solid #f3f4f6;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .notification-item:hover {
-      background: #f9fafb;
-    }
-    
-    .notification-item.unread {
-      background: #fef5f7;
-    }
-    
-    .notification-empty {
-      padding: 60px 24px;
-      text-align: center;
-      color: #9ca3af;
-    }
-    
-    .notification-empty i {
-      font-size: 48px;
-      color: #d1d5db;
-      margin-bottom: 16px;
-      display: block;
-    }
-    
-    .notification-empty p {
-      font-size: 15px;
-      color: #9ca3af;
-      margin: 0;
-    }
-    
-    .notification-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .notification-modal.show {
-      display: flex;
-    }
     
     .info-box {
       background: #f0f9ff;
@@ -425,24 +305,38 @@
       display: flex !important;
     }
 
-    .notification-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .notification-modal.show {
-      display: flex;
-    }
+.sidebar-bubble {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #dc2626;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: bold;
+  padding: 0;
+  border: 2px solid #f7d4d0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  animation: bubblePulse 2s ease-in-out infinite;
+  z-index: 10;
+}
 
-    @media (max-width: 768px) {
+@keyframes bubblePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.sidebar-btn {
+  position: relative;
+}
+
+@media (max-width: 768px) {
       .logout-modal {
         padding: 1.5rem;
       }
@@ -475,12 +369,7 @@
       .stat-card {
         padding: 1rem;
       }
-      
-      .notification-dropdown {
-        width: 300px;
-        right: -50px;
-      }
-      
+
       .filter-btn {
         font-size: 12px;
         padding: 6px 12px;
@@ -537,16 +426,25 @@
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
     <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
-    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+<button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'">
+  <i class="fa-solid fa-calendar-check"></i>
+  <span id="calendarBubble" class="sidebar-bubble" style="display: none;">0</span>
+</button>
     <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
+<button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'">
+  <i class="fa-solid fa-box-open"></i>
+  <span id="inventoryBubble" class="sidebar-bubble" style="display: none;">0</span>
+</button>
     <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
-    <button class="sidebar-btn active" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+<button class="sidebar-btn active" title="Purchase Order" onclick="window.location.href='purchase-order.html'">
+  <i class="fa-solid fa-receipt"></i>
+  <span id="purchaseOrderBubble" class="sidebar-bubble" style="display: none;">0</span>
+</button>
   </aside>
 
   <main class="flex-1 p-6 w-full ml-20">
@@ -559,25 +457,8 @@
             <i class="fa-solid fa-plus mr-2"></i>New Purchase Order
           </button>
         </div>
-        <div class="flex items-center gap-4">
-          <div class="relative">
-            <button id="notificationBtn" class="relative" onclick="toggleNotifications()">
-              <i class="fa-regular fa-bell text-xl cursor-pointer text-white"></i>
-              <span id="notificationBadge" class="notification-badge" style="display: none;">0</span>
-            </button>
-            <div id="notificationDropdown" class="notification-dropdown">
-              <div class="notification-header">
-                <h3>Notifications</h3>
-                <div class="notification-header-actions">
-                  <button onclick="clearAllNotifications()">Clear all</button>
-                  <button onclick="markAllRead()">Mark all read</button>
-                </div>
-              </div>
-              <div id="notificationList">
-              </div>
-            </div>
-          </div>
-          
+
+        <div class="flex items-center gap-4">          
           <span class="font-semibold text-lg text-white" id="userDisplayName">Loading...</span>
           <div class="relative">
             <button id="userMenuButton" onclick="document.getElementById('userMenu').classList.toggle('hidden')">
@@ -898,13 +779,6 @@
           <i class="fa-solid fa-times mr-2"></i>Close
         </button>
       </div>
-    </div>
-  </div>
-
-  <div id="notificationModal" class="notification-modal">
-    <div class="modal-content">
-      <span class="text-gray-400 hover:text-gray-600 cursor-pointer float-right text-2xl" onclick="closeNotificationModal()">&times;</span>
-      <div id="modalBody"></div>
     </div>
   </div>
 
