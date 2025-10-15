@@ -19,22 +19,6 @@
       overflow: hidden;
     }
 
-    /* Dot Grid Background */
-    .dot-grid-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .dot-grid-canvas {
-      width: 100%;
-      height: 100%;
-    }
-
     .login-container {
       max-width: 1000px;
       width: 100%;
@@ -50,33 +34,11 @@
     .form-section {
       max-width: 450px;
       flex: 1;
-      background: rgba(247, 212, 208, 0.95);
+      background: rgba(247, 212, 208, 0.5);
       padding: 40px;
       border-radius: 20px;
       backdrop-filter: blur(10px);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-      --form-bg-opacity: 0.95;
-    }
-
-    .form-section.transparent {
-      background: rgba(247, 212, 208, var(--form-bg-opacity));
-      backdrop-filter: none;
-      box-shadow: none;
-    }
-
-    .logo-container {
-      width: 150px;
-      height: 150px;
-      margin-bottom: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .logo-container img {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
     }
 
     .welcome-text {
@@ -89,31 +51,6 @@
       margin-bottom: 6px;
       user-select: none;
       display: inline-block;
-    }
-
-    .shuffle-parent {
-      display: inline-block;
-      white-space: normal;
-      word-wrap: break-word;
-      will-change: transform;
-      line-height: 1;
-      font-size: 2.3rem;
-      font-weight: 800;
-      font-family: 'Poppins', sans-serif;
-      text-transform: uppercase;
-      color: #000000cc;
-      letter-spacing: 4px;
-      visibility: hidden;
-    }
-
-    .shuffle-parent.is-ready {
-      visibility: visible;
-    }
-
-    .shuffle-char {
-      line-height: 1;
-      display: inline-block;
-      text-align: center;
     }
 
     .subtext {
@@ -238,10 +175,6 @@
       transition: box-shadow 0.3s ease;
     }
 
-    .image-section:hover {
-      box-shadow: none;
-    }
-
     .image-section-inner {
       width: 100%;
       height: 100%;
@@ -250,15 +183,6 @@
       justify-content: center;
       transform-style: preserve-3d;
       transition: transform 0.1s ease-out;
-    }
-
-    .pixel-canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      position: absolute;
-      top: 0;
-      left: 0;
     }
 
     .image-section img {
@@ -390,6 +314,147 @@
       display: none;
     }
 
+    /* Modal Styles */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(247, 212, 208, 0.95));
+      padding: 40px;
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 450px;
+      width: 90%;
+      position: relative;
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: none;
+      border: none;
+      font-size: 28px;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s ease, transform 0.3s ease;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .modal-close:hover {
+      color: #da5c73;
+      transform: rotate(90deg);
+      background: rgba(218, 92, 115, 0.1);
+    }
+
+    .modal-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #2b2b2b;
+      margin-bottom: 10px;
+      letter-spacing: 2px;
+    }
+
+    .modal-subtitle {
+      font-size: 0.9rem;
+      color: #666;
+      margin-bottom: 25px;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 15px;
+      border: 2px solid #e0c0be;
+      border-radius: 15px;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      transition: all 0.3s ease;
+    }
+
+    .modal-input:focus {
+      border-color: #da5c73;
+      box-shadow: 0 0 15px rgba(218, 92, 115, 0.3);
+      outline: none;
+      background: white;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #da5c73, #e2798d);
+      border: none;
+      border-radius: 15px;
+      color: black;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+    }
+
+    .modal-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(218, 92, 115, 0.4);
+    }
+
+    .modal-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .cooldown-info {
+      background: linear-gradient(135deg, #fff3cd, #ffe5a1);
+      border: 2px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 15px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
     @media (max-width: 768px) {
       .login-container {
         flex-direction: column;
@@ -404,36 +469,37 @@
         width: 200px;
         height: 200px;
       }
+
+      .modal-content {
+        padding: 30px;
+      }
     }
   </style>
 </head>
 <body>
-  <!-- Animated Dot Grid Background -->
-  <div class="dot-grid-bg">
-    <canvas id="dotGridCanvas" class="dot-grid-canvas"></canvas>
-  </div>
+  <canvas id="backgroundCanvas" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;"></canvas>
 
   <main class="login-container">
     <section class="form-section" role="main" aria-label="Login Form Section">
       <!-- Login Form -->
       <div id="loginSection">
-      <h1 class="welcome-text">WELCOME!</h1>
-      <p class="subtext">Please enter your login details</p>
-      <form id="loginForm">
+        <h1 class="welcome-text">WELCOME BACK!</h1>
+        <p class="subtext">Please enter your login details</p>
+        <form id="loginForm">
           <label for="email">Email</label>
           <input id="email" name="email" type="email" placeholder="Enter your email" required autocomplete="email" aria-required="true"/>
-        
-        <label for="password" class="mt-4">Password</label>
-        <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
-        
-        <div class="checkbox-group">
-          <input type="checkbox" id="remember" name="remember" />
-          <label for="remember" class="select-none">Remember me</label>
-            <span class="forgot-password" onclick="window.location.href='forgotpassword.html'" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
-        </div>
+          
+          <label for="password" class="mt-4">Password</label>
+          <input id="password" name="password" type="password" placeholder="Enter your password" required autocomplete="current-password" aria-required="true"/>
+          
+          <div class="checkbox-group">
+            <input type="checkbox" id="remember" name="remember" />
+            <label for="remember" class="select-none">Remember me</label>
+            <span class="forgot-password" id="forgotPasswordLink" role="link" tabindex="0" aria-label="Forgot password clickable text">Forgot password</span>
+          </div>
 
-        <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
-      </form>
+          <button type="submit" class="signin-btn" aria-label="Sign in button">SIGN IN</button>
+        </form>
       </div>
 
       <!-- 2FA Verification Section -->
@@ -467,7 +533,6 @@
     </section>
     
     <section class="image-section" id="tiltedLogo" aria-label="Skinship Beauty Logo">
-      <canvas id="pixelCanvas" class="pixel-canvas"></canvas>
       <div class="image-section-inner">
         <img src="123transparent.png" alt="Skinship Beauty Logo" />
       </div>
@@ -475,83 +540,104 @@
     </section>
   </main>
 
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close" id="closeModal">&times;</button>
+      <h2 class="modal-title">Forgot Password</h2>
+      <p class="modal-subtitle">Enter your email to reset your password</p>
+      
+      <form id="forgotPasswordForm">
+        <input 
+          type="email" 
+          id="forgotEmail" 
+          class="modal-input" 
+          placeholder="Enter your email" 
+          required 
+        />
+        <button type="submit" class="modal-btn" id="resetBtn">Reset Password</button>
+      </form>
+      
+      <div id="cooldownInfo" class="cooldown-info" style="display: none;"></div>
+      <div id="modalError" class="error-message"></div>
+      <div id="modalSuccess" class="success-message"></div>
+    </div>
+  </div>
+
   <script>
-    // Dot Grid Animation
-    const canvas = document.getElementById('dotGridCanvas');
+    // Combined Background Animation - Particles + Dot Grid
+    const canvas = document.getElementById('backgroundCanvas');
     const ctx = canvas.getContext('2d');
     
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     const particles = [];
-    const particleCount = 5;
-    
+    const particleCount = 100;
+    const colors = ['#da5c73', '#e2798d', '#f7d4d0'];
+
     class Particle {
       constructor() {
         this.reset();
-        this.y = Math.random() * window.innerHeight;
       }
-      
+
       reset() {
-        this.x = Math.random() * window.innerWidth;
-        this.y = -50;
-        this.size = Math.random() * 100 + 50;
-        this.speedY = Math.random() * 0.5 + 0.2;
-        this.speedX = (Math.random() - 0.5) * 0.3;
-        this.opacity = Math.random() * 0.3 + 0.1;
-        this.color = ['#da5c73', '#e2798d', '#f7d4d0'][Math.floor(Math.random() * 3)];
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.size = Math.random() * 3 + 1;
+        this.opacity = Math.random() * 0.5 + 0.3;
+        this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.angle = Math.random() * Math.PI * 2;
+        this.speed = Math.random() * 0.02 + 0.01;
       }
-      
+
       update() {
-        this.y += this.speedY;
-        this.x += this.speedX;
-        
-        if (this.y > window.innerHeight + 50) {
-          this.reset();
-        }
-        
-        if (this.x < -50 || this.x > window.innerWidth + 50) {
-          this.x = Math.random() * window.innerWidth;
-        }
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += this.speed;
+        this.vx += Math.sin(this.angle) * 0.001;
+        this.vy += Math.cos(this.angle) * 0.001;
+
+        if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+
+        this.x = Math.max(0, Math.min(canvas.width, this.x));
+        this.y = Math.max(0, Math.min(canvas.height, this.y));
       }
-      
-      draw(ctx) {
-        const gradient = ctx.createRadialGradient(
-          this.x, this.y, 0,
-          this.x, this.y, this.size
-        );
-        
-        gradient.addColorStop(0, this.color + Math.floor(this.opacity * 255).toString(16).padStart(2, '0'));
-        gradient.addColorStop(1, this.color + '00');
-        
-        ctx.fillStyle = gradient;
-        ctx.fillRect(
-          this.x - this.size,
-          this.y - this.size,
-          this.size * 2,
-          this.size * 2
-        );
+
+      draw() {
+        ctx.globalAlpha = this.opacity;
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
       }
     }
-    
+
     for (let i = 0; i < particleCount; i++) {
       particles.push(new Particle());
     }
-    
+
+    // Dot Grid
     let dots = [];
-    let pointer = { x: 0, y: 0, vx: 0, vy: 0, speed: 0, lastX: 0, lastY: 0, lastTime: 0 };
-    
-    // Configuration
     const config = {
-      dotSize: 5,
-      gap: 30,
+      dotSize: 4,
+      gap: 40,
       baseColor: '#da5c73',
-      activeColor: 'fffffff',
-      proximity: 120,
-      speedTrigger: 100,
-      shockRadius: 200,
-      shockStrength: 3,
+      activeColor: 'ffffff',
+      proximity: 100,
+      speedTrigger: 80,
+      shockRadius: 180,
+      shockStrength: 2.5,
       maxSpeed: 5000,
       resistance: 800,
       returnDuration: 1200
     };
+
+    let pointer = { x: 0, y: 0, vx: 0, vy: 0, speed: 0, lastX: 0, lastY: 0, lastTime: 0 };
 
     function hexToRgb(hex) {
       const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -565,20 +651,10 @@
     const baseRgb = hexToRgb(config.baseColor);
     const activeRgb = hexToRgb(config.activeColor);
 
-    function resizeCanvas() {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctx.scale(dpr, dpr);
-      buildGrid();
-    }
-
     function buildGrid() {
       dots = [];
-      const width = window.innerWidth;
-      const height = window.innerHeight;
+      const width = canvas.width;
+      const height = canvas.height;
       const cell = config.dotSize + config.gap;
       const cols = Math.floor((width + config.gap) / cell);
       const rows = Math.floor((height + config.gap) / cell);
@@ -611,8 +687,6 @@
       function update() {
         const elapsed = performance.now() - startTime;
         const progress = Math.min(elapsed / duration, 1);
-        
-        // Elastic easing out
         const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
         
         dot.xOffset = startX + (targetX - startX) * easeOut;
@@ -629,12 +703,11 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Draw floating particles
-      particles.forEach(particle => {
-        particle.update();
-        particle.draw(ctx);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
       });
-      
+
       const proxSq = config.proximity * config.proximity;
 
       for (const dot of dots) {
@@ -663,10 +736,16 @@
       requestAnimationFrame(draw);
     }
 
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      buildGrid();
+    });
+
     let lastMoveTime = 0;
-    function onMouseMove(e) {
+    window.addEventListener('mousemove', (e) => {
       const now = performance.now();
-      if (now - lastMoveTime < 16) return; // Throttle to ~60fps
+      if (now - lastMoveTime < 16) return;
       lastMoveTime = now;
 
       const dt = pointer.lastTime ? now - pointer.lastTime : 16;
@@ -704,9 +783,9 @@
           }
         }
       }
-    }
+    });
 
-    function onClick(e) {
+    window.addEventListener('click', (e) => {
       const cx = e.clientX;
       const cy = e.clientY;
 
@@ -714,8 +793,8 @@
         const dist = Math.hypot(dot.cx - cx, dot.cy - cy);
         if (dist < config.shockRadius && !dot.animating) {
           const falloff = Math.max(0, 1 - dist / config.shockRadius);
-          const pushX = (dot.cx - cx) * config.shockStrength * falloff;
-          const pushY = (dot.cy - cy) * config.shockStrength * falloff;
+          const pushX = (dot.cx - cx) * 2.5 * falloff;
+          const pushY = (dot.cy - cy) * 2.5 * falloff;
           
           animate(dot, pushX, pushY, config.resistance);
           setTimeout(() => {
@@ -723,41 +802,10 @@
           }, config.resistance);
         }
       }
-    }
+    });
 
-    window.addEventListener('resize', resizeCanvas);
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('click', onClick);
-
-    resizeCanvas();
+    buildGrid();
     draw();
-
-    // Particle visibility control - add data attribute to toggle
-    window.setParticlesVisible = (visible) => {
-      document.getElementById('dotGridCanvas').style.opacity = visible ? '1' : '0';
-    };
-
-    // Dot grid visibility control
-    window.setDotsVisible = (visible) => {
-      const dots = document.querySelectorAll('.pixel-canvas');
-      dots.forEach(canvas => {
-        canvas.style.opacity = visible ? '1' : '0';
-      });
-    };
-
-    // Form transparency control
-    window.setFormTransparent = (transparent) => {
-      const form = document.querySelector('.form-section');
-      if (form) {
-        if (transparent) {
-          form.classList.add('transparent');
-          form.style.setProperty('--form-bg-opacity', '0');
-        } else {
-          form.classList.remove('transparent');
-          form.style.setProperty('--form-bg-opacity', '0.95');
-        }
-      }
-    };
   </script>
 
   <script>
@@ -780,7 +828,6 @@
       logoTooltip.style.opacity = tooltipOpacity;
       logoTooltip.style.transform = `translate(-50%, -50%) rotate(${tooltipRotate}deg)`;
       
-      // Smooth interpolation
       logoRotateX *= 0.85;
       logoRotateY *= 0.85;
       logoScale += (1 - logoScale) * 0.15;
@@ -803,11 +850,9 @@
       logoRotateX = rotationX;
       logoRotateY = rotationY;
 
-      // Tooltip position
       logoTooltip.style.left = `${e.clientX - rect.left}px`;
       logoTooltip.style.top = `${e.clientY - rect.top}px`;
 
-      // Tooltip rotation based on velocity
       const velocityY = offsetY - lastLogoY;
       tooltipRotate = -velocityY * 0.3;
       lastLogoY = offsetY;
@@ -828,16 +873,36 @@
       logoTooltip.classList.remove('show');
     });
   </script>
+
+  <!-- Modal Logic -->
+  <script>
+    const forgotPasswordModal = document.getElementById('forgotPasswordModal');
+    const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+    const closeModal = document.getElementById('closeModal');
+
+    forgotPasswordLink.addEventListener('click', () => {
+      forgotPasswordModal.classList.add('show');
+    });
+
+    closeModal.addEventListener('click', () => {
+      forgotPasswordModal.classList.remove('show');
+    });
+
+    forgotPasswordModal.addEventListener('click', (e) => {
+      if (e.target === forgotPasswordModal) {
+        forgotPasswordModal.classList.remove('show');
+      }
+    });
+  </script>
   
   <!-- EmailJS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
     import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-    // Initialize EmailJS with your public key
     emailjs.init("JcMrqAedryjLalsIq");
 
     const firebaseConfig = {
@@ -866,6 +931,14 @@
     const rememberCheckbox = document.getElementById("remember");
     const resendLink = document.getElementById("resendLink");
     const backToLoginLink = document.getElementById("backToLoginLink");
+
+    // Forgot Password Modal Elements
+    const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+    const forgotEmailInput = document.getElementById("forgotEmail");
+    const resetBtn = document.getElementById("resetBtn");
+    const cooldownInfo = document.getElementById("cooldownInfo");
+    const modalError = document.getElementById("modalError");
+    const modalSuccess = document.getElementById("modalSuccess");
 
     let currentUser = null;
     let generatedCode = null;
@@ -1122,11 +1195,16 @@
         if (is2FAValid(user.uid)) {
           saveCredentials(email, password, remember);
           const userData = userDoc.data();
-          localStorage.setItem("currentUserEmail", email);
-          localStorage.setItem("currentUserRole", role);
-          localStorage.setItem("currentUsername", userData.username || "");
-          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
-          window.location.href = "dashboard.html";
+          window.currentUserData = {
+            email: email,
+            role: role,
+            username: userData.username || "",
+            fullName: userData.fullName || userData.fullname || ""
+          };
+          showSuccess("✅ Login successful! Redirecting...");
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1000);
           return;
         }
 
@@ -1210,10 +1288,12 @@
           
           saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
           const userData = userDoc.data();
-          localStorage.setItem("currentUserEmail", userEmail);
-          localStorage.setItem("currentUserRole", role);
-          localStorage.setItem("currentUsername", userData.username || "");
-          localStorage.setItem("currentUserFullName", userData.fullName || userData.fullname || "");
+          window.currentUserData = {
+            email: userEmail,
+            role: role,
+            username: userData.username || "",
+            fullName: userData.fullName || userData.fullname || ""
+          };
           
           setTimeout(() => {
             window.location.href = "dashboard.html";
@@ -1231,6 +1311,93 @@
         verifyBtn.textContent = "VERIFY CODE";
       }
     });
+
+    // Forgot Password Functionality
+    const COOLDOWN_TIME = 160;
+    let cooldownTimer = null;
+
+    function checkCooldown() {
+      const cooldownEnd = parseInt(sessionStorage.getItem('forgotPasswordCooldown') || '0');
+      const now = Date.now();
+      
+      if (cooldownEnd > now) {
+        const remainingSeconds = Math.ceil((cooldownEnd - now) / 1000);
+        startCooldown(remainingSeconds);
+      }
+    }
+
+    function startCooldown(seconds) {
+      resetBtn.disabled = true;
+      let remaining = seconds;
+      
+      function updateDisplay() {
+        const minutes = Math.floor(remaining / 60);
+        const secs = remaining % 60;
+        cooldownInfo.textContent = `⏱️ Please wait ${minutes}:${secs.toString().padStart(2, '0')} before sending another email`;
+        cooldownInfo.style.display = 'block';
+        resetBtn.textContent = `Wait ${minutes}:${secs.toString().padStart(2, '0')}`;
+      }
+      
+      updateDisplay();
+      
+      cooldownTimer = setInterval(() => {
+        remaining--;
+        
+        if (remaining <= 0) {
+          clearInterval(cooldownTimer);
+          resetBtn.disabled = false;
+          resetBtn.textContent = 'Reset Password';
+          cooldownInfo.style.display = 'none';
+          sessionStorage.removeItem('forgotPasswordCooldown');
+        } else {
+          updateDisplay();
+        }
+      }, 1000);
+    }
+
+    forgotPasswordForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      
+      modalError.textContent = '';
+      modalError.classList.remove('show');
+      modalSuccess.textContent = '';
+      modalSuccess.classList.remove('show');
+      
+      const email = forgotEmailInput.value.trim();
+
+      try {
+        await sendPasswordResetEmail(auth, email);
+        modalSuccess.textContent = "✅ Password reset email sent! Please check your inbox or spam.";
+        modalSuccess.classList.add('show');
+        
+        const cooldownEnd = Date.now() + (COOLDOWN_TIME * 1000);
+        sessionStorage.setItem('forgotPasswordCooldown', cooldownEnd.toString());
+        startCooldown(COOLDOWN_TIME);
+        
+        forgotPasswordForm.reset();
+      } catch (error) {
+        let errorMessage = "Failed to send reset email: ";
+        
+        switch (error.code) {
+          case 'auth/invalid-email':
+            errorMessage = "Invalid email address.";
+            break;
+          case 'auth/user-not-found':
+            errorMessage = "No account found with this email.";
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = "Too many requests. Please try again later.";
+            break;
+          default:
+            errorMessage += error.message;
+        }
+        
+        modalError.textContent = errorMessage;
+        modalError.classList.add('show');
+      }
+    });
+
+    checkCooldown();
   </script>
 </body>
-</html> 
+</html>
