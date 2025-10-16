@@ -184,6 +184,7 @@
       flex-direction: column;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
       max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-header {
@@ -518,6 +519,17 @@
       margin: 0 10px;
     }
 
+    .category-header {
+      background: #f3f4f6;
+      color: #666;
+      font-weight: 600;
+      font-size: 12px;
+      padding: 8px 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+
     @media (max-width: 480px) {
       .sidebar-bubble {
         width: 16px;
@@ -704,7 +716,7 @@
         <div class="form-row">
           <label class="form-label">Date & Time *</label>
           <input type="datetime-local" class="form-input" id="appointmentDate" required>
-          <span class="error-message" id="dateError">Please select a future date and time</span>
+          <span class="error-message" id="dateError">Please select a future date and time or current date and time</span>
         </div>
       </div>
       
@@ -794,12 +806,42 @@
 
     // ==================== OPTIMIZED DATA LOADING ====================
     
+    // Cache for services data
+    let servicesCache = {
+      byId: new Map(),        // serviceId -> service data
+      byCategory: new Map()   // category -> [service data]
+    };
+
     // Load all data once on initialization
     async function loadInitialData() {
       try {
-        // Single read: Get all customers
-        const customersSnapshot = await getDocs(collection(db, "customers"));
-        allCustomers = customersSnapshot.docs
+        console.log("Loading initial data...");
+        
+        // Single read: Get all services first (needed for mapping)
+        const servicesSnapshot = await getDocs(collection(db, "services"));
+        servicesCache.byId.clear();
+        servicesCache.byCategory.clear();
+        
+        servicesSnapshot.docs.forEach(doc => {
+          const serviceData = { id: doc.id, ...doc.data() };
+          const category = serviceData.category || 'Uncategorized';
+          
+          // Store by ID
+          servicesCache.byId.set(doc.id, serviceData);
+          
+          // Store by category
+          if (!servicesCache.byCategory.has(category)) {
+            servicesCache.byCategory.set(category, []);
+          }
+          servicesCache.byCategory.get(category).push(serviceData);
+        });
+        
+        console.log("Loaded services:", servicesCache.byId.size);
+        console.log("Categories:", Array.from(servicesCache.byCategory.keys()));
+        
+        // Single read: Get all appointments (changed from customers to appointments)
+        const appointmentsSnapshot = await getDocs(collection(db, "appointments"));
+        allCustomers = appointmentsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter(c => c.archived !== true)
           .sort((a, b) => {
@@ -808,11 +850,17 @@
             return bTime - aTime;
           });
         
+        console.log("Loaded appointments:", allCustomers.length);
+        
         // Single read: Get all staff
         const staffSnapshot = await getDocs(collection(db, "users"));
         allStaff = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
+        console.log("Loaded staff:", allStaff.length);
+        
         // Update UI
+        populateServiceDropdown();
+        populateServiceSelect();
         populateStaffDropdown();
         renderTable();
         
@@ -831,11 +879,11 @@
       }
       
       customersListener = onSnapshot(
-        collection(db, "customers"),
+        collection(db, "appointments"),
         (snapshot) => {
           // Only process if there are actual changes
           if (snapshot.docChanges().length > 0) {
-            console.log("Customers data changed, reloading...");
+            console.log("Appointments data changed, updating...");
             
             // Update only the changed documents
             snapshot.docChanges().forEach((change) => {
@@ -871,6 +919,18 @@
           console.error("Error in customers listener:", error);
         }
       );
+    }
+
+    // Get service name from cache
+    function getServiceNameById(serviceId) {
+      const service = servicesCache.byId.get(serviceId);
+      return service ? service.name : serviceId;
+    }
+
+    // Get service category from cache
+    function getServiceCategoryById(serviceId) {
+      const service = servicesCache.byId.get(serviceId);
+      return service ? (service.category || 'Uncategorized') : '';
     }
 
     // Notification System - SIDEBAR BUBBLE NOTIFICATIONS
@@ -1066,45 +1126,10 @@
 
     window.db = db;
     window.currentUserId = currentUserId;
+    window.servicesCache = servicesCache;
   </script>
 
   <script>
-    const serviceMap = {
-      'FLEEK EYELASH': 'fleek-eyelash',
-      'BROWMAZING': 'browmazing',
-      'WOKE UP LIKE THIS': 'woke-up-like-this',
-      'EXPRESS OFFER (30 MINS.)': 'express-offer',
-      'HAPPY NAILS – CLASSICS': 'happy-nails',
-      'PROMO PACKAGES': 'promo-packages',
-      'THERAPEUTIC HEAT': 'therapeutic-heat',
-      'WAX – OUT': 'wax-out',
-      'ES-FACIALY FOR YOU': 'es-facialy-for-you',
-      'FACE AND BODY CONTOURING': 'face-body-contouring',
-      'LASER HAIR REMOVAL / WHITENING': 'laser-hair-removal',
-      'PICOSURE LASER TREATMENT': 'picosure-laser',
-      'WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)': 'warts-removal',
-      'CO2 FRACTIONAL LASER LAY-AWAY': 'co2-fractional'
-    };
-
-    const services = [
-      "All Services",
-      "FLEEK EYELASH",
-      "BROWMAZING",
-      "WOKE UP LIKE THIS",
-      "EXPRESS OFFER (30 MINS.)",
-      "HAPPY NAILS – CLASSICS",
-      "PROMO PACKAGES",
-      "THERAPEUTIC HEAT",
-      "WAX – OUT",
-      "ES-FACIALY FOR YOU",
-      "FACE AND BODY CONTOURING",
-      "LASER HAIR REMOVAL / WHITENING",
-      "PICOSURE LASER TREATMENT",
-      "WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)",
-      "CO2 FRACTIONAL LASER LAY-AWAY"
-    ];
-
-    let activeService = "All Services";
     const customerTableBody = document.querySelector('#customerTable tbody');
     const searchInput = document.getElementById('searchInput');
     const serviceDropdown = document.getElementById('serviceDropdown');
@@ -1116,6 +1141,7 @@
     let currentPage = 1;
     const itemsPerPage = 15;
     let totalPages = 1;
+    let activeService = "All Services";
 
     function updateEditButton() {
       const checkboxes = document.querySelectorAll('.customer-checkbox:checked');
@@ -1150,7 +1176,7 @@
       openEditModalWithData(customer);
     }
 
-    function openEditModalWithData(customer) {
+    async function openEditModalWithData(customer) {
       editMode = true;
       selectedCustomerId = customer.id;
       
@@ -1175,46 +1201,59 @@
       emailInput.classList.add('bg-gray-100', 'cursor-not-allowed');
       phoneInput.classList.add('bg-gray-100', 'cursor-not-allowed');
 
+      // Load service and populate dropdown - just display what's in the database
+      await populateServiceSelect();
+      
+      // Set the service value directly from customer data (show as text, not editable)
       const serviceSelect = document.getElementById('serviceSelect');
-      let serviceName = customer.service;
-      
-      const foundService = Object.keys(serviceMap).find(key => serviceMap[key] === customer.service);
-      if (foundService) {
-        serviceName = foundService;
+      if (customer.service) {
+        // Find if it's an ID or a text value
+        const serviceExists = window.servicesCache.byId.has(customer.service);
+        
+        if (serviceExists) {
+          // It's a valid service ID
+          serviceSelect.value = customer.service;
+        } else {
+          // It's a text value (like "HydraFacial + BBGlow + Collagen PDT - ₱1899")
+          // Add it as a custom option and select it
+          const customOption = document.createElement('option');
+          customOption.value = customer.service;
+          customOption.textContent = customer.service;
+          customOption.selected = true;
+          serviceSelect.insertBefore(customOption, serviceSelect.firstChild);
+        }
       }
-      
-      serviceSelect.value = serviceName;
 
       document.getElementById('statusSelect').value = customer.status || 'Pending';
       document.getElementById('employeeSelect').value = customer.staff || '';
 
+      // Parse and set the date/time from customer data
       if (customer.date && customer.time) {
         try {
-          let timeStr = customer.time.trim();
+          const dateTimeStr = `${customer.date} ${customer.time}`;
+          const dateObj = new Date(dateTimeStr);
           
-          if (timeStr.toLowerCase().includes('am') || timeStr.toLowerCase().includes('pm')) {
-            const parts = timeStr.split(' ');
-            const timePart = parts[0];
-            const modifier = parts[1].toLowerCase();
+          if (!isNaN(dateObj.getTime())) {
+            const year = dateObj.getFullYear();
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const hours = String(dateObj.getHours()).padStart(2, '0');
+            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
             
-            let [hours, minutes] = timePart.split(':').map(str => parseInt(str, 10));
-            
-            if (modifier === 'pm' && hours < 12) hours += 12;
-            if (modifier === 'am' && hours === 12) hours = 0;
-            
-            timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+            document.getElementById('appointmentDate').value = `${year}-${month}-${day}T${hours}:${minutes}`;
           }
-          
-          document.getElementById('appointmentDate').value = `${customer.date}T${timeStr}`;
         } catch (e) {
           console.error('Error parsing date/time:', e);
         }
       }
       
-      document.getElementById('appointmentDate').removeAttribute('min');
+      // Set minimum to current date/time for edit mode too
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('appointmentDate').min = now.toISOString().slice(0, 16);
     }
 
-    function openAddModal() {
+    async function openAddModal() {
       editMode = false;
       selectedCustomerId = null;
       
@@ -1233,6 +1272,7 @@
       emailInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
       phoneInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
       
+      // Set minimum datetime to current time
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       document.getElementById('appointmentDate').value = now.toISOString().slice(0, 16);
@@ -1240,6 +1280,9 @@
       
       clearForm();
       clearErrors();
+      
+      // Load services for add mode
+      await populateServiceSelect();
     }
 
     function clearForm() {
@@ -1260,22 +1303,51 @@
       });
     }
 
-    function initializeDropdown() {
-      services.forEach(service => {
+    // Populate service dropdown (filter - shows only CATEGORIES)
+    function populateServiceDropdown() {
+      serviceDropdown.innerHTML = '';
+      
+      const allOption = document.createElement('a');
+      allOption.className = 'dropdown-item selected';
+      allOption.textContent = 'All Services';
+      allOption.onclick = (event) => selectService('All Services', event);
+      serviceDropdown.appendChild(allOption);
+      
+      // Get unique categories from cache
+      const categories = Array.from(window.servicesCache.byCategory.keys()).sort();
+      
+      categories.forEach(category => {
         const item = document.createElement('a');
         item.className = 'dropdown-item';
-        item.textContent = service;
-        item.onclick = (event) => selectService(service, event);
+        item.textContent = category;
+        item.onclick = (event) => selectService(category, event);
         serviceDropdown.appendChild(item);
       });
-      serviceDropdown.children[0].classList.add('selected');
-      
+    }
+
+    // Populate service select (modal - shows all services GROUPED BY CATEGORY)
+    function populateServiceSelect() {
       const serviceSelect = document.getElementById('serviceSelect');
-      services.slice(1).forEach(service => {
-        const option = document.createElement('option');
-        option.value = service;
-        option.textContent = service;
-        serviceSelect.appendChild(option);
+      serviceSelect.innerHTML = '<option value="">Select a service</option>';
+      
+      // Get categories sorted
+      const categories = Array.from(window.servicesCache.byCategory.keys()).sort();
+      
+      categories.forEach(category => {
+        // Add category header
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = category;
+        
+        // Add services under this category
+        const services = window.servicesCache.byCategory.get(category);
+        services.forEach(service => {
+          const option = document.createElement('option');
+          option.value = service.id;
+          option.textContent = service.name;
+          optgroup.appendChild(option);
+        });
+        
+        serviceSelect.appendChild(optgroup);
       });
     }
 
@@ -1330,14 +1402,22 @@
       customerTableBody.innerHTML = '';
       const searchTerm = searchInput.value.toLowerCase();
 
+      // Filter customers based on service CATEGORY and search
       const filtered = allCustomers.filter(c => {
         let matchesService = activeService === "All Services";
-        if (!matchesService) {
-          const serviceSlug = serviceMap[activeService];
-          matchesService = c.service === activeService || c.service === serviceSlug;
+        
+        if (!matchesService && c.service) {
+          const service = window.servicesCache.byId.get(c.service);
+          if (service) {
+            const category = service.category || 'Uncategorized';
+            matchesService = category === activeService;
+          }
         }
         
-        const matchesSearch = Object.values(c).some(v => String(v).toLowerCase().includes(searchTerm));
+        const matchesSearch = !searchTerm || Object.values(c).some(v => 
+          String(v).toLowerCase().includes(searchTerm)
+        );
+        
         return matchesService && matchesSearch;
       });
 
@@ -1362,10 +1442,11 @@
       paginatedCustomers.forEach(c => {
         const tr = document.createElement('tr');
         
+        // Get service name from cache
         let displayService = c.service;
-        const foundService = Object.keys(serviceMap).find(key => serviceMap[key] === c.service);
-        if (foundService) {
-          displayService = foundService;
+        if (c.service) {
+          const service = window.servicesCache.byId.get(c.service);
+          displayService = service ? service.name : c.service;
         }
         
         tr.innerHTML = `
@@ -1377,10 +1458,10 @@
           <td>${displayService || '-'}</td>
           <td>
             <span class="px-2 py-1 text-xs rounded-full ${
-              c.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 
+              c.status === 'Confirmed' ? 'bg-blue-100 text-blue-800' : 
               c.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : 
               c.status === 'Cancelled' ? 'bg-red-100 text-red-800' :
-              c.status === 'Completed' ? 'bg-blue-100 text-blue-800' :
+              c.status === 'Completed' ? 'bg-green-100 text-green-800' :
               'bg-gray-100 text-gray-800'
             }">
               ${c.status || 'Pending'}
@@ -1424,8 +1505,12 @@
       return /^09\d{9}$/.test(phone);
     }
 
-    function validateFutureDate(dateString) {
-      return new Date(dateString) > new Date();
+    function validateDateTime(dateString) {
+      const selectedDate = new Date(dateString);
+      const now = new Date();
+      
+      // Always require future dates or current time (for both add and edit)
+      return selectedDate >= now || Math.abs(selectedDate - now) < 60000; // Within 1 minute tolerance
     }
 
     function showError(inputId, errorId) {
@@ -1469,7 +1554,7 @@
       
       try {
         const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const customerDoc = doc(window.db, "customers", selectedCustomerId);
+        const customerDoc = doc(window.db, "appointments", selectedCustomerId);
         await deleteDoc(customerDoc);
         alert('Customer deleted successfully!');
         closeEditModal();
@@ -1482,7 +1567,7 @@
     async function saveCustomer() {
       const customerName = document.getElementById('customerName').value.trim();
       const customerEmail = document.getElementById('customerEmail').value.trim();
-      const service = document.getElementById('serviceSelect').value;
+      const serviceId = document.getElementById('serviceSelect').value;
       const status = document.getElementById('statusSelect').value;
       const contactNumber = document.getElementById('contactNumber').value.trim();
       const employee = document.getElementById('employeeSelect').value;
@@ -1502,7 +1587,7 @@
         hasError = true;
       }
 
-      if (!service) {
+      if (!serviceId) {
         showError('serviceSelect', 'serviceError');
         hasError = true;
       }
@@ -1517,14 +1602,13 @@
         hasError = true;
       }
 
-      if (!dateTime || (!editMode && !validateFutureDate(dateTime))) {
+      if (!dateTime || !validateDateTime(dateTime)) {
         showError('appointmentDate', 'dateError');
         hasError = true;
       }
 
       if (hasError) return;
       
-      const serviceSlug = serviceMap[service] || service;
       const dateObj = new Date(dateTime);
       const formattedDate = dateObj.toISOString().split('T')[0];
       const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
@@ -1532,7 +1616,7 @@
       const customerData = {
         name: customerName,
         email: customerEmail,
-        service: serviceSlug,
+        service: serviceId,
         status: status,
         phone: contactNumber,
         staff: employee,
@@ -1546,12 +1630,12 @@
         const { collection, doc, addDoc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
         
         if (editMode && selectedCustomerId) {
-          const customerDoc = doc(window.db, "customers", selectedCustomerId);
+          const customerDoc = doc(window.db, "appointments", selectedCustomerId);
           await updateDoc(customerDoc, customerData);
           alert('Customer updated successfully!');
         } else {
           customerData.createdAt = serverTimestamp();
-          const customersRef = collection(window.db, "customers");
+          const customersRef = collection(window.db, "appointments");
           await addDoc(customersRef, customerData);
           alert('Customer added successfully!');
         }
@@ -1587,7 +1671,16 @@
       renderTable();
     });
 
-    initializeDropdown();
+    window.openAddModal = openAddModal;
+    window.editSelectedCustomer = editSelectedCustomer;
+    window.closeEditModal = closeEditModal;
+    window.deleteCustomer = deleteCustomer;
+    window.saveCustomer = saveCustomer;
+    window.toggleDropdown = toggleDropdown;
+    window.toggleUserMenu = toggleUserMenu;
+    window.previousPage = previousPage;
+    window.nextPage = nextPage;
+    window.updateEditButton = updateEditButton;
   </script>
 
 </body>
