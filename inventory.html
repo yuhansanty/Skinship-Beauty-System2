@@ -373,11 +373,8 @@
           <!-- Search Bar -->
           <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-3 md:px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-full lg:w-80 text-sm md:text-base" />
           
-          <!-- Action Buttons -->
+          <!-- Action Button (Only Edit) -->
           <div class="flex gap-2 w-full lg:w-auto">
-            <button class="bg-white text-[#da5c73] px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md text-xs md:text-sm flex-1 lg:flex-none" onclick="addNewItem()">
-              <i class="fa-solid fa-plus mr-1 md:mr-2"></i>Add Item
-            </button>
             <button class="bg-white text-[#da5c73] px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md text-xs md:text-sm flex-1 lg:flex-none" onclick="enableEditMode()" id="editModeBtn">
               <i class="fa-solid fa-pen-to-square mr-1 md:mr-2"></i>Edit Item
             </button>
@@ -480,67 +477,6 @@
   </main>
 
 
-  <!-- Add Product Modal -->
-  <div id="addProductModal" class="add-product-modal">
-    <div class="modal-content" style="max-width: 700px;">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-plus-circle mr-2"></i>+ Add New Product
-        </h2>
-        <span class="modal-close" onclick="closeAddProductModal()">&times;</span>
-      </div>
-      <form id="addProductForm" onsubmit="handleAddProduct(event)">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="form-group">
-            <label class="form-label">Item Name <span class="text-red-500">*</span></label>
-            <input type="text" id="itemName" class="form-input" placeholder="e.g., Hair Dye - Blonde" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Category <span class="text-red-500">*</span></label>
-            <select id="itemCategory" class="form-select" required>
-              <option value="">Select Category</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Quantity (per piece) <span class="text-red-500">*</span></label>
-            <input type="number" id="itemQuantity" class="form-input" placeholder="0" min="0" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Unit Price (₱) <span class="text-red-500">*</span></label>
-            <input type="number" id="itemPrice" class="form-input" placeholder="0.00" min="0" step="0.01" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Minimum Stock Level <span class="text-red-500">*</span></label>
-            <input type="number" id="minStock" class="form-input" placeholder="10" min="0" value="10" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">Supplier (Optional)</label>
-            <input type="text" id="itemSupplier" class="form-input" placeholder="e.g., Beauty Co." />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Description (Optional)</label>
-          <textarea id="itemDescription" class="form-input" rows="3" placeholder="Add any additional details..."></textarea>
-        </div>
-
-        <div class="flex flex-col md:flex-row gap-3 mt-6">
-          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-            <i class="fa-solid fa-check mr-2"></i>Add Product
-          </button>
-          <button type="button" onclick="closeAddProductModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-            <i class="fa-solid fa-times mr-2"></i>Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
   <!-- Edit Product Modal -->
   <div id="editProductModal" class="add-product-modal">
     <div class="modal-content" style="max-width: 700px;">
@@ -599,64 +535,6 @@
           </button>
         </div>
       </form>
-    </div>
-  </div>
-
-  <!-- Add Category Modal -->
-  <div id="addCategoryModal" class="add-product-modal">
-    <div class="modal-content" style="max-width: 400px;">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-tag mr-2"></i>Add New Category
-        </h2>
-        <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
-      </div>
-      <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
-        <div class="form-group">
-          <label class="form-label">Category Name <span class="text-red-500">*</span></label>
-          <input type="text" id="newCategoryName" class="form-input" placeholder="e.g., Facial Products" required />
-        </div>
-
-        <div class="flex flex-col md:flex-row gap-3 mt-6">
-          <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
-            <i class="fa-solid fa-check mr-2"></i>Add Category
-          </button>
-          <button type="button" onclick="closeAddCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-            <i class="fa-solid fa-times mr-2"></i>Cancel
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Manage Categories Modal -->
-  <div id="manageCategoriesModal" class="add-product-modal">
-    <div class="modal-content" style="max-width: 600px;">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl md:text-2xl font-bold text-[#da5c73]">
-          <i class="fa-solid fa-layer-group mr-2"></i>Manage Categories
-        </h2>
-        <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
-      </div>
-      
-      <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <div class="flex items-start gap-2">
-          <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-1"></i>
-          <div class="text-sm text-yellow-800">
-            <strong>Warning:</strong> Deleting a category will also delete all inventory items associated with it. This action cannot be undone.
-          </div>
-        </div>
-      </div>
-
-      <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
-        <!-- Categories will be loaded here -->
-      </div>
-
-      <div class="mt-6">
-        <button onclick="closeManageCategoriesModal()" class="w-full bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
-          <i class="fa-solid fa-times mr-2"></i>Close
-        </button>
-      </div>
     </div>
   </div>
 

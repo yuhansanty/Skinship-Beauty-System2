@@ -12,44 +12,45 @@ body {
 }
 
 .sidebar-btn { 
-  width:50px;
-  height:50px;
-  border-radius:50%;
-  border:none;
-  background:transparent;
-  color:#da5c73;
-  font-size:20px;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:.3s;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #da5c73;
+  font-size: 20px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: .3s;
+  position: relative;
 }
+
 .sidebar-btn:hover { 
-  background:#da5c73;
-  color:white;
-  transform:scale(1.1);
+  background: #da5c73;
+  color: white;
+  transform: scale(1.1);
 }
+
 .sidebar-btn.active { 
-  background:#da5c73;
-  color:white;
-}
-/* Hide all sidebar buttons by default */
-.sidebar-btn {
-  display: none !important;
+  background: #da5c73;
+  color: white;
 }
 
-html.staff-loaded .sidebar-btn[title="Dashboard"],
-html.staff-loaded .sidebar-btn[title="Reports"],
-html.staff-loaded .sidebar-btn[title="Cashier"],
-html.staff-loaded .sidebar-btn[title="Staff"] {
+/* Default: Show only staff buttons */
+.sidebar-btn[title="Dashboard"],
+.sidebar-btn[title="Reports"],
+.sidebar-btn[title="Cashier"],
+.sidebar-btn[title="Staff"] {
+  display: flex;
+}
+
+/* Admin role shows all buttons */
+html.admin-loaded .sidebar-btn {
   display: flex !important;
 }
 
-/* Show all buttons when NOT staff (admin) */
-html:not(.staff-loaded) .sidebar-btn {
-  display: flex !important;
-}
 .glass-card {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -179,7 +180,6 @@ html:not(.staff-loaded) .sidebar-btn {
   margin-bottom: 1rem;
 }
 
-
 .menu-buttons-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -261,13 +261,11 @@ html:not(.staff-loaded) .sidebar-btn {
   z-index: 100;
 }
 
-/* Ensure notification button container is properly positioned */
 .flex.items-center.gap-4 {
   position: relative;
   z-index: 100;
 }
 
-/* Update notification dropdown z-index */
 .notification-dropdown {
   position: absolute;
   top: 50px;
@@ -278,22 +276,19 @@ html:not(.staff-loaded) .sidebar-btn {
   width: 400px;
   max-height: 500px;
   overflow-y: auto;
-  z-index: 9999 !important; /* Add !important to override */
+  z-index: 9999 !important;
   display: none;
 }
 
-/* Ensure main content doesn't overlap */
 main {
   position: relative;
   z-index: 1;
 }
 
-/* Ensure cart card doesn't overlap notification */
 .glass-card.rounded-2xl.p-6.flex.flex-col.h-fit.sticky {
-  z-index: 10; /* Lower than notification dropdown */
+  z-index: 10;
 }
 
-/* Ensure notification modal is on top */
 .notification-modal {
   z-index: 10000 !important;
 }
@@ -340,7 +335,6 @@ main {
   box-shadow: 0 4px 12px rgba(218, 92, 115, 0.3);
 }
 
-/* Animation for first row (left to right) */
 .category-btn.first-row {
   animation: slideInLeft 0.4s ease forwards;
 }
@@ -361,7 +355,6 @@ main {
   animation-delay: 0.4s;
 }
 
-/* Animation for remaining buttons (top to bottom) */
 .category-btn.remaining-rows {
   animation: slideInTop 0.4s ease forwards;
   animation-delay: 0.5s;
@@ -404,7 +397,6 @@ main {
   }
 }
 
-/* Logout Modal Styles */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -533,7 +525,40 @@ main {
   gap: 0.5rem;
 }
 
-/* Mobile Responsive Styles */
+.logout-btn-cancel {
+  background: #e5e7eb;
+  color: #1f2937;
+}
+
+.logout-btn-cancel:hover {
+  background: #d1d5db;
+}
+
+.logout-btn-confirm {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+}
+
+.logout-btn-confirm:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+}
+
+.logout-btn-confirm.loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.logout-btn-confirm.loading i {
+  animation: spinLogout 1s linear infinite;
+}
+
+@keyframes spinLogout {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @media (max-width: 640px) {
   .sidebar {
     width: 60px;
@@ -584,65 +609,7 @@ main {
     width: 95%;
     padding: 20px;
   }
-}
-
-@media (max-width: 1024px) {
-  .category-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* Prevent text selection for better mobile experience */
-.service-card, .cart-item, .category-btn {
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-}
-
-/* Touch-friendly button sizes */
-@media (max-width: 640px) {
-  button, .sidebar-btn, .category-btn, .payment-method-btn {
-    min-height: 44px;
-    min-width: 44px;
-  }
-}
-
-.logout-btn-cancel {
-  background: #e5e7eb;
-  color: #1f2937;
-}
-
-.logout-btn-cancel:hover {
-  background: #d1d5db;
-}
-
-.logout-btn-confirm {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  color: white;
-  box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
-}
-
-.logout-btn-confirm:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
-}
-
-.logout-btn-confirm.loading {
-  pointer-events: none;
-  opacity: 0.7;
-}
-
-.logout-btn-confirm.loading i {
-  animation: spinLogout 1s linear infinite;
-}
-
-@keyframes spinLogout {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
+  
   .category-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -657,5 +624,25 @@ main {
 
   .logout-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 1024px) {
+  .category-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.service-card, .cart-item, .category-btn {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+@media (max-width: 640px) {
+  button, .sidebar-btn, .category-btn, .payment-method-btn {
+    min-height: 44px;
+    min-width: 44px;
   }
 }

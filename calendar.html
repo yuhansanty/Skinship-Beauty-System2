@@ -59,21 +59,6 @@
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
     .sidebar-btn.active { background:#da5c73;color:white }
     .appointment-item { font-size:10px;padding:2px 4px;margin:1px 0;border-radius:4px;cursor:pointer }
-    .service-fleek-eyelash { background:#dcfce7;color:#166534 }
-    .service-browmazing { background:#fef3c7;color:#92400e }
-    .service-woke-up-like-this { background:#fecaca;color:#991b1b }
-    .service-express-offer { background:#fce7f3;color:#be185d }
-    .service-happy-nails { background:#e9d5ff;color:#7c2d12 }
-    .service-promo-packages { background:#e0e7ff;color:#3730a3 }
-    .service-therapeutic-heat { background:#ddd6fe;color:#5b21b6 }
-    .service-wax-out { background:#fed7aa;color:#9a3412 }
-    .service-es-facialy-for-you { background:#fecdd3;color:#9f1239 }
-    .service-face-body-contouring { background:#ccfbf1;color:#134e4a }
-    .service-laser-hair-removal { background:#d1fae5;color:#065f46 }
-    .service-picosure-laser { background:#fbcfe8;color:#831843 }
-    .service-warts-removal { background:#fef08a;color:#713f12 }
-    .service-co2-fractional { background:#bfdbfe;color:#1e3a8a }
-    .service-other { background:#e5e7eb;color:#374151 }
     .calendar-day { min-height:80px;border:1px solid #e5e7eb;background:white;position:relative;cursor:pointer;transition:.2s }
     .calendar-day:hover { background:#f9fafb }
     .calendar-day.today { background:#fef3c7 }
@@ -83,6 +68,29 @@
     .form-input.error { border-color: #ef4444; }
     .error-message { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
     .error-message.show { display: block; }
+
+    /* Service dropdown styling */
+    #serviceType {
+      max-height: 200px;
+    }
+    
+    #serviceType optgroup {
+      font-weight: 600;
+      color: #1f2937;
+      background-color: #f3f4f6;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+    
+    #serviceType option {
+      padding: 8px 16px;
+      font-size: 14px;
+      color: #374151;
+    }
+    
+    #serviceType option:hover {
+      background-color: #e5e7eb;
+    }
 
     /* Logout Modal Styles */
     .modal-overlay {
@@ -298,7 +306,6 @@
           <div class="relative">
             <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
             <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow">
-              <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="window.location.href='LandingPage.html';document.getElementById('userMenu').classList.add('hidden');"><i class="fa fa-home mr-2"></i>Go to Home Page</button>
               <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100">
                 <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
               </button>
@@ -338,24 +345,7 @@
         <div class="font-bold bg-gray-200 rounded py-2">SAT</div>
       </div>
 
-      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-16"></div>
-
-      <div class="absolute left-1/2 -translate-x-1/2 bottom-4 flex flex-wrap justify-center gap-2 text-xs">
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#dcfce7] rounded inline-block"></span><span>Fleek Eyelash</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fef3c7] rounded inline-block"></span><span>Browmazing</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fecaca] rounded inline-block"></span><span>Woke Up</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fce7f3] rounded inline-block"></span><span>Express</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#e9d5ff] rounded inline-block"></span><span>Happy Nails</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#e0e7ff] rounded inline-block"></span><span>Promo</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#ddd6fe] rounded inline-block"></span><span>Therapeutic</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fed7aa] rounded inline-block"></span><span>Wax Out</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fecdd3] rounded inline-block"></span><span>ES-Facialy</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#ccfbf1] rounded inline-block"></span><span>Contouring</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#d1fae5] rounded inline-block"></span><span>Laser Hair</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fbcfe8] rounded inline-block"></span><span>Picosure</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#fef08a] rounded inline-block"></span><span>Warts</span></div>
-        <div class="flex items-center gap-1"><span class="w-3 h-3 bg-[#bfdbfe] rounded inline-block"></span><span>CO2</span></div>
-      </div>
+      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1"></div>
     </div>
   </main>
 
@@ -402,20 +392,6 @@
             <label class="block text-sm font-medium mb-2">Service *</label>
             <select id="serviceType" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
               <option value="">Select a service</option>
-              <option value="fleek-eyelash">FLEEK EYELASH</option>
-              <option value="browmazing">BROWMAZING</option>
-              <option value="woke-up-like-this">WOKE UP LIKE THIS</option>
-              <option value="express-offer">EXPRESS OFFER (30 MINS.)</option>
-              <option value="happy-nails">HAPPY NAILS – CLASSICS</option>
-              <option value="promo-packages">PROMO PACKAGES</option>
-              <option value="therapeutic-heat">THERAPEUTIC HEAT</option>
-              <option value="wax-out">WAX – OUT</option>
-              <option value="es-facialy-for-you">ES-FACIALY FOR YOU</option>
-              <option value="face-body-contouring">FACE AND BODY CONTOURING</option>
-              <option value="laser-hair-removal">LASER HAIR REMOVAL / WHITENING</option>
-              <option value="picosure-laser">PICOSURE LASER TREATMENT</option>
-              <option value="warts-removal">WARTS REMOVAL FRACTIONAL LASER (UNLIMITED)</option>
-              <option value="co2-fractional">CO2 FRACTIONAL LASER LAY-AWAY</option>
             </select>
             <span class="error-message" id="serviceError">Please select a service</span>
           </div>
@@ -528,17 +504,16 @@
           });
         });
 
-        // Update sidebar bubbles based on notification types
         updateSidebarBubbles(notifications);
+      }, (error) => {
+        console.error('Error loading notifications:', error);
       });
     }
 
-    // Mark notifications as read for current page
     async function markCurrentPageNotificationsRead() {
       const currentPage = window.location.pathname;
       let notificationType = null;
       
-      // Determine notification type based on current page
       if (currentPage.includes('calendar.html')) {
         notificationType = 'appointment';
       } else if (currentPage.includes('purchase-order.html')) {
@@ -547,7 +522,6 @@
         notificationType = 'low_stock';
       }
       
-      // Mark notifications as read for this page
       if (notificationType) {
         try {
           const notificationsRef = collection(db, 'notifications');
@@ -569,26 +543,19 @@
     }
 
     function updateSidebarBubbles(notifications) {
-      // Count unread notifications by type
       const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
       const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
       const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
       
-      // Update calendar bubble (appointments)
-      updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
-      
-      // Update purchase order bubble
-      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
-      
-      // Update inventory bubble (low stock)
-      updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
+      updateBubble('calendarBubble', appointmentCount, '#dc2626');
+      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
+      updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
     }
 
     function updateBubble(bubbleId, count, color) {
       let bubble = document.getElementById(bubbleId);
       
       if (!bubble) {
-        // Create bubble if it doesn't exist
         const button = getBubbleButton(bubbleId);
         if (button) {
           bubble = document.createElement('span');
@@ -619,7 +586,10 @@
       return buttonMap[bubbleId];
     }
 
-    // Clock out function
+    // Expose functions to global scope
+    window.loadNotifications = loadNotifications;
+    window.markCurrentPageNotificationsRead = markCurrentPageNotificationsRead;
+
     async function handleClockOut() {
       const user = auth.currentUser;
       if (!user) return;
@@ -640,7 +610,6 @@
           }
         }
 
-        // Set user as unavailable
         const staffRef = doc(db, "users", user.uid);
         await updateDoc(staffRef, { 
           availability: false,
@@ -653,7 +622,6 @@
       }
     }
 
-    // Logout modal functions
     window.showLogoutModal = function() {
       document.getElementById('logoutModal').classList.add('show');
     }
@@ -668,46 +636,37 @@
       confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
       try {
-        // Clock out and set unavailable
         await handleClockOut();
         
-        // Detach notification listener
         if (notificationListener) notificationListener();
         
-        // Clear local storage
         localStorage.removeItem('currentUserEmail');
         localStorage.removeItem('currentUserRole');
         localStorage.removeItem('currentUsername');
         localStorage.removeItem('currentUserFullName');
         
-        // Sign out
         await signOut(auth);
         
-        // Redirect to login page
         window.location.href = "index.html";
       } catch (error) {
         console.error("Logout error:", error);
         
-        // Reset button state
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
         
         alert("An error occurred during logout. Please try again.");
         
-        // Force sign out even if there's an error
         await signOut(auth);
         window.location.href = "index.html";
       }
     }
 
-    // Close modal on overlay click
     document.getElementById('logoutModal')?.addEventListener('click', function(e) {
       if (e.target === this) {
         hideLogoutModal();
       }
     });
 
-    // Close modal on Escape key
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         const modal = document.getElementById('logoutModal');
@@ -717,7 +676,6 @@
       }
     });
 
-    // Auth state change listener
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUserId = user.uid;
@@ -738,7 +696,6 @@
       }
     });
 
-    // Updated logout button handler
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
@@ -746,7 +703,6 @@
       });
     }
 
-    // Handle page unload
     window.addEventListener("beforeunload", async (e) => {
       await handleClockOut();
     });
@@ -763,9 +719,8 @@
   </script>
 
   <script type="module">
-    // Firebase modular SDK v9.6.1 - already imported above
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfigCompat = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -794,11 +749,49 @@
       return /^09\d{9}$/.test(phone);
     }
 
+    // Category color mapping
+    const categoryColors = {};
+    const defaultColors = [
+      { bg: '#dcfce7', text: '#166534' },
+      { bg: '#fef3c7', text: '#92400e' },
+      { bg: '#fecaca', text: '#991b1b' },
+      { bg: '#fce7f3', text: '#be185d' },
+      { bg: '#e9d5ff', text: '#7c2d12' },
+      { bg: '#e0e7ff', text: '#3730a3' },
+      { bg: '#ddd6fe', text: '#5b21b6' },
+      { bg: '#fed7aa', text: '#9a3412' },
+      { bg: '#fecdd3', text: '#9f1239' },
+      { bg: '#ccfbf1', text: '#134e4a' },
+      { bg: '#d1fae5', text: '#065f46' },
+      { bg: '#fbcfe8', text: '#831843' },
+      { bg: '#fef08a', text: '#713f12' },
+      { bg: '#bfdbfe', text: '#1e3a8a' },
+      { bg: '#fde68a', text: '#78350f' },
+      { bg: '#c7d2fe', text: '#3730a3' },
+      { bg: '#fbcfe8', text: '#9f1239' },
+      { bg: '#fed7aa', text: '#7c2d12' },
+      { bg: '#d1fae5', text: '#065f46' },
+      { bg: '#fce7f3', text: '#831843' }
+    ];
+    let colorIndex = 0;
+
+    function getCategoryColor(serviceName, services) {
+      const service = services.find(s => s.name === serviceName);
+      const category = service ? service.category : 'Other';
+      
+      if (!categoryColors[category]) {
+        categoryColors[category] = defaultColors[colorIndex % defaultColors.length];
+        colorIndex++;
+      }
+      return categoryColors[category];
+    }
+
     class Calendar {
       constructor(db) {
         this.currentDate = new Date();
         this.customers = [];
         this.allStaff = [];
+        this.allServices = [];
         this.editingId = null;
         this.selectedDate = null;
         this.searchTerm = '';
@@ -814,19 +807,20 @@
         this.bindEvents();
         await this.loadUserInfo();
         await this.loadStaff();
+        await this.loadServices();
         await this.loadCustomers();
         this.renderCalendar();
         this.setMinDateTime();
         
-        // Load notifications from the parent scope
-        if (typeof loadNotifications === 'function') {
-          loadNotifications();
+        // Load notifications
+        if (typeof window.loadNotifications === 'function') {
+          window.loadNotifications();
         }
         
-        // Mark current page notifications as read after a short delay
+        // Mark current page notifications as read after delay
         setTimeout(() => {
-          if (typeof markCurrentPageNotificationsRead === 'function') {
-            markCurrentPageNotificationsRead();
+          if (typeof window.markCurrentPageNotificationsRead === 'function') {
+            window.markCurrentPageNotificationsRead();
           }
         }, 1000);
       }
@@ -872,6 +866,54 @@
           option.value = staff.fullName || staff.email;
           option.textContent = staff.fullName || staff.email;
           employeeSelect.appendChild(option);
+        });
+      }
+
+      async loadServices() {
+        try {
+          onSnapshot(collection(this.db, "services"), (snapshot) => {
+            this.allServices = [];
+            snapshot.forEach(doc => {
+              const data = doc.data();
+              this.allServices.push({
+                id: doc.id,
+                name: data.name,
+                category: data.category,
+                price: data.price
+              });
+            });
+            this.populateServiceDropdown();
+          });
+        } catch (error) {
+          console.error("Error loading services:", error);
+        }
+      }
+
+      populateServiceDropdown() {
+        const serviceSelect = document.getElementById('serviceType');
+        serviceSelect.innerHTML = '<option value="">Select a service</option>';
+        
+        const groupedServices = {};
+        this.allServices.forEach(service => {
+          const category = service.category || 'Other';
+          if (!groupedServices[category]) {
+            groupedServices[category] = [];
+          }
+          groupedServices[category].push(service);
+        });
+        
+        Object.keys(groupedServices).sort().forEach(category => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = category;
+          
+          groupedServices[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.name;
+            option.textContent = `${service.name} - ₱${service.price.toLocaleString()}`;
+            optgroup.appendChild(option);
+          });
+          
+          serviceSelect.appendChild(optgroup);
         });
       }
 
@@ -994,16 +1036,11 @@
         document.getElementById('calendarGrid').innerHTML = calendarHTML;
       }
 
-      getServiceClass(serviceValue) {
-        return `service-${serviceValue}`;
-      }
-
       renderAppointments(customers) {
         return customers.map(cust => {
-          const serviceClass = this.getServiceClass(cust.service);
           const formattedTime = this.formatTime(cust.time);
           return `
-            <div class="appointment-item ${serviceClass}" onclick="event.stopPropagation(); calendar.editAppointment('${cust.id}')">
+            <div class="appointment-item" style="background-color: transparent; color: #000000;" onclick="event.stopPropagation(); calendar.editAppointment('${cust.id}')">
               ${formattedTime} ${cust.name || ""} (${cust.service})
             </div>
           `;
@@ -1117,8 +1154,6 @@
 
         if (hasError) return;
 
-        const serviceSelect = document.getElementById('serviceType');
-        const serviceLabel = serviceSelect.options[serviceSelect.selectedIndex].text;
         const dateTime = new Date(date + ' ' + time);
         
         const [hours, minutes] = time.split(':').map(Number);
@@ -1205,12 +1240,42 @@
           document.getElementById('appointmentTime').value = time;
         }
 
-        const serviceSelect = document.getElementById('serviceType');
-        if (customer.service) {
-          serviceSelect.value = customer.service;
-        } else {
-          serviceSelect.selectedIndex = 0;
-        }
+        // Set service value - wait for dropdown to be populated
+        setTimeout(() => {
+          const serviceSelect = document.getElementById('serviceType');
+          // First try to match by service name
+          let serviceToMatch = customer.service || customer.category;
+          
+          if (serviceToMatch) {
+            // Try to find and select the matching option
+            let foundOption = false;
+            for (let i = 0; i < serviceSelect.options.length; i++) {
+              if (serviceSelect.options[i].value === serviceToMatch) {
+                serviceSelect.selectedIndex = i;
+                foundOption = true;
+                break;
+              }
+            }
+            if (!foundOption) {
+              // If service name not found, try category field
+              if (customer.category && customer.category !== serviceToMatch) {
+                for (let i = 0; i < serviceSelect.options.length; i++) {
+                  if (serviceSelect.options[i].value === customer.category) {
+                    serviceSelect.selectedIndex = i;
+                    foundOption = true;
+                    break;
+                  }
+                }
+              }
+            }
+            if (!foundOption) {
+              console.log('Service not found in dropdown:', serviceToMatch, customer.category);
+              serviceSelect.selectedIndex = 0;
+            }
+          } else {
+            serviceSelect.selectedIndex = 0;
+          }
+        }, 100);
 
         const employeeSelect = document.getElementById('employeeSelect');
         if (customer.staff) {
