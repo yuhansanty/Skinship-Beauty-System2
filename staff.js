@@ -46,6 +46,51 @@ let allHistoryData = [];
 let currentStaffId = null;
 let currentStaffName = null;
 let notificationListener = null;
+let staffDataCache = new Map();
+
+// ==================== APPLY DEFAULT SIDEBAR ON LOAD ====================
+
+// Check localStorage and apply sidebar visibility immediately
+(function initializeSidebar() {
+  const storedRole = localStorage.getItem('currentUserRole');
+  if (storedRole === 'staff') {
+    applyRoleBasedVisibility('staff');
+  }
+})();
+
+// ==================== ROLE-BASED VISIBILITY ====================
+
+function applyRoleBasedVisibility(role) {
+  if (role === 'staff') {
+    const allowedButtons = ['Dashboard', 'Reports', 'Cashier', 'Staff'];
+    const allButtons = document.querySelectorAll('.sidebar-btn');
+    
+    allButtons.forEach((btn) => {
+      const title = btn.getAttribute('title');
+      
+      if (!allowedButtons.includes(title)) {
+        btn.style.setProperty('display', 'none', 'important');
+        btn.style.visibility = 'hidden';
+        btn.style.opacity = '0';
+        btn.style.pointerEvents = 'none';
+      } else {
+        btn.style.setProperty('display', 'flex', 'important');
+        btn.style.visibility = 'visible';
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    });
+  } else {
+    // Show all buttons for admin
+    const allButtons = document.querySelectorAll('.sidebar-btn');
+    allButtons.forEach((btn) => {
+      btn.style.setProperty('display', 'flex', 'important');
+      btn.style.visibility = 'visible';
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    });
+  }
+}
 
 // ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
 
@@ -75,18 +120,12 @@ function loadNotifications() {
 }
 
 function updateSidebarBubbles(notifications) {
-  // Count unread notifications by type
   const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
   const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
   const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
   
-  // Update calendar bubble (appointments) - RED
   updateBubble('calendarBubble', appointmentCount, '#dc2626');
-  
-  // Update purchase order bubble - PURPLE
   updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-  
-  // Update inventory bubble (low stock) - YELLOW/ORANGE
   updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
 }
 
@@ -319,7 +358,7 @@ function displayStaffCards(staffData) {
   staffData.forEach((staff, index) => {
     const card = document.createElement('div');
     card.className = 'staff-card';
-    card.style.animationDelay = `${index * 0.3}s`;
+    card.style.animationDelay = `${index * 0.05}s`;
     card.setAttribute('data-staff-id', staff.id);
     
     card.innerHTML = `
@@ -375,7 +414,7 @@ function displayStaffCards(staffData) {
   });
 }
 
-// ==================== SEARCH FUNCTIONALITY ====================
+// ==================== SEARCH FUNCTIONALITY (FIXED) ====================
 
 searchInput.addEventListener('input', (e) => {
   const searchTerm = e.target.value.toLowerCase().trim();
@@ -386,12 +425,15 @@ searchInput.addEventListener('input', (e) => {
   }
   
   const filteredData = allStaffData.filter(staff => {
-    return staff.fullName.toLowerCase().includes(searchTerm) ||
-           staff.gender.toLowerCase().includes(searchTerm) ||
-           staff.mobile.toLowerCase().includes(searchTerm);
+    const fullName = (staff.fullName || '').toLowerCase();
+    const gender = (staff.gender || '').toLowerCase();
+    const mobile = (staff.mobile || '').toLowerCase();
+    
+    return fullName.includes(searchTerm) ||
+           gender === searchTerm ||
+           mobile.includes(searchTerm);
   });
   
-  staffGrid.innerHTML = '';
   displayStaffCards(filteredData);
 });
 
@@ -429,6 +471,27 @@ async function handleClockOut() {
   }
 }
 
+// ==================== OPTIMIZED STAFF DATA LOADING ====================
+
+async function getStaffLatestLog(staffId) {
+  if (staffDataCache.has(staffId)) {
+    return staffDataCache.get(staffId);
+  }
+  
+  const logsQuery = query(
+    collection(db, "staffLogs", staffId, "history"),
+    orderBy("timestamp", "desc"),
+    limit(1)
+  );
+  
+  const logsSnap = await getDocs(logsQuery);
+  const latest = logsSnap.docs[0]?.data() || {};
+  
+  staffDataCache.set(staffId, latest);
+  
+  return latest;
+}
+
 // ==================== AUTHENTICATION & MAIN ====================
 
 onAuthStateChanged(auth, async (user) => {
@@ -437,75 +500,88 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   
-  const userDoc = await getDoc(doc(db, "users", user.uid));
-  const currentUserFullName = userDoc.exists() ? userDoc.data().fullName : user.email;
-  usernameSpan.textContent = currentUserFullName;
-  document.getElementById('logoutUsername').textContent = currentUserFullName;
-
-  const today = new Date().toLocaleDateString();
-  const logsRef = collection(db, "staffLogs", user.uid, "history");
-  
-  const todayQuery = query(logsRef, where("date", "==", today));
-  const todaySnap = await getDocs(todayQuery);
-  
-  let needsNewLog = true;
-  if (!todaySnap.empty) {
-    const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
-    if (activeSession) {
-      needsNewLog = false;
+  try {
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    
+    if (!userDoc.exists()) {
+      console.error("User document not found in Firestore!");
+      return;
     }
-  }
-  
-  if (needsNewLog) {
-    await addDoc(logsRef, {
-      date: today,
-      clockIn: new Date().toLocaleString(),
-      clockOut: null,
-      timestamp: serverTimestamp()
+    
+    const userData = userDoc.data();
+    const currentUserFullName = userData.fullName || user.email;
+    const currentUserRole = userData.role || 'staff';
+    
+    // Store role in localStorage for faster future loads
+    localStorage.setItem('currentUserRole', currentUserRole);
+    
+    usernameSpan.textContent = currentUserFullName;
+    document.getElementById('logoutUsername').textContent = currentUserFullName;
+    
+    // Apply role-based visibility (reapply to confirm from Firebase)
+    applyRoleBasedVisibility(currentUserRole);
+
+    const today = new Date().toLocaleDateString();
+    const logsRef = collection(db, "staffLogs", user.uid, "history");
+    
+    const todayQuery = query(logsRef, where("date", "==", today));
+    const todaySnap = await getDocs(todayQuery);
+    
+    let needsNewLog = true;
+    if (!todaySnap.empty) {
+      const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
+      if (activeSession) {
+        needsNewLog = false;
+      }
+    }
+    
+    if (needsNewLog) {
+      await addDoc(logsRef, {
+        date: today,
+        clockIn: new Date().toLocaleString(),
+        clockOut: null,
+        timestamp: serverTimestamp()
+      });
+    }
+
+    const staffRef = doc(db, "users", user.uid);
+    await updateDoc(staffRef, { 
+      availability: true,
+      lastUpdated: serverTimestamp()
     });
-  }
 
-  const staffRef = doc(db, "users", user.uid);
-  await updateDoc(staffRef, { 
-    availability: true,
-    lastUpdated: serverTimestamp()
-  });
+    onSnapshot(collection(db, "users"), async (snapshot) => {
+      const promises = snapshot.docs.map(async (docSnap) => {
+        const staff = docSnap.data();
+        const latest = await getStaffLatestLog(docSnap.id);
+        
+        const isClockedIn = latest.clockIn && !latest.clockOut;
+        const isAvailable = staff.availability === true && isClockedIn;
 
-  onSnapshot(collection(db, "users"), async (snapshot) => {
-    const promises = snapshot.docs.map(async (docSnap) => {
-      const staff = docSnap.data();
-      
-      const logsQuery = query(
-        collection(db, "staffLogs", docSnap.id, "history"),
-        orderBy("timestamp", "desc"),
-        limit(1)
-      );
-      
-      const logsSnap = await getDocs(logsQuery);
-      const latest = logsSnap.docs[0]?.data() || {};
-      
-      const isClockedIn = latest.clockIn && !latest.clockOut;
-      const isAvailable = staff.availability === true && isClockedIn;
+        return {
+          id: docSnap.id,
+          fullName: staff.fullName || "N/A",
+          gender: staff.gender || "N/A",
+          mobile: staff.mobile || "N/A",
+          isAvailable,
+          clockIn: latest.clockIn || "N/A",
+          clockOut: latest.clockOut || "N/A"
+        };
+      });
 
-      return {
-        id: docSnap.id,
-        fullName: staff.fullName || "N/A",
-        gender: staff.gender || "N/A",
-        mobile: staff.mobile || "N/A",
-        isAvailable,
-        clockIn: latest.clockIn || "N/A",
-        clockOut: latest.clockOut || "N/A"
-      };
+      const results = await Promise.all(promises);
+      allStaffData = results;
+      allStaffData.sort((a, b) => b.isAvailable - a.isAvailable);
+      displayStaffCards(allStaffData);
+      
+      staffDataCache.clear();
     });
 
-    const results = await Promise.all(promises);
-    allStaffData = results;
-    allStaffData.sort((a, b) => b.isAvailable - a.isAvailable);
-    displayStaffCards(allStaffData);
-  });
-
-  // Load notifications for sidebar bubbles
-  loadNotifications();
+    loadNotifications();
+    
+  } catch (error) {
+    console.error("Error in onAuthStateChanged:", error);
+  }
 });
 
 // Logout handler
@@ -528,6 +604,9 @@ window.confirmLogout = async function() {
     if (notificationListener) {
       notificationListener();
     }
+    
+    // Clear role from localStorage on logout
+    localStorage.removeItem('currentUserRole');
     
     await signOut(auth);
     window.location.href = "index.html";

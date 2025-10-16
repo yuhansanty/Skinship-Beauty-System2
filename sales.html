@@ -17,20 +17,47 @@
       color: #da5c73;
       font-size: 20px;
       cursor: pointer;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       transition: .3s;
       position: relative;
     }
+    
     .sidebar-btn:hover { 
       background: #da5c73;
       color: white;
       transform: scale(1.1);
     }
+    
     .sidebar-btn.active { 
       background: #da5c73;
       color: white;
+    }
+    
+    /* Show only staff buttons by default */
+    .sidebar-btn[title="Dashboard"],
+    .sidebar-btn[title="Reports"],
+    .sidebar-btn[title="Cashier"],
+    .sidebar-btn[title="Staff"] {
+      display: flex;
+    }
+    
+    /* Admin role shows all buttons */
+    html.admin-loaded .sidebar-btn {
+      display: flex !important;
+    }
+    
+    /* Staff role shows only specific buttons */
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
+    
+    html.staff-loaded .sidebar-btn[title="Dashboard"],
+    html.staff-loaded .sidebar-btn[title="Reports"],
+    html.staff-loaded .sidebar-btn[title="Cashier"],
+    html.staff-loaded .sidebar-btn[title="Staff"] {
+      display: flex !important;
     }
     
     .sidebar-bubble {
@@ -589,14 +616,12 @@
 
     // Role-based visibility
     function applyRoleBasedVisibility(role) {
-      if (role === 'staff') {
-        const allowedButtons = ['Dashboard', 'Reports', 'Cashier', 'Staff'];
-        document.querySelectorAll('.sidebar-btn').forEach(btn => {
-          const title = btn.getAttribute('title');
-          if (!allowedButtons.includes(title)) {
-            btn.style.display = 'none';
-          }
-        });
+      if (role === 'admin') {
+        document.documentElement.classList.add('admin-loaded');
+        document.documentElement.classList.remove('staff-loaded');
+      } else {
+        document.documentElement.classList.add('staff-loaded');
+        document.documentElement.classList.remove('admin-loaded');
       }
     }
 

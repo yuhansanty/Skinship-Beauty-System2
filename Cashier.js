@@ -84,6 +84,9 @@ async function loadUserInfo(user) {
       document.getElementById('usernameDisplay').textContent = fullName;
       document.getElementById('cashierName').value = fullName;
       document.getElementById('logoutUsername').textContent = fullName;
+      
+      // Apply role-based sidebar visibility
+      applySidebarRoleBasedVisibility(currentUserData.role);
     } else {
       console.error('User document not found');
       document.getElementById('usernameDisplay').textContent = 'User Not Found';
@@ -95,6 +98,18 @@ async function loadUserInfo(user) {
     document.getElementById('usernameDisplay').textContent = 'Error Loading User';
     document.getElementById('cashierName').value = 'Unknown User';
     document.getElementById('logoutUsername').textContent = 'Error Loading User';
+  }
+}
+
+function applySidebarRoleBasedVisibility(role) {
+  const htmlElement = document.documentElement;
+  
+  if (role === 'admin' || role === 'Admin') {
+    htmlElement.classList.add('admin-loaded');
+    htmlElement.classList.remove('staff-loaded');
+  } else {
+    htmlElement.classList.add('staff-loaded');
+    htmlElement.classList.remove('admin-loaded');
   }
 }
 
