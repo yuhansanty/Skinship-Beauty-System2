@@ -14,7 +14,8 @@ import {
   updateDoc,
   increment,
   serverTimestamp,
-  setDoc
+  setDoc,
+  limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
 // Firebase Configuration
@@ -45,6 +46,8 @@ let cart = [];
 let currentCategory = 'all';
 let productCategories = [];
 let currentUserId = null;
+let dataLoaded = false;
+let lastLowStockCheck = 0;
 
 // ==================== AUTH & USER INFO ====================
 
@@ -55,16 +58,27 @@ onAuthStateChanged(auth, async (user) => {
   }
   
   currentUserId = user.uid;
-  await loadUserInfo(user);
-  await loadServicesFromFirebase();
-  await loadInventoryProducts();
-  await initializeNotificationSystem();
+  
+  // Only load data once
+  if (!dataLoaded) {
+    await loadUserInfo(user);
+    await Promise.all([
+      loadServicesFromFirebase(),
+      loadInventoryProducts()
+    ]);
+    await initializeNotificationSystem();
+    dataLoaded = true;
+  }
   
   currentView = 'services';
   currentCategory = 'all';
   renderServices(servicesData);
   
-  document.getElementById('paymentInput').addEventListener('input', calculateChange);
+  const paymentInput = document.getElementById('paymentInput');
+  if (paymentInput && !paymentInput.dataset.listenerAdded) {
+    paymentInput.addEventListener('input', calculateChange);
+    paymentInput.dataset.listenerAdded = 'true';
+  }
 });
 
 async function loadUserInfo(user) {
@@ -85,19 +99,20 @@ async function loadUserInfo(user) {
       document.getElementById('cashierName').value = fullName;
       document.getElementById('logoutUsername').textContent = fullName;
       
-      // Apply role-based sidebar visibility
       applySidebarRoleBasedVisibility(currentUserData.role);
     } else {
       console.error('User document not found');
-      document.getElementById('usernameDisplay').textContent = 'User Not Found';
+      const fallbackName = 'User Not Found';
+      document.getElementById('usernameDisplay').textContent = fallbackName;
       document.getElementById('cashierName').value = 'Unknown User';
-      document.getElementById('logoutUsername').textContent = 'User Not Found';
+      document.getElementById('logoutUsername').textContent = fallbackName;
     }
   } catch (error) {
     console.error("Error loading user info:", error);
-    document.getElementById('usernameDisplay').textContent = 'Error Loading User';
+    const errorName = 'Error Loading User';
+    document.getElementById('usernameDisplay').textContent = errorName;
     document.getElementById('cashierName').value = 'Unknown User';
-    document.getElementById('logoutUsername').textContent = 'Error Loading User';
+    document.getElementById('logoutUsername').textContent = errorName;
   }
 }
 
@@ -180,40 +195,56 @@ async function loadInventoryProducts() {
 async function initializeNotificationSystem() {
   try {
     loadSidebarBubbles();
-    checkLowStock();
-    setInterval(checkLowStock, 30000);
+    
+    // Check low stock only once on load
+    const now = Date.now();
+    if (now - lastLowStockCheck > 300000) { // 5 minutes
+      await checkLowStock();
+      lastLowStockCheck = now;
+    }
   } catch (error) {
     console.error('Error initializing notification system:', error);
   }
 }
 
-function checkLowStock() {
+async function checkLowStock() {
   const lowStockThreshold = 5;
+  const batch = [];
   
-  inventoryProducts.forEach(product => {
+  for (const product of inventoryProducts) {
     if (product.qty <= lowStockThreshold && product.qty > 0) {
       const notifQuery = query(
         collection(db, 'notifications'),
         where('type', '==', 'low_stock'),
         where('productId', '==', product.id),
-        where('read', '==', false)
+        where('read', '==', false),
+        limit(1)
       );
       
-      getDocs(notifQuery).then(snapshot => {
+      try {
+        const snapshot = await getDocs(notifQuery);
         if (snapshot.empty) {
-          addDoc(collection(db, 'notifications'), {
-            type: 'low_stock',
-            read: false,
-            timestamp: serverTimestamp(),
-            productId: product.id,
-            productName: product.name,
-            currentStock: product.qty,
-            category: product.category
-          });
+          batch.push(
+            addDoc(collection(db, 'notifications'), {
+              type: 'low_stock',
+              read: false,
+              timestamp: serverTimestamp(),
+              productId: product.id,
+              productName: product.name,
+              currentStock: product.qty,
+              category: product.category
+            })
+          );
         }
-      });
+      } catch (error) {
+        console.error('Error checking notification for product:', product.name, error);
+      }
     }
-  });
+  }
+  
+  if (batch.length > 0) {
+    await Promise.all(batch);
+  }
 }
 
 function loadSidebarBubbles() {
@@ -221,7 +252,11 @@ function loadSidebarBubbles() {
     notificationListener();
   }
 
-  const notifQuery = query(collection(db, 'notifications'), orderBy('timestamp', 'desc'));
+  const notifQuery = query(
+    collection(db, 'notifications'),
+    orderBy('timestamp', 'desc'),
+    limit(100)
+  );
   
   notificationListener = onSnapshot(notifQuery, (snapshot) => {
     const notifications = [];
@@ -234,6 +269,8 @@ function loadSidebarBubbles() {
     });
 
     updateSidebarBubbles(notifications);
+  }, (error) => {
+    console.error('Notification listener error:', error);
   });
 }
 
@@ -317,19 +354,27 @@ function selectPaymentMethod(method) {
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  document.querySelector(`[data-method="${method}"]`).classList.add('active');
+  const selectedBtn = document.querySelector(`[data-method="${method}"]`);
+  if (selectedBtn) {
+    selectedBtn.classList.add('active');
+  }
   
   const referenceContainer = document.getElementById('referenceNumberContainer');
-  if (method === 'check') {
-    referenceContainer.classList.remove('hidden');
-  } else {
-    referenceContainer.classList.add('hidden');
+  if (referenceContainer) {
+    if (method === 'check') {
+      referenceContainer.classList.remove('hidden');
+    } else {
+      referenceContainer.classList.add('hidden');
+    }
   }
   calculateChange();
 }
 
 function toggleUserMenu() {
-  document.getElementById('userMenu').classList.toggle('hidden');
+  const menu = document.getElementById('userMenu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+  }
 }
 
 window.onclick = function(event) {
@@ -368,7 +413,7 @@ async function handleClockOut() {
     const today = new Date().toLocaleDateString();
     const logsRef = collection(db, "staffLogs", user.uid, "history");
     
-    const todayQuery = query(logsRef, where("date", "==", today));
+    const todayQuery = query(logsRef, where("date", "==", today), limit(1));
     const todaySnap = await getDocs(todayQuery);
     
     if (!todaySnap.empty) {
@@ -393,8 +438,10 @@ async function handleClockOut() {
 
 async function confirmLogout() {
   const confirmBtn = document.getElementById('confirmLogoutBtn');
-  confirmBtn.classList.add('loading');
-  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+  if (confirmBtn) {
+    confirmBtn.classList.add('loading');
+    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+  }
 
   try {
     await handleClockOut();
@@ -405,8 +452,10 @@ async function confirmLogout() {
     window.location.href = "index.html";
   } catch (error) {
     console.error('Logout error:', error);
-    confirmBtn.classList.remove('loading');
-    confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+    if (confirmBtn) {
+      confirmBtn.classList.remove('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+    }
     
     alert("An error occurred during logout. Please try again.");
     await signOut(auth);
@@ -566,7 +615,9 @@ function showProductCategory(category, categoryName) {
   currentView = 'products';
   
   const allProductsBtn = document.querySelector('.all-products-btn span');
-  allProductsBtn.textContent = categoryName || 'All Products';
+  if (allProductsBtn) {
+    allProductsBtn.textContent = categoryName || 'All Products';
+  }
   
   const buttons = document.querySelectorAll('#productsGrid .category-btn');
   buttons.forEach(btn => {
@@ -591,6 +642,8 @@ function showProductCategory(category, categoryName) {
 
 function renderServices(filteredItems = servicesData) {
   const container = document.getElementById('servicesList');
+  if (!container) return;
+  
   container.innerHTML = '';
   
   filteredItems.forEach(item => {
@@ -625,7 +678,9 @@ function showCategory(category, categoryName) {
   currentView = 'services';
   
   const allServicesBtn = document.querySelector('.all-services-btn span');
-  allServicesBtn.textContent = categoryName || 'All Services';
+  if (allServicesBtn) {
+    allServicesBtn.textContent = categoryName || 'All Services';
+  }
   
   const buttons = document.querySelectorAll('#categoryGrid .category-btn');
   buttons.forEach(btn => {
@@ -650,7 +705,10 @@ function showCategory(category, categoryName) {
 }
 
 function filterServices() {
-  const search = document.getElementById('searchInput').value.toLowerCase();
+  const searchInput = document.getElementById('searchInput');
+  if (!searchInput) return;
+  
+  const search = searchInput.value.toLowerCase();
   const itemsToFilter = currentView === 'products' ? inventoryProducts : servicesData;
   const filtered = itemsToFilter.filter(s => 
     s.name.toLowerCase().includes(search) || 
@@ -701,6 +759,8 @@ function removeFromCart(id) {
 
 function updateCart() {
   const container = document.getElementById('cartItems');
+  if (!container) return;
+  
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   
   if (cart.length === 0) {
@@ -710,7 +770,10 @@ function updateCart() {
         <p class="text-sm">No items in cart</p>
       </div>
     `;
-    document.getElementById('checkoutBtn').disabled = true;
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) {
+      checkoutBtn.disabled = true;
+    }
   } else {
     container.innerHTML = cart.map(item => `
       <div class="cart-item bg-pink-50 p-2.5 rounded-lg border border-pink-200">
@@ -728,59 +791,80 @@ function updateCart() {
         </div>
       </div>
     `).join('');
-    document.getElementById('checkoutBtn').disabled = false;
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    if (checkoutBtn) {
+      checkoutBtn.disabled = false;
+    }
   }
   
-  document.getElementById('totalAmount').textContent = total.toFixed(2);
+  const totalElement = document.getElementById('totalAmount');
+  if (totalElement) {
+    totalElement.textContent = total.toFixed(2);
+  }
   calculateChange();
 }
 
 function calculateChange() {
-  const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
+  const paymentInput = document.getElementById('paymentInput');
+  const payment = paymentInput ? (parseFloat(paymentInput.value) || 0) : 0;
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   const change = payment - total;
   
   const changeDisplay = document.getElementById('changeDisplay');
+  const changeAmount = document.getElementById('changeAmount');
   
-  if (selectedPaymentMethod === 'cash' && payment > 0 && change >= 0) {
-    changeDisplay.classList.remove('hidden');
-    document.getElementById('changeAmount').textContent = change.toFixed(2);
-  } else {
-    changeDisplay.classList.add('hidden');
+  if (changeDisplay && changeAmount) {
+    if (selectedPaymentMethod === 'cash' && payment > 0 && change >= 0) {
+      changeDisplay.classList.remove('hidden');
+      changeAmount.textContent = change.toFixed(2);
+    } else {
+      changeDisplay.classList.add('hidden');
+    }
   }
 }
 
 function clearCart() {
   cart = [];
   updateCart();
-  document.getElementById('paymentInput').value = '';
-  document.getElementById('customerName').value = '';
-  document.getElementById('customerEmail').value = '';
-  document.getElementById('customerAddress').value = '';
-  document.getElementById('customerPhone').value = '';
-  document.getElementById('referenceNumber').value = '';
-  document.getElementById('changeDisplay').classList.add('hidden');
-  document.getElementById('phoneError').classList.add('hidden');
+  
+  const fields = [
+    'paymentInput', 'customerName', 'customerEmail', 
+    'customerAddress', 'customerPhone', 'referenceNumber'
+  ];
+  
+  fields.forEach(fieldId => {
+    const field = document.getElementById(fieldId);
+    if (field) field.value = '';
+  });
+  
+  const changeDisplay = document.getElementById('changeDisplay');
+  const phoneError = document.getElementById('phoneError');
+  
+  if (changeDisplay) changeDisplay.classList.add('hidden');
+  if (phoneError) phoneError.classList.add('hidden');
   
   selectedPaymentMethod = 'cash';
   document.querySelectorAll('.payment-method-btn').forEach(btn => {
     btn.classList.remove('active');
   });
-  document.querySelector('[data-method="cash"]').classList.add('active');
-  document.getElementById('referenceNumberContainer').classList.add('hidden');
+  const cashBtn = document.querySelector('[data-method="cash"]');
+  if (cashBtn) cashBtn.classList.add('active');
+  
+  const refContainer = document.getElementById('referenceNumberContainer');
+  if (refContainer) refContainer.classList.add('hidden');
 }
 
 function checkout() {
-  const customerName = document.getElementById('customerName').value.trim();
-  const customerEmail = document.getElementById('customerEmail').value.trim();
-  const customerPhone = document.getElementById('customerPhone').value.trim();
-  const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
+  const customerName = document.getElementById('customerName')?.value.trim();
+  const customerEmail = document.getElementById('customerEmail')?.value.trim();
+  const customerPhone = document.getElementById('customerPhone')?.value.trim();
+  const payment = parseFloat(document.getElementById('paymentInput')?.value) || 0;
   const total = cart.reduce((sum, item) => sum + item.price, 0);
-  const referenceNumber = document.getElementById('referenceNumber').value.trim();
+  const referenceNumber = document.getElementById('referenceNumber')?.value.trim();
   
   if (!customerName) {
     alert('Customer name is required');
-    document.getElementById('customerName').focus();
+    document.getElementById('customerName')?.focus();
     return;
   }
   
@@ -810,24 +894,27 @@ function checkout() {
 }
 
 async function generateReceipt() {
-  document.getElementById('loadingModal').classList.remove('hidden');
+  const loadingModal = document.getElementById('loadingModal');
+  if (loadingModal) {
+    loadingModal.classList.remove('hidden');
+  }
   
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
   
-  const customerName = document.getElementById('customerName').value.trim() || 'Walk-in Customer';
-  const customerEmail = document.getElementById('customerEmail').value.trim();
-  const customerAddress = document.getElementById('customerAddress').value.trim();
-  const customerPhone = document.getElementById('customerPhone').value.trim();
-  const payment = parseFloat(document.getElementById('paymentInput').value) || 0;
+  const customerName = document.getElementById('customerName')?.value.trim() || 'Walk-in Customer';
+  const customerEmail = document.getElementById('customerEmail')?.value.trim();
+  const customerAddress = document.getElementById('customerAddress')?.value.trim();
+  const customerPhone = document.getElementById('customerPhone')?.value.trim();
+  const payment = parseFloat(document.getElementById('paymentInput')?.value) || 0;
   const total = cart.reduce((sum, item) => sum + item.price, 0);
   const change = selectedPaymentMethod === 'cash' ? payment - total : 0;
-  const referenceNumber = document.getElementById('referenceNumber').value.trim();
+  const referenceNumber = document.getElementById('referenceNumber')?.value.trim();
   const date = new Date().toLocaleDateString('en-PH');
   const time = new Date().toLocaleTimeString('en-PH');
   const receiptNumber = 'RCP-' + Date.now();
   const paymentMethodText = selectedPaymentMethod === 'cash' ? 'Cash' : 'Check/Bank Transfer';
-  const cashierName = currentUserData ? currentUserData.fullName : 'Unknown';
+  const cashierName = currentUserData ? (currentUserData.fullName || currentUserData.fullname || 'Unknown') : 'Unknown';
   
   let y = 20;
   
@@ -970,18 +1057,25 @@ async function generateReceipt() {
             qty: increment(-1)
           })
         );
+        
+        const productIndex = inventoryProducts.findIndex(p => p.firebaseId === item.firebaseId);
+        if (productIndex !== -1) {
+          inventoryProducts[productIndex].qty -= 1;
+        }
       }
     }
     
-    await Promise.all(inventoryUpdates);
-    await addDoc(collection(db, "cashier_receipt"), receiptData);
-    await loadInventoryProducts();
+    await Promise.all([
+      ...inventoryUpdates,
+      addDoc(collection(db, "cashier_receipt"), receiptData)
+    ]);
     
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
-    
     doc.save(fileName);
     
-    document.getElementById('loadingModal').classList.add('hidden');
+    if (loadingModal) {
+      loadingModal.classList.add('hidden');
+    }
     
     setTimeout(() => {
       let alertMessage = `Receipt generated successfully!\n\nReceipt No: ${receiptNumber}\nTotal: ₱${total.toFixed(2)}\nPayment: ₱${payment.toFixed(2)}`;
@@ -1002,7 +1096,9 @@ async function generateReceipt() {
     }, 100);
   } catch (error) {
     console.error("Error saving receipt:", error);
-    document.getElementById('loadingModal').classList.add('hidden');
+    if (loadingModal) {
+      loadingModal.classList.add('hidden');
+    }
     alert('Receipt printed but failed to save to database. Please check your connection.');
     
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;

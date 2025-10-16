@@ -534,7 +534,6 @@
               updates.push(updateDoc(doc.ref, { read: true }));
             });
             await Promise.all(updates);
-            console.log(`Marked ${notificationType} notifications as read`);
           }
         } catch (error) {
           console.error('Error marking notifications as read:', error);
@@ -586,7 +585,6 @@
       return buttonMap[bubbleId];
     }
 
-    // Expose functions to global scope
     window.loadNotifications = loadNotifications;
     window.markCurrentPageNotificationsRead = markCurrentPageNotificationsRead;
 
@@ -615,8 +613,6 @@
           availability: false,
           lastUpdated: serverTimestamp()
         });
-        
-        console.log("User clocked out and set to unavailable");
       } catch (error) {
         console.error("Error during clock out:", error);
       }
@@ -639,11 +635,6 @@
         await handleClockOut();
         
         if (notificationListener) notificationListener();
-        
-        localStorage.removeItem('currentUserEmail');
-        localStorage.removeItem('currentUserRole');
-        localStorage.removeItem('currentUsername');
-        localStorage.removeItem('currentUserFullName');
         
         await signOut(auth);
         
@@ -749,7 +740,6 @@
       return /^09\d{9}$/.test(phone);
     }
 
-    // Category color mapping
     const categoryColors = {};
     const defaultColors = [
       { bg: '#dcfce7', text: '#166534' },
@@ -786,6 +776,19 @@
       return categoryColors[category];
     }
 
+    // Debounce function for search optimization
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+
     class Calendar {
       constructor(db) {
         this.currentDate = new Date();
@@ -796,6 +799,8 @@
         this.selectedDate = null;
         this.searchTerm = '';
         this.db = db;
+        this.customersListener = null;
+        this.servicesListener = null;
         this.monthNames = [
           "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
           "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
@@ -805,43 +810,21 @@
 
       async init() {
         this.bindEvents();
-        await this.loadUserInfo();
         await this.loadStaff();
-        await this.loadServices();
-        await this.loadCustomers();
+        this.setupServicesListener();
+        this.setupCustomersListener();
         this.renderCalendar();
         this.setMinDateTime();
         
-        // Load notifications
         if (typeof window.loadNotifications === 'function') {
           window.loadNotifications();
         }
         
-        // Mark current page notifications as read after delay
         setTimeout(() => {
           if (typeof window.markCurrentPageNotificationsRead === 'function') {
             window.markCurrentPageNotificationsRead();
           }
         }, 1000);
-      }
-
-      async loadUserInfo() {
-        const currentUserEmail = localStorage.getItem('currentUserEmail');
-        if (currentUserEmail) {
-          try {
-            const usersRef = collection(this.db, "users");
-            const q = query(usersRef, where("email", "==", currentUserEmail));
-            const userSnapshot = await getDocs(q);
-            
-            if (!userSnapshot.empty) {
-              const userData = userSnapshot.docs[0].data();
-              document.getElementById('usernameDisplay').textContent = userData.fullName || currentUserEmail;
-              document.getElementById('logoutUsername').textContent = userData.fullName || currentUserEmail;
-            }
-          } catch (error) {
-            console.error("Error loading user info:", error);
-          }
-        }
       }
 
       async loadStaff() {
@@ -869,24 +852,27 @@
         });
       }
 
-      async loadServices() {
-        try {
-          onSnapshot(collection(this.db, "services"), (snapshot) => {
-            this.allServices = [];
-            snapshot.forEach(doc => {
-              const data = doc.data();
-              this.allServices.push({
-                id: doc.id,
-                name: data.name,
-                category: data.category,
-                price: data.price
-              });
-            });
-            this.populateServiceDropdown();
-          });
-        } catch (error) {
-          console.error("Error loading services:", error);
+      setupServicesListener() {
+        if (this.servicesListener) {
+          this.servicesListener();
         }
+
+        const servicesRef = collection(this.db, "services");
+        this.servicesListener = onSnapshot(servicesRef, (snapshot) => {
+          this.allServices = [];
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            this.allServices.push({
+              id: doc.id,
+              name: data.name,
+              category: data.category,
+              price: data.price
+            });
+          });
+          this.populateServiceDropdown();
+        }, (error) => {
+          console.error("Error loading services:", error);
+        });
       }
 
       populateServiceDropdown() {
@@ -917,33 +903,14 @@
         });
       }
 
-      setMinDateTime() {
-        const now = new Date();
-        const dateStr = now.toISOString().split('T')[0];
-        document.getElementById('appointmentDate').min = dateStr;
-      }
+      setupCustomersListener() {
+        if (this.customersListener) {
+          this.customersListener();
+        }
 
-      bindEvents() {
-        document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
-        document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
-        document.getElementById('addAppointmentBtn').addEventListener('click', () => this.openModal());
-        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('cancelModal').addEventListener('click', () => this.closeModal());
-        document.getElementById('appointmentForm').addEventListener('submit', (e) => this.saveAppointment(e));
-        document.getElementById('deleteAppointment').addEventListener('click', () => this.deleteAppointment());
-        document.getElementById('appointmentModal').addEventListener('click', (e) => {
-          if (e.target.id === 'appointmentModal') this.closeModal();
-        });
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-          this.searchTerm = e.target.value.toLowerCase();
-          this.renderCalendar();
-        });
-      }
-
-      async loadCustomers() {
-        try {
-          const customersRef = collection(this.db, "customers");
-          const snapshot = await getDocs(customersRef);
+        const customersRef = collection(this.db, "customers");
+        
+        this.customersListener = onSnapshot(customersRef, (snapshot) => {
           this.customers = snapshot.docs
             .map(doc => {
               const data = doc.data();
@@ -963,10 +930,39 @@
               };
             })
             .filter(c => c.archived !== true);
-        } catch (error) {
+          this.renderCalendar();
+        }, (error) => {
           console.error("Error loading customers:", error);
           this.customers = [];
-        }
+        });
+      }
+
+      setMinDateTime() {
+        const now = new Date();
+        const dateStr = now.toISOString().split('T')[0];
+        document.getElementById('appointmentDate').min = dateStr;
+      }
+
+      bindEvents() {
+        document.getElementById('prevMonth').addEventListener('click', () => this.previousMonth());
+        document.getElementById('nextMonth').addEventListener('click', () => this.nextMonth());
+        document.getElementById('addAppointmentBtn').addEventListener('click', () => this.openModal());
+        document.getElementById('closeModal').addEventListener('click', () => this.closeModal());
+        document.getElementById('cancelModal').addEventListener('click', () => this.closeModal());
+        document.getElementById('appointmentForm').addEventListener('submit', (e) => this.saveAppointment(e));
+        document.getElementById('deleteAppointment').addEventListener('click', () => this.deleteAppointment());
+        document.getElementById('appointmentModal').addEventListener('click', (e) => {
+          if (e.target.id === 'appointmentModal') this.closeModal();
+        });
+        
+        const debouncedSearch = debounce((value) => {
+          this.searchTerm = value.toLowerCase();
+          this.renderCalendar();
+        }, 300);
+        
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+          debouncedSearch(e.target.value);
+        });
       }
 
       previousMonth() {
@@ -1191,9 +1187,7 @@
             alert('Appointment created successfully!');
           }
 
-          await this.loadCustomers();
           this.closeModal();
-          this.renderCalendar();
         } catch (error) {
           console.error("Error saving appointment:", error);
           alert('Failed to save appointment. Please try again.');
@@ -1206,9 +1200,7 @@
         try {
           const docRef = doc(this.db, "customers", this.editingId);
           await deleteDoc(docRef);
-          await this.loadCustomers();
           this.closeModal();
-          this.renderCalendar();
           alert('Appointment deleted successfully!');
         } catch (error) {
           console.error("Error deleting appointment:", error);
@@ -1240,14 +1232,11 @@
           document.getElementById('appointmentTime').value = time;
         }
 
-        // Set service value - wait for dropdown to be populated
         setTimeout(() => {
           const serviceSelect = document.getElementById('serviceType');
-          // First try to match by service name
           let serviceToMatch = customer.service || customer.category;
           
           if (serviceToMatch) {
-            // Try to find and select the matching option
             let foundOption = false;
             for (let i = 0; i < serviceSelect.options.length; i++) {
               if (serviceSelect.options[i].value === serviceToMatch) {
@@ -1256,20 +1245,16 @@
                 break;
               }
             }
-            if (!foundOption) {
-              // If service name not found, try category field
-              if (customer.category && customer.category !== serviceToMatch) {
-                for (let i = 0; i < serviceSelect.options.length; i++) {
-                  if (serviceSelect.options[i].value === customer.category) {
-                    serviceSelect.selectedIndex = i;
-                    foundOption = true;
-                    break;
-                  }
+            if (!foundOption && customer.category && customer.category !== serviceToMatch) {
+              for (let i = 0; i < serviceSelect.options.length; i++) {
+                if (serviceSelect.options[i].value === customer.category) {
+                  serviceSelect.selectedIndex = i;
+                  foundOption = true;
+                  break;
                 }
               }
             }
             if (!foundOption) {
-              console.log('Service not found in dropdown:', serviceToMatch, customer.category);
               serviceSelect.selectedIndex = 0;
             }
           } else {
@@ -1286,10 +1271,25 @@
 
         document.getElementById('appointmentNotes').value = customer.notes || '';
       }
+
+      cleanup() {
+        if (this.customersListener) {
+          this.customersListener();
+        }
+        if (this.servicesListener) {
+          this.servicesListener();
+        }
+      }
     }
 
     const calendar = new Calendar(dbCompat);
     window.calendar = calendar;
+
+    window.addEventListener('beforeunload', () => {
+      if (calendar) {
+        calendar.cleanup();
+      }
+    });
   </script>
   <script type="module" src="role-check.js"></script>
 
