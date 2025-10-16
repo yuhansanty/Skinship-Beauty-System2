@@ -58,7 +58,19 @@
     }
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
     .sidebar-btn.active { background:#da5c73;color:white }
-    .appointment-item { font-size:10px;padding:2px 4px;margin:1px 0;border-radius:4px;cursor:pointer }
+    .appointment-item { 
+      font-size:10px;
+      padding:4px 6px;
+      margin:2px 0;
+      border-radius:4px;
+      cursor:pointer;
+      font-weight: 500;
+    }
+    .appointment-item.pending { background-color: #fef3c7; color: #92400e; }
+    .appointment-item.confirmed { background-color: #bfdbfe; color: #1e3a8a; }
+    .appointment-item.completed { background-color: #bbf7d0; color: #065f46; }
+    .appointment-item.cancelled { background-color: #fecaca; color: #991b1b; }
+    
     .calendar-day { min-height:80px;border:1px solid #e5e7eb;background:white;position:relative;cursor:pointer;transition:.2s }
     .calendar-day:hover { background:#f9fafb }
     .calendar-day.today { background:#fef3c7 }
@@ -68,6 +80,40 @@
     .form-input.error { border-color: #ef4444; }
     .error-message { color: #ef4444; font-size: 12px; margin-top: 4px; display: none; }
     .error-message.show { display: block; }
+
+    /* Status Legend Styles */
+    .status-legend {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-top: 16px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .legend-color {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .legend-color.pending { background-color: #fef3c7; }
+    .legend-color.confirmed { background-color: #bfdbfe; }
+    .legend-color.completed { background-color: #bbf7d0; }
+    .legend-color.cancelled { background-color: #fecaca; }
 
     /* Service dropdown styling */
     #serviceType {
@@ -275,6 +321,19 @@
         top: -3px;
         right: -3px;
       }
+
+      .status-legend {
+        gap: 12px;
+      }
+
+      .legend-item {
+        font-size: 11px;
+      }
+
+      .legend-color {
+        width: 20px;
+        height: 20px;
+      }
     }
   </style>
 </head>
@@ -298,7 +357,7 @@
   </aside>
 
   <main class="flex-1 flex flex-col items-center justify-start p-8 w-full ml-20">
-    <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full">
+    <div class="w-full bg-white rounded-3xl shadow-lg p-8 relative h-full flex flex-col">
       <div class="flex justify-between items-center mb-6">
         <input type="text" id="searchInput" placeholder="Search Here" class="rounded px-3 py-1 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#e6bfc7] w-64" />
         <div class="flex items-center gap-4">
@@ -345,7 +404,27 @@
         <div class="font-bold bg-gray-200 rounded py-2">SAT</div>
       </div>
 
-      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1"></div>
+      <div id="calendarGrid" class="grid grid-cols-7 gap-2 text-center flex-1 mb-4"></div>
+
+      <!-- Status Legend -->
+      <div class="status-legend">
+        <div class="legend-item">
+          <div class="legend-color pending"></div>
+          <span>Pending</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color confirmed"></div>
+          <span>Confirmed</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color completed"></div>
+          <span>Completed</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-color cancelled"></div>
+          <span>Cancelled</span>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -372,8 +451,8 @@
 
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Phone Number *</label>
-            <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" placeholder="09XXXXXXXXX" maxlength="11" required>
-            <span class="error-message" id="phoneError">Please enter a valid 11-digit Philippine number starting with 09</span>
+            <input type="tel" id="phoneNumber" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" placeholder="+639XXXXXXXXX or 09XXXXXXXXX" maxlength="13" required>
+            <span class="error-message" id="phoneError">Please enter a valid Philippine number (+639XXXXXXXXX or 09XXXXXXXXX)</span>
           </div>
           
           <div class="mb-4">
@@ -402,6 +481,16 @@
               <option value="">Select employee</option>
             </select>
             <span class="error-message" id="employeeError">Please select an employee</span>
+          </div>
+
+          <div class="mb-4">
+            <label class="block text-sm font-medium mb-2">Status *</label>
+            <select id="appointmentStatus" class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-[#e6bfc7]" required>
+              <option value="Pending">Pending</option>
+              <option value="Confirmed">Confirmed</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
           </div>
           
           <div class="mb-4">
@@ -725,9 +814,29 @@
     const appCompat = initializeApp(firebaseConfigCompat, "calendarApp");
     const dbCompat = getFirestore(appCompat);
 
+    // Phone number validation for both +63 and 09 formats
     document.getElementById('phoneNumber').addEventListener('input', function(e) {
-      this.value = this.value.replace(/[^0-9]/g, '');
-      if (this.value && !/^09\d{0,9}$/.test(this.value)) {
+      let value = this.value.replace(/[^0-9+]/g, '');
+      
+      // Handle +63 format
+      if (value.startsWith('+63')) {
+        value = '+63' + value.slice(3).replace(/[^0-9]/g, '');
+        if (value.length > 13) value = value.slice(0, 13);
+      } 
+      // Handle 09 format
+      else if (value.startsWith('09')) {
+        value = value.replace(/[^0-9]/g, '');
+        if (value.length > 11) value = value.slice(0, 11);
+      }
+      // Handle raw 9 (convert to +63)
+      else if (value.startsWith('9') && !value.startsWith('09')) {
+        value = '+63' + value.replace(/[^0-9]/g, '');
+        if (value.length > 13) value = value.slice(0, 13);
+      }
+      
+      this.value = value;
+      
+      if (this.value && !validatePhoneNumber(this.value)) {
         this.classList.add('error');
         document.getElementById('phoneError').classList.add('show');
       } else {
@@ -737,7 +846,8 @@
     });
 
     function validatePhoneNumber(phone) {
-      return /^09\d{9}$/.test(phone);
+      // Accept both +639XXXXXXXXX (13 chars) and 09XXXXXXXXX (11 chars)
+      return /^(\+639\d{9}|09\d{9})$/.test(phone);
     }
 
     const categoryColors = {};
@@ -908,7 +1018,7 @@
           this.customersListener();
         }
 
-        const customersRef = collection(this.db, "customers");
+        const customersRef = collection(this.db, "appointments");
         
         this.customersListener = onSnapshot(customersRef, (snapshot) => {
           this.customers = snapshot.docs
@@ -988,6 +1098,15 @@
         return `${String(displayHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')} ${period}`;
       }
 
+      getStatusClass(status) {
+        if (!status) return 'pending';
+        const statusLower = status.toLowerCase();
+        if (statusLower === 'confirmed') return 'confirmed';
+        if (statusLower === 'completed') return 'completed';
+        if (statusLower === 'cancelled') return 'cancelled';
+        return 'pending';
+      }
+
       renderCalendar() {
         const year = this.currentDate.getFullYear();
         const month = this.currentDate.getMonth();
@@ -1035,8 +1154,9 @@
       renderAppointments(customers) {
         return customers.map(cust => {
           const formattedTime = this.formatTime(cust.time);
+          const statusClass = this.getStatusClass(cust.status);
           return `
-            <div class="appointment-item" style="background-color: transparent; color: #000000;" onclick="event.stopPropagation(); calendar.editAppointment('${cust.id}')">
+            <div class="appointment-item ${statusClass}" onclick="event.stopPropagation(); calendar.editAppointment('${cust.id}')">
               ${formattedTime} ${cust.name || ""} (${cust.service})
             </div>
           `;
@@ -1071,6 +1191,7 @@
         
         if (!editing) {
           document.getElementById('appointmentForm').reset();
+          document.getElementById('appointmentStatus').value = 'Pending';
           if (this.selectedDate) {
             document.getElementById('appointmentDate').value = this.selectedDate;
           }
@@ -1112,6 +1233,7 @@
         const service = document.getElementById('serviceType').value;
         const employee = document.getElementById('employeeSelect').value;
         const phone = document.getElementById('phoneNumber').value;
+        const status = document.getElementById('appointmentStatus').value;
         
         ['appointmentDate', 'appointmentTime', 'serviceType', 'employeeSelect', 'phoneNumber'].forEach(id => {
           document.getElementById(id).classList.remove('error');
@@ -1166,7 +1288,7 @@
           phone: phone,
           staff: employee,
           notes: document.getElementById('appointmentNotes').value,
-          status: "Pending",
+          status: status,
           appointment: dateTime.toLocaleString(),
           archived: false
         };
@@ -1176,10 +1298,10 @@
         }
 
         try {
-          const customersRef = collection(this.db, "customers");
+          const customersRef = collection(this.db, "appointments");
           
           if (this.editingId) {
-            const docRef = doc(this.db, "customers", this.editingId);
+            const docRef = doc(this.db, "appointments", this.editingId);
             await updateDoc(docRef, customerData);
             alert('Appointment updated successfully!');
           } else {
@@ -1198,7 +1320,7 @@
         if (!this.editingId || !confirm('Are you sure you want to delete this appointment?')) return;
         
         try {
-          const docRef = doc(this.db, "customers", this.editingId);
+          const docRef = doc(this.db, "appointments", this.editingId);
           await deleteDoc(docRef);
           this.closeModal();
           alert('Appointment deleted successfully!');
@@ -1219,6 +1341,7 @@
         document.getElementById('customerEmail').value = customer.email || '';
         document.getElementById('phoneNumber').value = customer.phone || '';
         document.getElementById('appointmentDate').value = customer.date || '';
+        document.getElementById('appointmentStatus').value = customer.status || 'Pending';
 
         if (customer.time) {
           let time = customer.time;
