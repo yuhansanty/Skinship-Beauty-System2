@@ -790,6 +790,88 @@
     let currentUserId = null;
     let currentUserFullName = "";
     let notificationListener = null;
+    let customersListener = null;
+
+    // ==================== OPTIMIZED DATA LOADING ====================
+    
+    // Load all data once on initialization
+    async function loadInitialData() {
+      try {
+        // Single read: Get all customers
+        const customersSnapshot = await getDocs(collection(db, "customers"));
+        allCustomers = customersSnapshot.docs
+          .map(doc => ({ id: doc.id, ...doc.data() }))
+          .filter(c => c.archived !== true)
+          .sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+            return bTime - aTime;
+          });
+        
+        // Single read: Get all staff
+        const staffSnapshot = await getDocs(collection(db, "users"));
+        allStaff = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Update UI
+        populateStaffDropdown();
+        renderTable();
+        
+        // Setup real-time listener for changes only
+        setupCustomersListener();
+        
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      }
+    }
+
+    // Setup lightweight real-time listener
+    function setupCustomersListener() {
+      if (customersListener) {
+        customersListener();
+      }
+      
+      customersListener = onSnapshot(
+        collection(db, "customers"),
+        (snapshot) => {
+          // Only process if there are actual changes
+          if (snapshot.docChanges().length > 0) {
+            console.log("Customers data changed, reloading...");
+            
+            // Update only the changed documents
+            snapshot.docChanges().forEach((change) => {
+              const customerData = { id: change.doc.id, ...change.doc.data() };
+              
+              if (change.type === "added" || change.type === "modified") {
+                const index = allCustomers.findIndex(c => c.id === customerData.id);
+                if (index !== -1) {
+                  allCustomers[index] = customerData;
+                } else {
+                  allCustomers.push(customerData);
+                }
+              }
+              
+              if (change.type === "removed") {
+                allCustomers = allCustomers.filter(c => c.id !== customerData.id);
+              }
+            });
+            
+            // Filter out archived and re-sort
+            allCustomers = allCustomers
+              .filter(c => c.archived !== true)
+              .sort((a, b) => {
+                const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+                const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+                return bTime - aTime;
+              });
+            
+            renderTable();
+          }
+        },
+        (error) => {
+          console.error("Error in customers listener:", error);
+        }
+      );
+    }
 
     // Notification System - SIDEBAR BUBBLE NOTIFICATIONS
     function loadNotifications() {
@@ -810,67 +892,24 @@
           });
         });
 
-        // Update sidebar bubbles based on notification types
         updateSidebarBubbles(notifications);
       });
     }
 
-    // Mark notifications as read for current page
-    async function markCurrentPageNotificationsRead() {
-      const currentPage = window.location.pathname;
-      let notificationType = null;
-      
-      // Determine notification type based on current page
-      if (currentPage.includes('calendar.html')) {
-        notificationType = 'appointment';
-      } else if (currentPage.includes('purchase-order.html')) {
-        notificationType = 'purchase_order';
-      } else if (currentPage.includes('inventory.html')) {
-        notificationType = 'low_stock';
-      }
-      
-      // Mark notifications as read for this page
-      if (notificationType) {
-        try {
-          const notificationsRef = collection(db, 'notifications');
-          const q = query(notificationsRef, where('type', '==', notificationType), where('read', '==', false));
-          const snapshot = await getDocs(q);
-          
-          if (!snapshot.empty) {
-            const updates = [];
-            snapshot.forEach(doc => {
-              updates.push(updateDoc(doc.ref, { read: true }));
-            });
-            await Promise.all(updates);
-            console.log(`Marked ${notificationType} notifications as read`);
-          }
-        } catch (error) {
-          console.error('Error marking notifications as read:', error);
-        }
-      }
-    }
-
     function updateSidebarBubbles(notifications) {
-      // Count unread notifications by type
       const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
       const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
       const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
       
-      // Update calendar bubble (appointments)
-      updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
-      
-      // Update purchase order bubble
-      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
-      
-      // Update inventory bubble (low stock)
-      updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
+      updateBubble('calendarBubble', appointmentCount, '#dc2626');
+      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
+      updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
     }
 
     function updateBubble(bubbleId, count, color) {
       let bubble = document.getElementById(bubbleId);
       
       if (!bubble) {
-        // Create bubble if it doesn't exist
         const button = getBubbleButton(bubbleId);
         if (button) {
           bubble = document.createElement('span');
@@ -922,7 +961,6 @@
           }
         }
 
-        // Set user as unavailable
         const staffRef = doc(db, "users", user.uid);
         await updateDoc(staffRef, { 
           availability: false,
@@ -950,46 +988,34 @@
       confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
       try {
-        // Clock out and set unavailable
         await handleClockOut();
         
-        // Detach notification listener
         if (notificationListener) notificationListener();
+        if (customersListener) customersListener();
         
-        // Clear local storage
         localStorage.removeItem('currentUserEmail');
         localStorage.removeItem('currentUserRole');
         localStorage.removeItem('currentUsername');
         localStorage.removeItem('currentUserFullName');
         
-        // Sign out
         await signOut(auth);
-        
-        // Redirect to login page
         window.location.href = "index.html";
       } catch (error) {
         console.error("Logout error:", error);
-        
-        // Reset button state
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        
         alert("An error occurred during logout. Please try again.");
-        
-        // Force sign out even if there's an error
         await signOut(auth);
         window.location.href = "index.html";
       }
     }
 
-    // Close modal on overlay click
     document.getElementById('logoutModal')?.addEventListener('click', function(e) {
       if (e.target === this) {
         hideLogoutModal();
       }
     });
 
-    // Close modal on Escape key
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
         const modal = document.getElementById('logoutModal');
@@ -1012,6 +1038,13 @@
             document.getElementById("usernameDisplay").textContent = currentUserFullName;
             document.getElementById("logoutUsername").textContent = currentUserFullName;
           }
+          
+          // Load all data once
+          await loadInitialData();
+          
+          // Initialize notifications
+          loadNotifications();
+          
         } catch (err) {
           console.error("Error fetching user document:", err);
         }
@@ -1020,7 +1053,6 @@
       }
     });
 
-    // Updated Logout handler with modal
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
       logoutBtn.addEventListener('click', () => {
@@ -1028,17 +1060,12 @@
       });
     }
 
-    // Handle page unload
     window.addEventListener("beforeunload", async (e) => {
       await handleClockOut();
     });
 
-    // Make db available globally for the rest of the script
     window.db = db;
     window.currentUserId = currentUserId;
-
-    // Initialize notifications
-    loadNotifications();
   </script>
 
   <script>
@@ -1268,6 +1295,7 @@
       document.getElementById('serviceDropdown').classList.remove('show');
       document.getElementById('dropdownIcon').classList.add('fa-chevron-down');
       document.getElementById('dropdownIcon').classList.remove('fa-chevron-up');
+      currentPage = 1;
       renderTable();
     }
 
@@ -1287,27 +1315,6 @@
       }
     }
 
-    async function fetchStaff() {
-      try {
-        await new Promise(resolve => {
-          const checkDb = setInterval(() => {
-            if (window.db) {
-              clearInterval(checkDb);
-              resolve();
-            }
-          }, 100);
-        });
-
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const usersRef = collection(window.db, "users");
-        const snapshot = await getDocs(usersRef);
-        allStaff = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        populateStaffDropdown();
-      } catch (error) {
-        console.error("Error fetching staff:", error);
-      }
-    }
-
     function populateStaffDropdown() {
       const employeeSelect = document.getElementById('employeeSelect');
       employeeSelect.innerHTML = '<option value="">Select employee</option>';
@@ -1317,36 +1324,6 @@
         option.textContent = staff.fullName || staff.email;
         employeeSelect.appendChild(option);
       });
-    }
-
-    async function fetchCustomers() {
-      try {
-        await new Promise(resolve => {
-          const checkDb = setInterval(() => {
-            if (window.db) {
-              clearInterval(checkDb);
-              resolve();
-            }
-          }, 100);
-        });
-
-        const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const customersRef = collection(window.db, "customers");
-        const snapshot = await getDocs(customersRef);
-        allCustomers = snapshot.docs
-          .map(doc => ({ id: doc.id, ...doc.data() }))
-          .filter(c => c.archived !== true)
-          .sort((a, b) => {
-            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
-            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
-            return bTime - aTime;
-          });
-        renderTable();
-      } catch (error) {
-        console.error("Error fetching customers:", error);
-        allCustomers = [];
-        renderTable();
-      }
     }
 
     function renderTable() {
@@ -1364,15 +1341,14 @@
         return matchesService && matchesSearch;
       });
 
-      // Calculate pagination
       totalPages = Math.ceil(filtered.length / itemsPerPage);
-      if (currentPage > totalPages) currentPage = 1;
+      if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
       
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
       const paginatedCustomers = filtered.slice(startIndex, endIndex);
 
-      // Update pagination info
       document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages || 1} (${filtered.length} total)`;
       document.getElementById('prevBtn').disabled = currentPage === 1;
       document.getElementById('nextBtn').disabled = currentPage === totalPages || totalPages === 0;
@@ -1497,7 +1473,6 @@
         await deleteDoc(customerDoc);
         alert('Customer deleted successfully!');
         closeEditModal();
-        await fetchCustomers();
       } catch (error) {
         console.error("Error deleting customer:", error);
         alert('Failed to delete customer. Please try again.');
@@ -1582,7 +1557,6 @@
         }
         
         closeEditModal();
-        await fetchCustomers();
       } catch (error) {
         console.error("Error saving customer:", error);
         alert('Failed to save customer. Please try again.');
@@ -1608,14 +1582,12 @@
       }
     });
 
-    searchInput.addEventListener('input', renderTable);
+    searchInput.addEventListener('input', () => {
+      currentPage = 1;
+      renderTable();
+    });
 
     initializeDropdown();
-    
-    setTimeout(() => {
-      fetchStaff();
-      fetchCustomers();
-    }, 1000);
   </script>
 
 </body>

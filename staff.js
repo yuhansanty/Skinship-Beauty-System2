@@ -46,11 +46,10 @@ let allHistoryData = [];
 let currentStaffId = null;
 let currentStaffName = null;
 let notificationListener = null;
-let staffDataCache = new Map();
+let staffListener = null;
 
 // ==================== APPLY DEFAULT SIDEBAR ON LOAD ====================
 
-// Check localStorage and apply sidebar visibility immediately
 (function initializeSidebar() {
   const storedRole = localStorage.getItem('currentUserRole');
   if (storedRole === 'staff') {
@@ -81,7 +80,6 @@ function applyRoleBasedVisibility(role) {
       }
     });
   } else {
-    // Show all buttons for admin
     const allButtons = document.querySelectorAll('.sidebar-btn');
     allButtons.forEach((btn) => {
       btn.style.setProperty('display', 'flex', 'important');
@@ -414,7 +412,7 @@ function displayStaffCards(staffData) {
   });
 }
 
-// ==================== SEARCH FUNCTIONALITY (FIXED) ====================
+// ==================== SEARCH FUNCTIONALITY ====================
 
 searchInput.addEventListener('input', (e) => {
   const searchTerm = e.target.value.toLowerCase().trim();
@@ -473,23 +471,94 @@ async function handleClockOut() {
 
 // ==================== OPTIMIZED STAFF DATA LOADING ====================
 
-async function getStaffLatestLog(staffId) {
-  if (staffDataCache.has(staffId)) {
-    return staffDataCache.get(staffId);
+async function loadAllStaffData() {
+  try {
+    // Single read: Get all users at once
+    const usersSnapshot = await getDocs(collection(db, "users"));
+    
+    // Build a map of users
+    const usersMap = new Map();
+    usersSnapshot.forEach(doc => {
+      usersMap.set(doc.id, {
+        id: doc.id,
+        ...doc.data()
+      });
+    });
+    
+    // Single read: Get today's logs for all staff in one query
+    const today = new Date().toLocaleDateString();
+    const staffIds = Array.from(usersMap.keys());
+    
+    // Map to store latest logs per staff
+    const latestLogsMap = new Map();
+    
+    // Fetch logs for each staff (this is unavoidable with subcollections)
+    // But we limit to 1 document per staff member
+    const logPromises = staffIds.map(async (staffId) => {
+      const logsQuery = query(
+        collection(db, "staffLogs", staffId, "history"),
+        orderBy("timestamp", "desc"),
+        limit(1)
+      );
+      
+      const logsSnap = await getDocs(logsQuery);
+      const latest = logsSnap.docs[0]?.data() || {};
+      latestLogsMap.set(staffId, latest);
+    });
+    
+    await Promise.all(logPromises);
+    
+    // Build staff data array
+    const staffData = [];
+    usersMap.forEach((userData, staffId) => {
+      const latest = latestLogsMap.get(staffId) || {};
+      const isClockedIn = latest.clockIn && !latest.clockOut;
+      const isAvailable = userData.availability === true && isClockedIn;
+      
+      staffData.push({
+        id: staffId,
+        fullName: userData.fullName || "N/A",
+        gender: userData.gender || "N/A",
+        mobile: userData.mobile || "N/A",
+        isAvailable,
+        clockIn: latest.clockIn || "N/A",
+        clockOut: latest.clockOut || "N/A"
+      });
+    });
+    
+    // Sort by availability
+    staffData.sort((a, b) => b.isAvailable - a.isAvailable);
+    
+    allStaffData = staffData;
+    displayStaffCards(allStaffData);
+    
+  } catch (error) {
+    console.error("Error loading staff data:", error);
+  }
+}
+
+// ==================== SETUP REAL-TIME LISTENER (OPTIMIZED) ====================
+
+function setupStaffListener() {
+  // Only listen to changes in the users collection
+  // This triggers much fewer reads than before
+  if (staffListener) {
+    staffListener();
   }
   
-  const logsQuery = query(
-    collection(db, "staffLogs", staffId, "history"),
-    orderBy("timestamp", "desc"),
-    limit(1)
+  staffListener = onSnapshot(
+    collection(db, "users"),
+    async (snapshot) => {
+      // Only process changes, not all documents
+      if (snapshot.docChanges().length > 0) {
+        console.log("Staff data changed, reloading...");
+        await loadAllStaffData();
+      }
+    },
+    (error) => {
+      console.error("Error in staff listener:", error);
+    }
   );
-  
-  const logsSnap = await getDocs(logsQuery);
-  const latest = logsSnap.docs[0]?.data() || {};
-  
-  staffDataCache.set(staffId, latest);
-  
-  return latest;
 }
 
 // ==================== AUTHENTICATION & MAIN ====================
@@ -512,13 +581,11 @@ onAuthStateChanged(auth, async (user) => {
     const currentUserFullName = userData.fullName || user.email;
     const currentUserRole = userData.role || 'staff';
     
-    // Store role in localStorage for faster future loads
     localStorage.setItem('currentUserRole', currentUserRole);
     
     usernameSpan.textContent = currentUserFullName;
     document.getElementById('logoutUsername').textContent = currentUserFullName;
     
-    // Apply role-based visibility (reapply to confirm from Firebase)
     applyRoleBasedVisibility(currentUserRole);
 
     const today = new Date().toLocaleDateString();
@@ -550,32 +617,11 @@ onAuthStateChanged(auth, async (user) => {
       lastUpdated: serverTimestamp()
     });
 
-    onSnapshot(collection(db, "users"), async (snapshot) => {
-      const promises = snapshot.docs.map(async (docSnap) => {
-        const staff = docSnap.data();
-        const latest = await getStaffLatestLog(docSnap.id);
-        
-        const isClockedIn = latest.clockIn && !latest.clockOut;
-        const isAvailable = staff.availability === true && isClockedIn;
-
-        return {
-          id: docSnap.id,
-          fullName: staff.fullName || "N/A",
-          gender: staff.gender || "N/A",
-          mobile: staff.mobile || "N/A",
-          isAvailable,
-          clockIn: latest.clockIn || "N/A",
-          clockOut: latest.clockOut || "N/A"
-        };
-      });
-
-      const results = await Promise.all(promises);
-      allStaffData = results;
-      allStaffData.sort((a, b) => b.isAvailable - a.isAvailable);
-      displayStaffCards(allStaffData);
-      
-      staffDataCache.clear();
-    });
+    // Initial load of all staff data
+    await loadAllStaffData();
+    
+    // Setup real-time listener for updates
+    setupStaffListener();
 
     loadNotifications();
     
@@ -605,7 +651,10 @@ window.confirmLogout = async function() {
       notificationListener();
     }
     
-    // Clear role from localStorage on logout
+    if (staffListener) {
+      staffListener();
+    }
+    
     localStorage.removeItem('currentUserRole');
     
     await signOut(auth);
