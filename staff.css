@@ -85,19 +85,19 @@ body {
   color: white;
 }
 
-html.staff-loaded .sidebar-btn.role-restricted {
-  display: none !important;
-}
-
-/* Show all buttons for admin */
-html.admin-loaded .sidebar-btn {
+/* Show buttons based on role */
+body.role-admin .sidebar-btn {
   display: flex !important;
 }
 
-html.staff-loaded .sidebar-btn[title="Dashboard"],
-html.staff-loaded .sidebar-btn[title="Staff"],
-html.staff-loaded .sidebar-btn[title="Reports"],
-html.staff-loaded .sidebar-btn[title="Cashier"] {
+body.role-staff .sidebar-btn {
+  display: none !important;
+}
+
+body.role-staff .sidebar-btn[data-page="dashboard"],
+body.role-staff .sidebar-btn[data-page="staff"],
+body.role-staff .sidebar-btn[data-page="reports"],
+body.role-staff .sidebar-btn[data-page="cashier"] {
   display: flex !important;
 }
 

@@ -1195,12 +1195,13 @@
         if (is2FAValid(user.uid)) {
           saveCredentials(email, password, remember);
           const userData = userDoc.data();
-          window.currentUserData = {
-            email: email,
-            role: role,
-            username: userData.username || "",
-            fullName: userData.fullName || userData.fullname || ""
-          };
+localStorage.setItem('currentUserRole', role);
+window.currentUserData = {
+  email: email,
+  role: role,
+  username: userData.username || "",
+  fullName: userData.fullName || userData.fullname || ""
+};
           showSuccess("✅ Login successful! Redirecting...");
           setTimeout(() => {
             window.location.href = "dashboard.html";
@@ -1288,12 +1289,13 @@
           
           saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
           const userData = userDoc.data();
-          window.currentUserData = {
-            email: userEmail,
-            role: role,
-            username: userData.username || "",
-            fullName: userData.fullName || userData.fullname || ""
-          };
+localStorage.setItem('currentUserRole', role);
+window.currentUserData = {
+  email: email,
+  role: role,
+  username: userData.username || "",
+  fullName: userData.fullName || userData.fullname || ""
+};
           
           setTimeout(() => {
             window.location.href = "dashboard.html";

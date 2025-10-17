@@ -48,47 +48,36 @@ let currentStaffName = null;
 let notificationListener = null;
 let staffListener = null;
 
-// ==================== APPLY DEFAULT SIDEBAR ON LOAD ====================
-
-(function initializeSidebar() {
-  const storedRole = localStorage.getItem('currentUserRole');
-  if (storedRole === 'staff') {
-    applyRoleBasedVisibility('staff');
-  }
-})();
-
 // ==================== ROLE-BASED VISIBILITY ====================
 
 function applyRoleBasedVisibility(role) {
-  if (role === 'staff') {
-    const allowedButtons = ['Dashboard', 'Reports', 'Cashier', 'Staff'];
-    const allButtons = document.querySelectorAll('.sidebar-btn');
-    
-    allButtons.forEach((btn) => {
-      const title = btn.getAttribute('title');
-      
-      if (!allowedButtons.includes(title)) {
-        btn.style.setProperty('display', 'none', 'important');
-        btn.style.visibility = 'hidden';
-        btn.style.opacity = '0';
-        btn.style.pointerEvents = 'none';
-      } else {
-        btn.style.setProperty('display', 'flex', 'important');
-        btn.style.visibility = 'visible';
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      }
-    });
+  const body = document.body;
+  
+  // Remove existing role classes
+  body.classList.remove('role-admin', 'role-staff');
+  
+  // Add appropriate role class - default to staff if no role specified
+  if (role === 'admin') {
+    body.classList.add('role-admin');
   } else {
-    const allButtons = document.querySelectorAll('.sidebar-btn');
-    allButtons.forEach((btn) => {
-      btn.style.setProperty('display', 'flex', 'important');
-      btn.style.visibility = 'visible';
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
-    });
+    // Default to staff for any other role or undefined
+    body.classList.add('role-staff');
   }
 }
+
+// ==================== APPLY ROLE ON PAGE LOAD ====================
+
+// Check localStorage for role and apply immediately to prevent flash
+(function() {
+  const storedRole = localStorage.getItem('currentUserRole');
+  if (storedRole === 'admin') {
+    document.body.classList.remove('role-staff');
+    document.body.classList.add('role-admin');
+  } else {
+    // Default to staff (already applied in HTML)
+    document.body.classList.add('role-staff');
+  }
+})();
 
 // ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
 
@@ -168,7 +157,7 @@ window.openHistory = async function(staffId, staffName) {
   const paginationControls = document.getElementById("paginationControls");
   const historyStaffName = document.getElementById("historyStaffName");
   
-  historyList.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+  historyList.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
     <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i>
     <p style="margin-top: 1rem;">Loading history...</p>
   </td></tr>`;
@@ -208,7 +197,7 @@ function displayHistoryPage() {
   if (totalEntries === 0) {
     historyList.innerHTML = `
       <tr>
-        <td colspan="3" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+        <td colspan="2" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
           <i class="fa-solid fa-inbox" style="font-size: 3rem; opacity: 0.5; margin-bottom: 1rem; display: block;"></i>
           No history available yet
         </td>
@@ -223,34 +212,15 @@ function displayHistoryPage() {
   const pageData = allHistoryData.slice(startIndex, endIndex);
   
   historyList.innerHTML = pageData.map(log => {
-    const duration = calculateDuration(log.clockIn, log.clockOut);
     return `
       <tr>
         <td>${log.clockIn || "N/A"}</td>
         <td>${log.clockOut || '<span style="color: var(--success); font-weight: 600;">Currently Active</span>'}</td>
-        <td>${duration}</td>
       </tr>
     `;
   }).join("");
   
   renderPagination(totalPages, paginationControls);
-}
-
-function calculateDuration(clockIn, clockOut) {
-  if (!clockIn || !clockOut) return "—";
-  
-  try {
-    const start = new Date(clockIn);
-    const end = new Date(clockOut);
-    const diff = end - start;
-    
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    return `${hours}h ${minutes}m`;
-  } catch (e) {
-    return "—";
-  }
 }
 
 function renderPagination(totalPages, container) {
@@ -586,6 +556,7 @@ onAuthStateChanged(auth, async (user) => {
     usernameSpan.textContent = currentUserFullName;
     document.getElementById('logoutUsername').textContent = currentUserFullName;
     
+    // Apply role-based visibility
     applyRoleBasedVisibility(currentUserRole);
 
     const today = new Date().toLocaleDateString();
