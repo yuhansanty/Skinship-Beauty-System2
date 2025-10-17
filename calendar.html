@@ -1192,6 +1192,8 @@
         if (!editing) {
           document.getElementById('appointmentForm').reset();
           document.getElementById('appointmentStatus').value = 'Pending';
+          // Make service required for new appointments
+          document.getElementById('serviceType').setAttribute('required', 'required');
           if (this.selectedDate) {
             document.getElementById('appointmentDate').value = this.selectedDate;
           }
@@ -1203,6 +1205,9 @@
         this.editingId = null;
         this.selectedDate = null;
         document.getElementById('appointmentForm').reset();
+        
+        // Reset service to required state
+        document.getElementById('serviceType').setAttribute('required', 'required');
         
         document.getElementById('customerName').readOnly = false;
         document.getElementById('customerEmail').readOnly = false;
@@ -1258,7 +1263,8 @@
           hasError = true;
         }
 
-        if (!service) {
+        // Only require service when NOT editing
+        if (!this.editingId && !service) {
           document.getElementById('serviceType').classList.add('error');
           document.getElementById('serviceError').classList.add('show');
           hasError = true;
@@ -1284,7 +1290,6 @@
           email: document.getElementById('customerEmail').value,
           date: date,
           time: formattedTime,
-          service: service,
           phone: phone,
           staff: employee,
           notes: document.getElementById('appointmentNotes').value,
@@ -1292,6 +1297,17 @@
           appointment: dateTime.toLocaleString(),
           archived: false
         };
+
+        // Only update service if one is selected
+        if (service) {
+          customerData.service = service;
+        } else if (this.editingId) {
+          // When editing, keep the existing service if none selected
+          const existingCustomer = this.customers.find(c => c.id === this.editingId);
+          if (existingCustomer && existingCustomer.service) {
+            customerData.service = existingCustomer.service;
+          }
+        }
 
         if (!this.editingId) {
           customerData.createdAt = Timestamp.now();
@@ -1335,7 +1351,11 @@
         if (!customer) return;
 
         this.editingId = id;
+
         this.openModal(true);
+
+        // Make service not required when editing
+        document.getElementById('serviceType').removeAttribute('required');
 
         document.getElementById('customerName').value = customer.name || '';
         document.getElementById('customerEmail').value = customer.email || '';
@@ -1355,35 +1375,63 @@
           document.getElementById('appointmentTime').value = time;
         }
 
-        setTimeout(() => {
-          const serviceSelect = document.getElementById('serviceType');
-          let serviceToMatch = customer.service || customer.category;
+        // Set the service dropdown value
+        const serviceSelect = document.getElementById('serviceType');
+        const savedService = customer.service;
+        
+        // Wait longer for dropdown to be fully populated
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        if (savedService) {
+          let foundMatch = false;
           
-          if (serviceToMatch) {
-            let foundOption = false;
+          // Debug: Print all option values
+          for (let i = 0; i < serviceSelect.options.length; i++) {
+          }
+          
+          // Try exact match first (case-insensitive)
+          for (let i = 0; i < serviceSelect.options.length; i++) {
+            if (serviceSelect.options[i].value.toLowerCase().trim() === savedService.toLowerCase().trim()) {
+              serviceSelect.selectedIndex = i;
+              foundMatch = true;
+              console.log('Found exact match at index:', i);
+              break;
+            }
+          }
+          
+          // If not found, check if service name is part of the option value
+          if (!foundMatch) {
             for (let i = 0; i < serviceSelect.options.length; i++) {
-              if (serviceSelect.options[i].value === serviceToMatch) {
+              const optionValue = serviceSelect.options[i].value.toLowerCase().trim();
+              if (optionValue && savedService.toLowerCase().trim().includes(optionValue)) {
                 serviceSelect.selectedIndex = i;
-                foundOption = true;
+                foundMatch = true;
                 break;
               }
             }
-            if (!foundOption && customer.category && customer.category !== serviceToMatch) {
-              for (let i = 0; i < serviceSelect.options.length; i++) {
-                if (serviceSelect.options[i].value === customer.category) {
-                  serviceSelect.selectedIndex = i;
-                  foundOption = true;
-                  break;
-                }
+          }
+          
+          // If not found, check if option value is part of service name
+          if (!foundMatch) {
+            for (let i = 0; i < serviceSelect.options.length; i++) {
+              const optionValue = serviceSelect.options[i].value.toLowerCase().trim();
+              if (optionValue && optionValue.includes(savedService.toLowerCase().trim())) {
+                serviceSelect.selectedIndex = i;
+                foundMatch = true;
+                break;
               }
             }
-            if (!foundOption) {
-              serviceSelect.selectedIndex = 0;
-            }
-          } else {
-            serviceSelect.selectedIndex = 0;
           }
-        }, 100);
+          
+          // If still not found, keep it blank (which is now allowed when editing)
+          if (!foundMatch) {
+            serviceSelect.selectedIndex = 0;
+            console.warn('Service not found in dropdown:', savedService);
+          }
+        } else {
+          console.log('No service value in customer data');
+          serviceSelect.selectedIndex = 0;
+        }
 
         const employeeSelect = document.getElementById('employeeSelect');
         if (customer.staff) {

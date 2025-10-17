@@ -18,7 +18,7 @@ let purchaseOrders = [];
 let inventoryItems = [];
 let categories = [];
 let categoryCounts = {};
-let suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
+let suppliers = [];
 let currentUser = null;
 let currentProductMode = 'existing';
 let selectedProduct = null;
@@ -220,8 +220,35 @@ function getBubbleButton(bubbleId) {
   return buttonMap[bubbleId];
 }
 
+// Load suppliers from Firebase
+async function loadSuppliersFromFirebase() {
+  try {
+    const doc = await db.collection('metadata').doc('suppliers').get();
+    if (doc.exists && doc.data().list) {
+      suppliers = doc.data().list;
+    } else {
+      // Initialize with default suppliers if none exist
+      suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
+      await db.collection('metadata').doc('suppliers').set({ list: suppliers });
+    }
+  } catch (error) {
+    console.error('Error loading suppliers:', error);
+    suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
+  }
+}
+
+// Save suppliers to Firebase
+async function saveSuppliersToFirebase() {
+  try {
+    await db.collection('metadata').doc('suppliers').set({ list: suppliers });
+  } catch (error) {
+    console.error('Error saving suppliers:', error);
+  }
+}
+
 // Initialize the page
 document.addEventListener('DOMContentLoaded', async function() {
+  await loadSuppliersFromFirebase();
   await loadInventoryItemsAndCategories();
   await loadPurchaseOrders();
   updateStats();
@@ -234,7 +261,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     markCurrentPageNotificationsRead();
   }, 1000);
   
-  document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
+  // Set minimum date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('poDate').value = today;
+  document.getElementById('poDate').min = today;
   
   document.getElementById('logoutBtn').addEventListener('click', function() {
     showLogoutModal();
@@ -565,7 +595,7 @@ function closeAddSupplierModal() {
 }
 
 // Handle Add Supplier
-function handleAddSupplier(event) {
+async function handleAddSupplier(event) {
   event.preventDefault();
   
   const supplierName = document.getElementById('newSupplierName').value.trim();
@@ -582,6 +612,10 @@ function handleAddSupplier(event) {
   
   suppliers.push(supplierName);
   suppliers.sort();
+  
+  // Save to Firebase
+  await saveSuppliersToFirebase();
+  
   updateSupplierDropdown();
   closeAddSupplierModal();
   
@@ -650,7 +684,7 @@ function loadManageSuppliersList() {
 }
 
 // Handle Delete Supplier
-function handleDeleteSupplier(supplierName, usageCount) {
+async function handleDeleteSupplier(supplierName, usageCount) {
   if (usageCount === 0) {
     if (!confirm(`Are you sure you want to delete the supplier "${supplierName}"?`)) {
       return;
@@ -662,6 +696,10 @@ function handleDeleteSupplier(supplierName, usageCount) {
   }
   
   suppliers = suppliers.filter(s => s !== supplierName);
+  
+  // Save to Firebase
+  await saveSuppliersToFirebase();
+  
   updateSupplierDropdown();
   loadManageSuppliersList();
   
@@ -837,8 +875,11 @@ function openNewPOModal() {
   document.getElementById('modalTitle').textContent = 'New Purchase Order';
   document.getElementById('poForm').reset();
   generatePONumber();
-  document.getElementById('poDate').value = new Date().toISOString().split('T')[0];
   
+  // Set minimum date to today
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('poDate').value = today;
+  document.getElementById('poDate').min = today;
   switchProductMode('existing');
   selectedProduct = null;
   document.getElementById('productDetails').style.display = 'none';
@@ -947,7 +988,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     if (editingIndex === -1) {
       const docRef = await db.collection('purchaseOrders').add(formData);
       formData.firebaseId = docRef.id;
-      purchaseOrders.push(formData);
+      purchaseOrders.unshift(formData); // Add to beginning of array
       
       // Create notification
       await db.collection('notifications').add({
@@ -1054,6 +1095,11 @@ function editPO(index) {
   document.getElementById('modalTitle').textContent = 'Edit Purchase Order';
   document.getElementById('poNumber').value = po.id;
   document.getElementById('poDate').value = po.date;
+  
+  // Set minimum date to today for editing
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('poDate').min = today;
+  
   document.getElementById('supplier').value = po.supplier;
   document.getElementById('quantity').value = po.quantity;
   
@@ -1202,6 +1248,10 @@ async function receiveOrder(index) {
     purchaseOrders[index].status = 'received';
     purchaseOrders[index].receivedDate = getCurrentDate();
     purchaseOrders[index].receivedBy = currentUser ? currentUser.fullName : 'Unknown';
+
+    // Move received order to the top
+    const receivedPO = purchaseOrders.splice(index, 1)[0];
+    purchaseOrders.unshift(receivedPO);
 
     updateStats();
     renderTable();
