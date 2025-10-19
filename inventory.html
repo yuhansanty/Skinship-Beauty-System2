@@ -373,7 +373,7 @@
           <!-- Search Bar -->
           <input type="text" id="searchInput" placeholder="Search inventory..." class="rounded-lg px-3 md:px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-white w-full lg:w-80 text-sm md:text-base" />
           
-          <!-- Action Button (Only Edit) -->
+          <!-- Action Button -->
           <div class="flex gap-2 w-full lg:w-auto">
             <button class="bg-white text-[#da5c73] px-3 md:px-4 py-2 rounded-lg font-semibold hover:bg-[#da5c73] hover:text-white transition-all shadow-md text-xs md:text-sm flex-1 lg:flex-none" onclick="enableEditMode()" id="editModeBtn">
               <i class="fa-solid fa-pen-to-square mr-1 md:mr-2"></i>Edit Item
@@ -398,52 +398,82 @@
         </div>
       </div>
 
-      <!-- Stats Summary -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6 stats-grid">
+      <!-- Stats Summary - Organized Layout -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 md:gap-3 mb-4 md:mb-6 stats-grid">
+        <!-- Total Items -->
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-xs md:text-sm font-semibold">Total Items</p>
-              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
+              <p class="text-lg md:text-2xl font-bold text-[#da5c73]" id="totalItems">0</p>
             </div>
-            <i class="fa-solid fa-boxes-stacked text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-boxes-stacked text-xl md:text-2xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
+
+        <!-- Total Value -->
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-xs md:text-sm font-semibold">Total Value</p>
-              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
+              <p class="text-lg md:text-2xl font-bold text-[#da5c73]" id="totalValue">₱ 0</p>
             </div>
-            <i class="fa-solid fa-peso-sign text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-peso-sign text-xl md:text-2xl text-[#da5c73] opacity-50"></i>
           </div>
         </div>
+
+        <!-- In Stock -->
+        <div class="stat-card hidden md:block">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">In Stock</p>
+              <p class="text-lg md:text-2xl font-bold text-green-600" id="inStock">0</p>
+            </div>
+            <i class="fa-solid fa-check-circle text-xl md:text-2xl text-green-600 opacity-50"></i>
+          </div>
+        </div>
+
+        <!-- Low Stock -->
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-xs md:text-sm font-semibold">Low Stock</p>
-              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="lowStock">0</p>
+              <p class="text-lg md:text-2xl font-bold text-yellow-600" id="lowStock">0</p>
             </div>
-            <i class="fa-solid fa-triangle-exclamation text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-triangle-exclamation text-xl md:text-2xl text-yellow-600 opacity-50"></i>
           </div>
         </div>
+
+        <!-- Out of Stock -->
         <div class="stat-card">
           <div class="flex items-center justify-between">
             <div>
               <p class="text-gray-600 text-xs md:text-sm font-semibold">Out of Stock</p>
-              <p class="text-xl md:text-2xl font-bold text-[#da5c73]" id="outOfStock">0</p>
+              <p class="text-lg md:text-2xl font-bold text-red-600" id="outOfStock">0</p>
             </div>
-            <i class="fa-solid fa-circle-xmark text-2xl md:text-3xl text-[#da5c73] opacity-50"></i>
+            <i class="fa-solid fa-circle-xmark text-xl md:text-2xl text-red-600 opacity-50"></i>
+          </div>
+        </div>
+
+        <!-- Overstock -->
+        <div class="stat-card">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-600 text-xs md:text-sm font-semibold">Overstock</p>
+              <p class="text-lg md:text-2xl font-bold text-blue-600" id="overstock">0</p>
+            </div>
+            <i class="fa-solid fa-arrow-up-long text-xl md:text-2xl text-blue-600 opacity-50"></i>
           </div>
         </div>
       </div>
 
-      <!-- Filters -->
+      <!-- Filters - Organized -->
       <div class="flex gap-2 md:gap-3 mb-4 md:mb-6 flex-wrap filter-container overflow-x-auto pb-2">
         <button class="filter-btn active" onclick="filterByStatus('all')">All Items</button>
-        <button class="filter-btn" onclick="filterByStatus('in-stock')">In Stock</button>
+        <button class="filter-btn hidden md:block" onclick="filterByStatus('in-stock')">In Stock</button>
         <button class="filter-btn" onclick="filterByStatus('low-stock')">Low Stock</button>
         <button class="filter-btn" onclick="filterByStatus('out-of-stock')">Out of Stock</button>
+        <button class="filter-btn" onclick="filterByStatus('overstock')">Overstock</button>
         <select id="categoryFilter" class="filter-btn" onchange="filterByCategory()">
           <option value="all">All Categories</option>
         </select>
@@ -475,7 +505,6 @@
       </div>
     </div>
   </main>
-
 
   <!-- Edit Product Modal -->
   <div id="editProductModal" class="add-product-modal">

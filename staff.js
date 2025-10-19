@@ -45,8 +45,13 @@ const entriesPerPage = 10;
 let allHistoryData = [];
 let currentStaffId = null;
 let currentStaffName = null;
-let notificationListener = null;
 let staffListener = null;
+let inventoryListener = null;
+let purchaseOrderListener = null;
+
+// Cache
+let userDataCache = null;
+let inventoryDataCache = [];
 
 // ==================== ROLE-BASED VISIBILITY ====================
 
@@ -79,75 +84,123 @@ function applyRoleBasedVisibility(role) {
   }
 })();
 
-// ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
+// Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
 
-function loadNotifications() {
-  if (notificationListener) {
-    notificationListener();
+function monitorInventory() {
+  if (inventoryListener) {
+    inventoryListener();
   }
 
-  notificationListener = onSnapshot(
-    query(collection(db, "notifications"), orderBy("timestamp", "desc")),
+  inventoryListener = onSnapshot(
+    collection(db, "inventory"),
     (snapshot) => {
-      const notifications = [];
-      
+      inventoryDataCache = [];
       snapshot.forEach(doc => {
-        notifications.push({
+        const product = doc.data();
+        const qty = product.qty || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        product.status = determineStatus(qty, minStock);
+        
+        // Recalculate total
+        product.total = qty * price;
+        
+        inventoryDataCache.push({
           id: doc.id,
-          ...doc.data()
+          ...product
         });
       });
-
-      updateSidebarBubbles(notifications);
+      updateInventoryBubble();
     },
     (error) => {
-      console.error("Error loading notifications:", error);
+      console.error('Error monitoring inventory:', error);
     }
   );
 }
 
-function updateSidebarBubbles(notifications) {
-  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+function updateInventoryBubble() {
+  const noStockCount = inventoryDataCache.filter(item => item.status === 'out-of-stock').length;
+  const lowStockCount = inventoryDataCache.filter(item => item.status === 'low-stock').length;
+  const overstockCount = inventoryDataCache.filter(item => {
+    const minStockThreshold = item.minStock || 10;
+    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+  }).length;
   
-  updateBubble('calendarBubble', appointmentCount, '#dc2626');
-  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-  updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-}
-
-function updateBubble(bubbleId, count, color) {
-  let bubble = document.getElementById(bubbleId);
+  const button = document.querySelector('button[title="Inventory"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
   
   if (!bubble) {
-    const button = getBubbleButton(bubbleId);
-    if (button) {
-      bubble = document.createElement('span');
-      bubble.id = bubbleId;
-      bubble.className = 'sidebar-bubble';
-      button.style.position = 'relative';
-      button.appendChild(bubble);
-    }
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
   }
   
-  if (bubble) {
-    if (count > 0) {
-      bubble.textContent = count > 99 ? '99+' : count;
-      bubble.style.backgroundColor = color;
-      bubble.style.display = 'flex';
-    } else {
-      bubble.style.display = 'none';
-    }
+  // Priority: No Stock (Red) > Low Stock (Yellow) > Overstock (Blue)
+  if (noStockCount > 0) {
+    bubble.textContent = noStockCount > 99 ? '99+' : noStockCount;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStockCount > 0) {
+    bubble.textContent = lowStockCount > 99 ? '99+' : lowStockCount;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstockCount > 0) {
+    bubble.textContent = overstockCount > 99 ? '99+' : overstockCount;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
-function getBubbleButton(bubbleId) {
-  const buttonMap = {
-    'calendarBubble': document.querySelector('button[title="Reservations"]'),
-    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-    'inventoryBubble': document.querySelector('button[title="Inventory"]')
-  };
-  return buttonMap[bubbleId];
+// Monitor purchase orders for sidebar bubble
+function monitorPurchaseOrders() {
+  if (purchaseOrderListener) {
+    purchaseOrderListener();
+  }
+
+  purchaseOrderListener = onSnapshot(
+    query(collection(db, "purchaseOrders"), where("status", "==", "pending"), limit(100)),
+    (snapshot) => {
+      const newOrderCount = snapshot.size;
+      updatePurchaseOrderBubble(newOrderCount);
+    },
+    (error) => {
+      console.error('Error monitoring purchase orders:', error);
+    }
+  );
+}
+
+function updatePurchaseOrderBubble(count) {
+  const button = document.querySelector('button[title="Purchase Order"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
 }
 
 // ==================== HISTORY MODAL ====================
@@ -415,12 +468,12 @@ async function handleClockOut() {
     const today = new Date().toLocaleDateString();
     const logsRef = collection(db, "staffLogs", user.uid, "history");
     
-    const todayQuery = query(logsRef, where("date", "==", today));
+    const todayQuery = query(logsRef, where("date", "==", today), limit(1));
     const todaySnap = await getDocs(todayQuery);
     
     if (!todaySnap.empty) {
-      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-      if (activeLog) {
+      const activeLog = todaySnap.docs[0];
+      if (!activeLog.data().clockOut) {
         await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
           clockOut: new Date().toLocaleString()
         }, { merge: true });
@@ -455,15 +508,11 @@ async function loadAllStaffData() {
       });
     });
     
-    // Single read: Get today's logs for all staff in one query
-    const today = new Date().toLocaleDateString();
-    const staffIds = Array.from(usersMap.keys());
-    
     // Map to store latest logs per staff
     const latestLogsMap = new Map();
+    const staffIds = Array.from(usersMap.keys());
     
-    // Fetch logs for each staff (this is unavoidable with subcollections)
-    // But we limit to 1 document per staff member
+    // Fetch latest log for each staff (limit 1)
     const logPromises = staffIds.map(async (staffId) => {
       const logsQuery = query(
         collection(db, "staffLogs", staffId, "history"),
@@ -511,7 +560,6 @@ async function loadAllStaffData() {
 
 function setupStaffListener() {
   // Only listen to changes in the users collection
-  // This triggers much fewer reads than before
   if (staffListener) {
     staffListener();
   }
@@ -540,29 +588,46 @@ onAuthStateChanged(auth, async (user) => {
   }
   
   try {
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    
-    if (!userDoc.exists()) {
-      console.error("User document not found in Firestore!");
-      return;
+    // Check cache first
+    if (userDataCache && userDataCache.uid === user.uid) {
+      const currentUserFullName = userDataCache.fullName;
+      const currentUserRole = userDataCache.role;
+      
+      usernameSpan.textContent = currentUserFullName;
+      document.getElementById('logoutUsername').textContent = currentUserFullName;
+      applyRoleBasedVisibility(currentUserRole);
+    } else {
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      
+      if (!userDoc.exists()) {
+        console.error("User document not found in Firestore!");
+        return;
+      }
+      
+      const userData = userDoc.data();
+      const currentUserFullName = userData.fullName || user.email;
+      const currentUserRole = userData.role || 'staff';
+      
+      // Cache user data
+      userDataCache = {
+        uid: user.uid,
+        fullName: currentUserFullName,
+        role: currentUserRole
+      };
+      
+      localStorage.setItem('currentUserRole', currentUserRole);
+      
+      usernameSpan.textContent = currentUserFullName;
+      document.getElementById('logoutUsername').textContent = currentUserFullName;
+      
+      // Apply role-based visibility
+      applyRoleBasedVisibility(currentUserRole);
     }
-    
-    const userData = userDoc.data();
-    const currentUserFullName = userData.fullName || user.email;
-    const currentUserRole = userData.role || 'staff';
-    
-    localStorage.setItem('currentUserRole', currentUserRole);
-    
-    usernameSpan.textContent = currentUserFullName;
-    document.getElementById('logoutUsername').textContent = currentUserFullName;
-    
-    // Apply role-based visibility
-    applyRoleBasedVisibility(currentUserRole);
 
     const today = new Date().toLocaleDateString();
     const logsRef = collection(db, "staffLogs", user.uid, "history");
     
-    const todayQuery = query(logsRef, where("date", "==", today));
+    const todayQuery = query(logsRef, where("date", "==", today), limit(1));
     const todaySnap = await getDocs(todayQuery);
     
     let needsNewLog = true;
@@ -594,7 +659,9 @@ onAuthStateChanged(auth, async (user) => {
     // Setup real-time listener for updates
     setupStaffListener();
 
-    loadNotifications();
+    // Setup inventory and purchase order monitoring
+    monitorInventory();
+    monitorPurchaseOrders();
     
   } catch (error) {
     console.error("Error in onAuthStateChanged:", error);
@@ -618,13 +685,14 @@ window.confirmLogout = async function() {
   try {
     await handleClockOut();
     
-    if (notificationListener) {
-      notificationListener();
-    }
+    // Detach all listeners
+    if (staffListener) staffListener();
+    if (inventoryListener) inventoryListener();
+    if (purchaseOrderListener) purchaseOrderListener();
     
-    if (staffListener) {
-      staffListener();
-    }
+    // Clear caches
+    userDataCache = null;
+    inventoryDataCache = [];
     
     localStorage.removeItem('currentUserRole');
     

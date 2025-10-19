@@ -41,7 +41,6 @@
       position: absolute;
       top: -5px;
       right: -5px;
-      background: #dc2626;
       color: white;
       border-radius: 50%;
       min-width: 20px;
@@ -230,7 +229,6 @@
       transform: translateY(-4px);
     }
 
-    /* Logout Modal Styles */
     .logout-modal {
       background: white;
       border-radius: 1rem;
@@ -402,20 +400,19 @@
     <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
     <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'">
       <i class="fa-solid fa-calendar-check"></i>
-      <span id="calendarBubble" class="sidebar-bubble" style="display: none;">0</span>
     </button>
     <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
     <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
     <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'">
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'" id="inventoryBtn">
       <i class="fa-solid fa-box-open"></i>
       <span id="inventoryBubble" class="sidebar-bubble" style="display: none;">0</span>
     </button>
     <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
     <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
     <button class="sidebar-btn active" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
-    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'">
+    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'" id="purchaseOrderBtn">
       <i class="fa-solid fa-receipt"></i>
       <span id="purchaseOrderBubble" class="sidebar-bubble" style="display: none;">0</span>
     </button>
@@ -616,7 +613,7 @@
     let currentInvoiceId = null;
     let invoicesListener = null;
     let purchaseOrdersListener = null;
-    let notificationListener = null;
+    let inventoryListener = null;
     let processedPOs = new Set();
 
     // Cache user data to reduce reads
@@ -678,7 +675,7 @@
         
         if (invoicesListener) invoicesListener();
         if (purchaseOrdersListener) purchaseOrdersListener();
-        if (notificationListener) notificationListener();
+        if (inventoryListener) inventoryListener();
         
         await auth.signOut();
         window.location.href = "index.html";
@@ -749,6 +746,10 @@
           const batch = db.batch();
           let batchCount = 0;
           const MAX_BATCH_SIZE = 500;
+          
+          // Update purchase order bubble
+          const pendingCount = snapshot.docs.filter(doc => doc.data().status === 'pending').length;
+          updatePurchaseOrderBubble(pendingCount);
           
           for (const change of snapshot.docChanges()) {
             if (change.type === 'added' || change.type === 'modified') {
@@ -1168,85 +1169,84 @@
       window.URL.revokeObjectURL(url);
     }
 
-    // Sidebar Bubble Notification System
-    function loadNotifications() {
-      if (notificationListener) {
-        notificationListener();
-      }
+// Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
 
-      notificationListener = db.collection('notifications')
-        .orderBy('timestamp', 'desc')
-        .onSnapshot((snapshot) => {
-          const notifications = [];
+// Monitor inventory for sidebar bubble - OPTIMIZED single listener
+function monitorInventory() {
+  if (inventoryListener) {
+    inventoryListener();
+  }
+
+  inventoryListener = db.collection('inventory')
+    .onSnapshot((snapshot) => {
+      let noStockCount = 0;
+      let lowStockCount = 0;
+      let overstockCount = 0;
+      
+      snapshot.forEach(doc => {
+        const product = doc.data();
+        const qty = product.qty || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        const status = determineStatus(qty, minStock);
+        
+        if (status === 'out-of-stock') {
+          noStockCount++;
+        } else if (status === 'low-stock') {
+          lowStockCount++;
+        } else if (qty > (minStock * 1.5) && qty > 0) {
+          overstockCount++;
+        }
+      });
           
-          snapshot.forEach(doc => {
-            notifications.push({
-              id: doc.id,
-              ...doc.data()
-            });
-          });
-
-          updateSidebarBubbles(notifications);
+          updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
         }, (error) => {
-          console.error('Error loading notifications:', error);
+          console.error('Error monitoring inventory:', error);
         });
     }
 
-    // Mark notifications as read for current page
-    async function markCurrentPageNotificationsRead() {
-      const currentPage = window.location.pathname;
-      let notificationType = null;
+    // Update inventory bubble based on priority: red > yellow > blue
+    function updateInventoryBubble(noStock, lowStock, overstock) {
+      const bubble = document.getElementById('inventoryBubble');
       
-      if (currentPage.includes('calendar.html')) {
-        notificationType = 'appointment';
-      } else if (currentPage.includes('purchase-order.html')) {
-        notificationType = 'purchase_order';
-      } else if (currentPage.includes('inventory.html')) {
-        notificationType = 'low_stock';
-      }
+      if (!bubble) return;
       
-      if (notificationType) {
-        try {
-          const snapshot = await db.collection('notifications')
-            .where('type', '==', notificationType)
-            .where('read', '==', false)
-            .get();
-          
-          if (!snapshot.empty) {
-            const batch = db.batch();
-            snapshot.forEach(doc => {
-              batch.update(doc.ref, { read: true });
-            });
-            await batch.commit();
-            console.log(`Marked ${notificationType} notifications as read`);
-          }
-        } catch (error) {
-          console.error('Error marking notifications as read:', error);
-        }
+      if (noStock > 0) {
+        bubble.textContent = noStock > 99 ? '99+' : noStock;
+        bubble.style.backgroundColor = '#dc2626'; // Red for out of stock
+        bubble.style.display = 'flex';
+      } else if (lowStock > 0) {
+        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+        bubble.style.backgroundColor = '#f59e0b'; // Yellow for low stock
+        bubble.style.display = 'flex';
+      } else if (overstock > 0) {
+        bubble.textContent = overstock > 99 ? '99+' : overstock;
+        bubble.style.backgroundColor = '#3b82f6'; // Blue for overstock
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
       }
     }
 
-    function updateSidebarBubbles(notifications) {
-      const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-      const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-      const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+    // Update purchase order bubble
+    function updatePurchaseOrderBubble(count) {
+      const bubble = document.getElementById('purchaseOrderBubble');
       
-      updateBubble('calendarBubble', appointmentCount, '#dc2626');
-      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-      updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-    }
-
-    function updateBubble(bubbleId, count, color) {
-      let bubble = document.getElementById(bubbleId);
+      if (!bubble) return;
       
-      if (bubble) {
-        if (count > 0) {
-          bubble.textContent = count > 99 ? '99+' : count;
-          bubble.style.backgroundColor = color;
-          bubble.style.display = 'flex';
-        } else {
-          bubble.style.display = 'none';
-        }
+      if (count > 0) {
+        bubble.textContent = count > 99 ? '99+' : count;
+        bubble.style.backgroundColor = '#8b5cf6'; // Purple for purchase orders
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
       }
     }
 
@@ -1289,7 +1289,7 @@
     function cleanup() {
       if (invoicesListener) invoicesListener();
       if (purchaseOrdersListener) purchaseOrdersListener();
-      if (notificationListener) notificationListener();
+      if (inventoryListener) inventoryListener();
       userDataCache = null;
       processedPOs.clear();
     }
@@ -1299,11 +1299,7 @@
       loadCurrentUser();
       loadInvoices();
       listenToPurchaseOrders();
-      loadNotifications();
-      
-      setTimeout(() => {
-        markCurrentPageNotificationsRead();
-      }, 1000);
+      monitorInventory();
       
       const logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) {

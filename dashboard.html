@@ -1,1576 +1,1691 @@
 <!DOCTYPE html>
-  <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Skinship Beauty Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      
-      :root {
-        --glow-color: 132, 0, 255;
-        --border-color: #f7d4d0;
-        --background-dark: #ffffff;
-      }
-      
-      body, html {
-        height: 100%;
-        width: 100%;
-        overflow-x: hidden;
-        margin: 0;
-        padding: 0;
-      }
-      
-      aside {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 80px;
-        height: 100vh;
-        z-index: 1000;
-        background-color: #f7d4d0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 1rem 0;
-        gap: 0.5rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        border-radius: 0 1.5rem 1.5rem 0;
-        overflow-y: auto;
-      }
-      
-      .sidebar-btn {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        border: none;
-        background: transparent;
-        color: #da5c73;
-        font-size: 20px;
-        cursor: pointer;
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        transition: .3s;
-        flex-shrink: 0;
-        position: relative;
-      }
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Skinship Beauty Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    :root {
+      --glow-color: 132, 0, 255;
+      --border-color: #f7d4d0;
+      --background-dark: #ffffff;
+    }
+    
+    body, html {
+      height: 100%;
+      width: 100%;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    aside {
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 80px;
+      height: 100vh;
+      z-index: 1000;
+      background-color: #f7d4d0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem 0;
+      gap: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border-radius: 0 1.5rem 1.5rem 0;
+      overflow-y: auto;
+    }
+    
+    .sidebar-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      transition: .3s;
+      flex-shrink: 0;
+      position: relative;
+    }
 
-      .sidebar-btn:hover {
-        background: #da5c73;
-        color: white;
-        transform: scale(1.1);
-      }
+    .sidebar-btn:hover {
+      background: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
 
-      .sidebar-btn.active {
-        background: #da5c73;
-        color: white;
-      }
+    .sidebar-btn.active {
+      background: #da5c73;
+      color: white;
+    }
 
-      html.staff-loaded .sidebar-btn {
-        display: none !important;
-      }
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
 
-      html.staff-loaded .sidebar-btn[title="Dashboard"],
-      html.staff-loaded .sidebar-btn[title="Reports"],
-      html.staff-loaded .sidebar-btn[title="Cashier"],
-      html.staff-loaded .sidebar-btn[title="Staff"] {
-        display: flex !important;
-      }
+    html.staff-loaded .sidebar-btn[title="Dashboard"],
+    html.staff-loaded .sidebar-btn[title="Reports"],
+    html.staff-loaded .sidebar-btn[title="Cashier"],
+    html.staff-loaded .sidebar-btn[title="Staff"] {
+      display: flex !important;
+    }
 
-      .sidebar-bubble {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        background-color: #dc2626;
-        color: white;
-        border-radius: 50%;
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 10px;
-        font-weight: bold;
-        z-index: 10;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        animation: bubble-pulse 2s ease-in-out infinite;
-      }
+    .sidebar-bubble {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background-color: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      z-index: 10;
+      border: 2px solid #f7d4d0;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    html.admin-loaded .sidebar-btn {
+      display: flex !important;
+    }
+    
+    html.staff-loaded .sidebar-btn {
+      display: none !important;
+    }
 
-      @keyframes bubble-pulse {
-        0%, 100% {
-          transform: scale(1);
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        50% {
-          transform: scale(1.1);
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-      }
-      
-      html.admin-loaded .sidebar-btn {
-        display: flex !important;
-      }
-      
-      html.staff-loaded .sidebar-btn {
-        display: none !important;
-      }
+    .role-restricted {
+      display: none !important;
+    }
+    
+    html.admin-loaded .role-restricted {
+      display: flex !important;
+    }
+    
+    html.admin-loaded a.role-restricted {
+      display: inline-block !important;
+    }
 
-      .role-restricted {
-        display: none !important;
-      }
-      
-      html.admin-loaded .role-restricted {
-        display: flex !important;
-      }
-      
-      html.admin-loaded a.role-restricted {
-        display: inline-block !important;
-      }
+    html.admin-loaded button.role-restricted {
+      display: flex !important;
+    }
+    
+    main {
+      margin-left: 80px;
+      width: calc(100% - 80px);
+      min-height: 100vh;
+      padding: 1.5rem;
+      overflow-x: hidden;
+    }
+    
+    .dashboard-container {
+      background-color: #b97b8b;
+      border-radius: 1.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 100%;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+      max-width: 100%;
+      width: 100%;
+    }
+    
+    .table-wrapper table {
+      width: 100%;
+      min-width: 100%;
+      table-layout: auto;
+    }
+    
+    .table-wrapper td, 
+    .table-wrapper th {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 8px;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.5rem;
+      width: 100%;
+      position: relative;
+      user-select: none;
+    }
 
-      html.admin-loaded button.role-restricted {
-        display: flex !important;
+    .magic-card {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      color: #1f2937;
+      border: 1px solid var(--border-color);
+      background: var(--background-dark);
+      border-radius: 1.25rem;
+      padding: 1rem;
+      --glow-x: 50%;
+      --glow-y: 50%;
+      --glow-intensity: 0;
+      --glow-radius: 300px;
+    }
+
+    .magic-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .magic-card * {
+      color: inherit;
+    }
+
+    .magic-card h2,
+    .magic-card .font-bold,
+    .magic-card th {
+      color: #1f2937;
+    }
+
+          .inventory-carousel-wrapper {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.inventory-alert-item {
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.inventory-alert-item.active {
+  opacity: 1;
+  position: relative;
+}
+
+.inventory-alert-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.alert-out-of-stock {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+}
+
+.alert-low-stock {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fcd34d;
+}
+
+.alert-overstock {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #93c5fd;
+}
+
+.progress-bar-container {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  height: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-dot.active {
+  background: #da5c73;
+  width: 24px;
+  border-radius: 5px;
+}
+
+.nav-dot:hover {
+  background: #b97b8b;
+  transform: scale(1.2);
+}
+
+    .magic-card p,
+    .magic-card td,
+    .magic-card span,
+    .magic-card div {
+      color: #1f2937;
+    }
+
+    .magic-card a {
+      color: #da5c73;
+    }
+
+    .magic-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      padding: 2px;
+      background: radial-gradient(
+        var(--glow-radius) circle at var(--glow-x) var(--glow-y),
+        rgba(var(--glow-color), calc(var(--glow-intensity) * 0.7)) 0%,
+        rgba(var(--glow-color), calc(var(--glow-intensity) * 0.4)) 30%,
+        rgba(var(--glow-color), calc(var(--glow-intensity) * 0.2)) 50%,
+        transparent 70%
+      );
+      border-radius: inherit;
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: subtract;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      z-index: 1;
+      opacity: 0;
+    }
+
+    .magic-card:hover::after {
+      opacity: 1;
+    }
+
+    .magic-card:hover {
+      box-shadow: 0 8px 25px rgba(132, 0, 255, 0.25), 0 0 30px rgba(132, 0, 255, 0.15);
+    }
+
+    .particle {
+      position: absolute;
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(var(--glow-color), 1);
+      box-shadow: 0 0 8px rgba(var(--glow-color), 0.6), 0 0 16px rgba(var(--glow-color), 0.3);
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .particle::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: -3px;
+      right: -3px;
+      bottom: -3px;
+      background: rgba(var(--glow-color), 0.25);
+      border-radius: 50%;
+      z-index: -1;
+    }
+
+    .global-spotlight {
+      position: fixed;
+      width: 1200px;
+      height: 1200px;
+      border-radius: 50%;
+      pointer-events: none;
+      background: radial-gradient(circle,
+        rgba(var(--glow-color), 0.35) 0%,
+        rgba(var(--glow-color), 0.25) 15%,
+        rgba(var(--glow-color), 0.15) 25%,
+        rgba(var(--glow-color), 0.08) 40%,
+        rgba(var(--glow-color), 0.04) 65%,
+        transparent 70%
+      );
+      z-index: 200;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      mix-blend-mode: screen;
+      will-change: transform, opacity;
+      filter: blur(3px);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .logout-modal {
+      background: white;
+      border-radius: 1rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.9);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.show .logout-modal {
+      transform: scale(1);
+    }
+
+    .logout-modal-header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-icon {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      animation: iconPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes iconPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .logout-icon i {
+      font-size: 2.5rem;
+      color: white;
+    }
+
+    .logout-modal-header h2 {
+      color: #1f2937;
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .logout-modal-header p {
+      color: #6b7280;
+      font-size: 1rem;
+    }
+
+    .logout-modal-body {
+      background: #f9fafb;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .logout-info-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: white;
+      border-radius: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .logout-info-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .logout-info-item i {
+      color: #8b5cf6;
+      font-size: 1.25rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .logout-info-item span {
+      color: #1f2937;
+      font-size: 0.95rem;
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .logout-btn {
+      flex: 1;
+      padding: 0.875rem 1.5rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .logout-btn-cancel {
+      background: #e5e7eb;
+      color: #1f2937;
+    }
+
+    .logout-btn-cancel:hover {
+      background: #d1d5db;
+    }
+
+    .logout-btn-confirm {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
+    }
+
+    .logout-btn-confirm:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
+    }
+
+    .logout-btn-confirm.loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .logout-btn-confirm.loading i {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .staff-availability-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: #f3f4f6;
+      border-radius: 0.375rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .staff-availability-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .status-dot {
+      width: 0.5rem;
+      height: 0.5rem;
+      border-radius: 50%;
+      background: #10b981;
+      flex-shrink: 0;
+    }
+
+    html.staff-loaded .inventory-alert-item {
+      cursor: default !important;
+      pointer-events: none !important;
+    }
+
+    html.admin-loaded .inventory-alert-item {
+      cursor: pointer !important;
+      pointer-events: auto !important;
+    }
+    
+    @media (max-width: 768px) {
+      .dashboard-grid > div {
+        grid-column: span 12 !important;
       }
       
       main {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-        min-height: 100vh;
-        padding: 1.5rem;
-        overflow-x: hidden;
-      }
-      
-      .dashboard-container {
-        background-color: #b97b8b;
-        border-radius: 1.5rem;
-        padding: 1.5rem;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        width: 100%;
-        max-width: 100%;
-      }
-      
-      .table-wrapper {
-        overflow-x: auto;
-        max-width: 100%;
+        margin-left: 0;
         width: 100%;
       }
       
-      .table-wrapper table {
+      aside {
         width: 100%;
-        min-width: 100%;
-        table-layout: auto;
-      }
-      
-      .table-wrapper td, 
-      .table-wrapper th {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        padding: 8px;
-      }
-      
-      .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(12, 1fr);
-        gap: 1.5rem;
-        width: 100%;
+        height: auto;
+        flex-direction: row;
         position: relative;
-        user-select: none;
-      }
-
-      .magic-card {
-        position: relative;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        color: #1f2937;
-        border: 1px solid var(--border-color);
-        background: var(--background-dark);
-        border-radius: 1.25rem;
-        padding: 1rem;
-        --glow-x: 50%;
-        --glow-y: 50%;
-        --glow-intensity: 0;
-        --glow-radius: 300px;
-      }
-
-      .magic-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-      }
-
-      .magic-card * {
-        color: inherit;
-      }
-
-      .magic-card h2,
-      .magic-card .font-bold,
-      .magic-card th {
-        color: #1f2937;
-      }
-
-      .magic-card p,
-      .magic-card td,
-      .magic-card span,
-      .magic-card div {
-        color: #1f2937;
-      }
-
-      .magic-card a {
-        color: #da5c73;
-      }
-
-      .magic-card::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        padding: 2px;
-        background: radial-gradient(
-          var(--glow-radius) circle at var(--glow-x) var(--glow-y),
-          rgba(var(--glow-color), calc(var(--glow-intensity) * 0.7)) 0%,
-          rgba(var(--glow-color), calc(var(--glow-intensity) * 0.4)) 30%,
-          rgba(var(--glow-color), calc(var(--glow-intensity) * 0.2)) 50%,
-          transparent 70%
-        );
-        border-radius: inherit;
-        mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        mask-composite: subtract;
-        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        pointer-events: none;
-        transition: opacity 0.3s ease;
-        z-index: 1;
-        opacity: 0;
-      }
-
-      .magic-card:hover::after {
-        opacity: 1;
-      }
-
-      .magic-card:hover {
-        box-shadow: 0 8px 25px rgba(132, 0, 255, 0.25), 0 0 30px rgba(132, 0, 255, 0.15);
-      }
-
-      .particle {
-        position: absolute;
-        width: 5px;
-        height: 5px;
-        border-radius: 50%;
-        background: rgba(var(--glow-color), 1);
-        box-shadow: 0 0 8px rgba(var(--glow-color), 0.6), 0 0 16px rgba(var(--glow-color), 0.3);
-        pointer-events: none;
-        z-index: 100;
-      }
-
-      .particle::before {
-        content: '';
-        position: absolute;
-        top: -3px;
-        left: -3px;
-        right: -3px;
-        bottom: -3px;
-        background: rgba(var(--glow-color), 0.25);
-        border-radius: 50%;
-        z-index: -1;
-      }
-
-      .global-spotlight {
-        position: fixed;
-        width: 1200px;
-        height: 1200px;
-        border-radius: 50%;
-        pointer-events: none;
-        background: radial-gradient(circle,
-          rgba(var(--glow-color), 0.35) 0%,
-          rgba(var(--glow-color), 0.25) 15%,
-          rgba(var(--glow-color), 0.15) 25%,
-          rgba(var(--glow-color), 0.08) 40%,
-          rgba(var(--glow-color), 0.04) 65%,
-          transparent 70%
-        );
-        z-index: 200;
-        opacity: 0;
-        transform: translate(-50%, -50%);
-        mix-blend-mode: screen;
-        will-change: transform, opacity;
-        filter: blur(3px);
-      }
-
-      .modal-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-        backdrop-filter: blur(4px);
-      }
-
-      .modal-overlay.show {
-        opacity: 1;
-        visibility: visible;
+        border-radius: 0;
       }
 
       .logout-modal {
-        background: white;
-        border-radius: 1rem;
-        padding: 2rem;
-        max-width: 450px;
-        width: 90%;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-        transform: scale(0.9);
-        transition: transform 0.3s ease;
-      }
-
-      .modal-overlay.show .logout-modal {
-        transform: scale(1);
-      }
-
-      .logout-modal-header {
-        text-align: center;
-        margin-bottom: 1.5rem;
-      }
-
-      .logout-icon {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1rem;
-        animation: iconPulse 2s ease-in-out infinite;
-      }
-
-      @keyframes iconPulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-      }
-
-      .logout-icon i {
-        font-size: 2.5rem;
-        color: white;
-      }
-
-      .logout-modal-header h2 {
-        color: #1f2937;
-        font-size: 1.75rem;
-        margin-bottom: 0.5rem;
-      }
-
-      .logout-modal-header p {
-        color: #6b7280;
-        font-size: 1rem;
-      }
-
-      .logout-modal-body {
-        background: #f9fafb;
-        border-radius: 0.75rem;
-        padding: 1.25rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .logout-info-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        background: white;
-        border-radius: 0.5rem;
-        margin-bottom: 0.75rem;
-      }
-
-      .logout-info-item:last-child {
-        margin-bottom: 0;
-      }
-
-      .logout-info-item i {
-        color: #8b5cf6;
-        font-size: 1.25rem;
-        width: 24px;
-        text-align: center;
-      }
-
-      .logout-info-item span {
-        color: #1f2937;
-        font-size: 0.95rem;
+        padding: 1.5rem;
       }
 
       .logout-modal-actions {
-        display: flex;
-        gap: 1rem;
+        flex-direction: column-reverse;
       }
 
       .logout-btn {
-        flex: 1;
-        padding: 0.875rem 1.5rem;
-        border: none;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
+        width: 100%;
       }
 
-      .logout-btn-cancel {
-        background: #e5e7eb;
-        color: #1f2937;
+      .sidebar-bubble {
+        width: 18px;
+        height: 18px;
+        font-size: 9px;
+        top: -3px;
+        right: -3px;
       }
+    }
+  </style>
+</head>
+<body class="bg-[#e6bfc7]">
+  <aside id="sidebar">
+    <div class="mb-6 mt-2">
+      <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
+    </div>
+    <button class="sidebar-btn active" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
+    <button class="sidebar-btn role-restricted" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
+    <button class="sidebar-btn role-restricted" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
+    <button class="sidebar-btn role-restricted" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
+    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
+    <button class="sidebar-btn role-restricted" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
+    <button class="sidebar-btn role-restricted" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
+    <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
+    <button class="sidebar-btn role-restricted" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
+    <button class="sidebar-btn role-restricted" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+  </aside>
 
-      .logout-btn-cancel:hover {
-        background: #d1d5db;
-      }
+  <main>
+<div class="dashboard-container">
+  <div class="flex justify-end items-center gap-4 mb-6">
+    <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
+    <div class="relative">
+      <button id="userMenuButton" onclick="toggleUserMenu(event)"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
+      <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow-lg z-[9999]">
+        <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+        </button>
+      </div>      
+    </div>
+  </div>
 
-      .logout-btn-confirm {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-        color: white;
-        box-shadow: 0 4px 6px rgba(239, 68, 68, 0.3);
-      }
-
-      .logout-btn-confirm:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(239, 68, 68, 0.4);
-      }
-
-      .logout-btn-confirm.loading {
-        pointer-events: none;
-        opacity: 0.7;
-      }
-
-      .logout-btn-confirm.loading i {
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-
-      .staff-availability-item {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        background: #f3f4f6;
-        border-radius: 0.375rem;
-        margin-bottom: 0.5rem;
-        font-size: 0.875rem;
-      }
-
-      .staff-availability-item:last-child {
-        margin-bottom: 0;
-      }
-
-      .status-dot {
-        width: 0.5rem;
-        height: 0.5rem;
-        border-radius: 50%;
-        background: #10b981;
-        flex-shrink: 0;
-      }
-
-      html.staff-loaded .inventory-alert-item {
-        cursor: default !important;
-        pointer-events: none !important;
-      }
-
-      html.admin-loaded .inventory-alert-item {
-        cursor: pointer !important;
-        pointer-events: auto !important;
-      }
-      
-      @media (max-width: 768px) {
-        .dashboard-grid > div {
-          grid-column: span 12 !important;
-        }
-        
-        main {
-          margin-left: 0;
-          width: 100%;
-        }
-        
-        aside {
-          width: 100%;
-          height: auto;
-          flex-direction: row;
-          position: relative;
-          border-radius: 0;
-        }
-
-        .logout-modal {
-          padding: 1.5rem;
-        }
-
-        .logout-modal-actions {
-          flex-direction: column-reverse;
-        }
-
-        .logout-btn {
-          width: 100%;
-        }
-
-        .sidebar-bubble {
-          width: 16px;
-          height: 16px;
-          font-size: 8px;
-          top: -3px;
-          right: -3px;
-        }
-      }
-    </style>
-  </head>
-  <body class="bg-[#e6bfc7]">
-    <aside id="sidebar">
-      <div class="mb-6 mt-2">
-        <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
-      </div>
-      <button class="sidebar-btn active" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
-      <button class="sidebar-btn role-restricted" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
-      <button class="sidebar-btn role-restricted" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
-      <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
-      <button class="sidebar-btn role-restricted" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
-      <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-      <button class="sidebar-btn role-restricted" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-      <button class="sidebar-btn role-restricted" id="registrationBtn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
-      <button class="sidebar-btn" title="Cashier" onclick="window.location.href='Cashier.html'"><i class="fa-solid fa-cash-register"></i></button>
-      <button class="sidebar-btn role-restricted" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
-      <button class="sidebar-btn role-restricted" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
-    </aside>
-
-    <main>
-      <div class="dashboard-container">
-        <div class="flex justify-end items-center gap-4 mb-6">
-          <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
-          <div class="relative">
-            <button id="userMenuButton" onclick="toggleUserMenu(event)"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
-            <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow-lg z-[9999]">
-              <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">
-                <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
-              </button>
-            </div>      
-          </div>
-        </div>
-
-        <div class="dashboard-grid bento-section" id="dashboardGrid">
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <p id="completedCount" class="text-green-600 font-bold text-lg text-center">0</p>
-            <div class="font-bold text-center">Completed</div>
-          </div>
-
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <p id="pendingCount" class="text-yellow-600 font-bold text-lg text-center">00</p>
-            <div class="font-bold text-center">Pending</div>
-          </div>
-
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <p id="cancelledCount" class="text-red-600 font-bold text-lg text-center">00</p>
-            <div class="font-bold text-center">Cancelled</div>
-          </div>
-          
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <h2 class="font-bold mb-3">Inventory Alerts</h2>
-            <div id="inventoryAlerts" class="text-sm" style="height: 120px; position: relative; overflow: hidden;">
-              <p class="text-gray-500 italic">Loading alerts...</p>
-            </div>
-            <div id="inventoryNav" class="flex justify-center gap-2 mt-3"></div>
-          </div>
-
-          <div style="grid-column: span 9;" class="magic-card shadow">
-            <div class="flex justify-between items-center mb-5">
-              <h2 class="font-bold">Reservation</h2>
-              <a href="customer.html" id="viewAllReservations" class="text-sm text-rose-500 role-restricted hover:underline">View all</a>
-            </div>
-            <div class="table-wrapper">
-              <table class="w-full text-sm">
-                <thead class="text-left font-semibold">
-                  <tr>
-                    <th>Customer</th>
-                    <th>Time</th>
-                    <th>Status</th>
-                    <th>Service</th>
-                    <th>Staff</th>
-                  </tr>
-                </thead>
-                <tbody id="reservationTable">
-                  <tr>
-                    <td colspan="5" class="text-center text-gray-500 italic">Loading reservations...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <h2 class="font-bold mb-2">Staff Availability</h2>
-            <div id="staffAvailabilityList">
-              <p class="text-gray-500 italic text-sm">Loading...</p>
-            </div>
-          </div>
-
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <h2 class="font-bold mb-3">Top 3 Services Sold</h2>
-            <div style="height: 180px; position: relative;">
-              <canvas id="topServicesChart"></canvas>
-            </div>
-          </div>
-
-          <div style="grid-column: span 6;" class="magic-card shadow">
-            <h2 class="font-bold mb-3">Revenue (by Weekday)</h2>
-            <canvas id="revenueChart" style="max-height: 200px;"></canvas>
-            <p id="revenueTotal" class="text-right font-bold text-rose-600">Total of: ₱0.00</p>
-          </div>
-
-          <div style="grid-column: span 3;" class="magic-card shadow">
-            <div class="flex justify-between items-center mb-2">
-              <h2 class="font-bold">Today's Agenda</h2>
-              <a href="calendar.html" id="viewAllAgenda" class="text-sm text-rose-500 role-restricted hover:underline">View all</a>
-            </div>
-            <ul id="agendaList" class="list-disc list-inside text-sm">
-              <li class="text-gray-500 italic">Loading...</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <div class="modal-overlay" id="logoutModal">
-      <div class="logout-modal">
-        <div class="logout-modal-header">
-          <div class="logout-icon">
-            <i class="fa-solid fa-right-from-bracket"></i>
-          </div>
-          <h2>Confirm Logout</h2>
-          <p>Are you sure you want to sign out?</p>
-        </div>
-
-        <div class="logout-modal-body">
-          <div class="logout-info-item">
-            <i class="fa-solid fa-user"></i>
-            <span id="logoutUsername">Loading...</span>
-          </div>
-          <div class="logout-info-item">
-            <i class="fa-solid fa-clock"></i>
-            <span>Your session will be ended</span>
-          </div>
-          <div class="logout-info-item">
-            <i class="fa-solid fa-shield-halved"></i>
-            <span>You will be clocked out automatically</span>
-          </div>
-        </div>
-
-        <div class="logout-modal-actions">
-          <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
-            <i class="fa-solid fa-xmark"></i>
-            Cancel
-          </button>
-          <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            Logout
-          </button>
-        </div>
+  <!-- START OF DASHBOARD GRID -->
+  <div class="dashboard-grid bento-section" id="dashboardGrid">
+    
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="completedCount" class="text-green-600 font-bold text-4xl m-0">0</p>
+        <div class="font-bold text-center">Completed</div>
       </div>
     </div>
 
-    <script type="module">
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-      import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-      import {
-        getFirestore,
-        doc,
-        getDoc,
-        collection,
-        query,
-        where,
-        onSnapshot,
-        orderBy,
-        getDocs,
-        addDoc,
-        updateDoc,
-        serverTimestamp,
-        setDoc,
-        limit
-      } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="pendingCount" class="text-yellow-600 font-bold text-4xl m-0">00</p>
+        <div class="font-bold text-center">Pending</div>
+      </div>
+    </div>
 
-      const firebaseConfig = {
-        apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
-        authDomain: "skinship-1ff4b.firebaseapp.com",
-        projectId: "skinship-1ff4b",
-        storageBucket: "skinship-1ff4b.appspot.com",
-        messagingSenderId: "963752770497",
-        appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
-      };
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="cancelledCount" class="text-red-600 font-bold text-4xl m-0">00</p>
+        <div class="font-bold text-center">Cancelled</div>
+      </div>
+    </div>
+    
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <h2 class="font-bold mb-3">Inventory Alerts</h2>
+      <div class="inventory-carousel-wrapper" id="inventoryAlerts">
+        <p class="text-gray-500 italic">Loading alerts...</p>
+      </div>
+      <div id="inventoryNav" class="flex justify-center gap-2 mt-3"></div>
+    </div>
 
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getFirestore(app);
+    <!-- Rest of your cards... -->
+
+        <div style="grid-column: span 9;" class="magic-card shadow">
+          <div class="flex justify-between items-center mb-5">
+            <h2 class="font-bold">Reservation</h2>
+            <a href="customer.html" id="viewAllReservations" class="text-sm text-rose-500 role-restricted hover:underline">View all</a>
+          </div>
+          <div class="table-wrapper">
+            <table class="w-full text-sm">
+              <thead class="text-left font-semibold">
+                <tr>
+                  <th>Customer</th>
+                  <th>Time</th>
+                  <th>Status</th>
+                  <th>Service</th>
+                  <th>Staff</th>
+                </tr>
+              </thead>
+              <tbody id="reservationTable">
+                <tr>
+                  <td colspan="5" class="text-center text-gray-500 italic">Loading reservations...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="grid-column: span 3;" class="magic-card shadow">
+          <h2 class="font-bold mb-2">Staff Availability</h2>
+          <div id="staffAvailabilityList">
+            <p class="text-gray-500 italic text-sm">Loading...</p>
+          </div>
+        </div>
+
+        <div style="grid-column: span 3;" class="magic-card shadow">
+          <h2 class="font-bold mb-3">Top 3 Services Sold</h2>
+          <div style="height: 180px; position: relative;">
+            <canvas id="topServicesChart"></canvas>
+          </div>
+        </div>
+
+        <div style="grid-column: span 6;" class="magic-card shadow">
+          <h2 class="font-bold mb-3">Revenue (by Weekday)</h2>
+          <canvas id="revenueChart" style="max-height: 200px;"></canvas>
+          <p id="revenueTotal" class="text-right font-bold text-rose-600">Total of: ₱0.00</p>
+        </div>
+
+        <div style="grid-column: span 3;" class="magic-card shadow">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="font-bold">Today's Agenda</h2>
+            <a href="calendar.html" id="viewAllAgenda" class="text-sm text-rose-500 role-restricted hover:underline">View all</a>
+          </div>
+          <ul id="agendaList" class="list-disc list-inside text-sm">
+            <li class="text-gray-500 italic">Loading...</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="logoutModal">
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-right-from-bracket"></i>
+        </div>
+        <h2>Confirm Logout</h2>
+        <p>Are you sure you want to sign out?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="logoutUsername">Loading...</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock"></i>
+          <span>Your session will be ended</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>You will be clocked out automatically</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLogoutModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      onSnapshot,
+      orderBy,
+      getDocs,
+      addDoc,
+      updateDoc,
+      serverTimestamp,
+      setDoc,
+      limit
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
+      authDomain: "skinship-1ff4b.firebaseapp.com",
+      projectId: "skinship-1ff4b",
+      storageBucket: "skinship-1ff4b.appspot.com",
+      messagingSenderId: "963752770497",
+      appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    
+    window.appState = {
+      userRole: null,
+      currentUserId: null,
+      currentUserFullName: "",
+      currentUserEmail: ""
+    };
+
+    let customersListener = null;
+    let cashierListener = null;
+    let inventoryListener = null;
+    let staffListener = null;
+    let purchaseOrderListener = null;
+
+    const dataCache = {
+      customers: [],
+      cashierReceipts: [],
+      inventory: [],
+      staff: []
+    };
+
+    // Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
+
+function monitorInventory() {
+  if (inventoryListener) inventoryListener();
+
+  inventoryListener = onSnapshot(
+    collection(db, 'inventory'),
+    (snapshot) => {
+      dataCache.inventory = [];
+      snapshot.forEach((doc) => {
+        const product = doc.data();
+        const qty = product.qty || product.quantity || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        product.status = determineStatus(qty, minStock);
+        
+        // Recalculate total
+        product.total = qty * price;
+        
+        dataCache.inventory.push({ id: doc.id, ...product });
+      });
+      updateInventorySidebarBubbles();
+      updateInventoryAlerts();
+    },
+    (error) => console.error('Error monitoring inventory:', error)
+  );
+}
+
+    function updateInventorySidebarBubbles() {
+      const noStockCount = dataCache.inventory.filter(item => item.status === 'out-of-stock').length;
+      const lowStockCount = dataCache.inventory.filter(item => item.status === 'low-stock').length;
+      const overstockCount = dataCache.inventory.filter(item => {
+        const minStockThreshold = item.minStock || 10;
+        const qty = item.qty || item.quantity || 0;
+        return qty > (minStockThreshold * 1.5) && qty > 0;
+      }).length;
       
-      window.appState = {
-        userRole: null,
-        currentUserId: null,
-        currentUserFullName: "",
-        currentUserEmail: ""
-      };
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+    }
 
-      let notificationListener = null;
-      let customersListener = null;
-      let cashierListener = null;
-      let inventoryListener = null;
-      let staffListener = null;
-
-      const dataCache = {
-        customers: [],
-        cashierReceipts: [],
-        inventory: [],
-        staff: [],
-        lastUpdate: 0
-      };
-
-      // Sidebar Bubble Notifications
-      function loadNotifications() {
-        if (notificationListener) notificationListener();
-
-        notificationListener = onSnapshot(
-          query(collection(db, "notifications"), orderBy("timestamp", "desc"), limit(50)),
-          (snapshot) => {
-            const notifications = [];
-            snapshot.forEach(doc => {
-              notifications.push({ id: doc.id, ...doc.data() });
-            });
-            updateSidebarBubbles(notifications);
-          },
-          (error) => console.error("Error loading notifications:", error)
-        );
+    function updateInventoryBubble(noStock, lowStock, overstock) {
+      const button = document.querySelector('button[title="Inventory"]');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.appendChild(bubble);
       }
+      
+      if (noStock > 0) {
+        bubble.textContent = noStock > 99 ? '99+' : noStock;
+        bubble.style.backgroundColor = '#dc2626';
+        bubble.style.display = 'flex';
+      } else if (lowStock > 0) {
+        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+        bubble.style.backgroundColor = '#f59e0b';
+        bubble.style.display = 'flex';
+      } else if (overstock > 0) {
+        bubble.textContent = overstock > 99 ? '99+' : overstock;
+        bubble.style.backgroundColor = '#3b82f6';
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
+    }
 
-      function updateSidebarBubbles(notifications) {
-        const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-        const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-        const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+    function monitorPurchaseOrders() {
+      if (purchaseOrderListener) purchaseOrderListener();
+
+      purchaseOrderListener = onSnapshot(
+        query(collection(db, 'purchaseOrders'), where('status', '==', 'pending')),
+        (snapshot) => {
+          updatePurchaseOrderBubble(snapshot.size);
+        },
+        (error) => console.error('Error monitoring purchase orders:', error)
+      );
+    }
+
+    function updatePurchaseOrderBubble(count) {
+      const button = document.querySelector('button[title="Purchase Order"]');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.appendChild(bubble);
+      }
+      
+      if (count > 0) {
+        bubble.textContent = count > 99 ? '99+' : count;
+        bubble.style.backgroundColor = '#8b5cf6';
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
+    }
+
+    async function handleClockOut() {
+      const user = auth.currentUser;
+      if (!user) return;
+      
+      try {
+        const today = new Date().toLocaleDateString();
+        const logsRef = collection(db, "staffLogs", user.uid, "history");
+        const todayQuery = query(logsRef, where("date", "==", today));
+        const todaySnap = await getDocs(todayQuery);
         
-        updateBubble('calendarBubble', appointmentCount, '#dc2626');
-        updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-        updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-      }
-
-      function updateBubble(bubbleId, count, color) {
-        let bubble = document.getElementById(bubbleId);
-        if (!bubble) {
-          const button = getBubbleButton(bubbleId);
-          if (button) {
-            bubble = document.createElement('span');
-            bubble.id = bubbleId;
-            bubble.className = 'sidebar-bubble';
-            button.style.position = 'relative';
-            button.appendChild(bubble);
+        if (!todaySnap.empty) {
+          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+          if (activeLog) {
+            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+              clockOut: new Date().toLocaleString()
+            }, { merge: true });
           }
         }
-        if (bubble) {
-          if (count > 0) {
-            bubble.textContent = count > 99 ? '99+' : count;
-            bubble.style.backgroundColor = color;
-            bubble.style.display = 'flex';
-          } else {
-            bubble.style.display = 'none';
-          }
-        }
-      }
 
-      function getBubbleButton(bubbleId) {
-        const buttonMap = {
-          'calendarBubble': document.querySelector('button[title="Reservations"]'),
-          'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-          'inventoryBubble': document.querySelector('button[title="Inventory"]')
-        };
-        return buttonMap[bubbleId];
+        await updateDoc(doc(db, "users", user.uid), { 
+          availability: false,
+          lastUpdated: serverTimestamp()
+        });
+      } catch (error) {
+        console.error("Error during clock out:", error);
       }
+    }
 
-      async function handleClockOut() {
-        const user = auth.currentUser;
-        if (!user) return;
+    window.showLogoutModal = function() {
+      document.getElementById('logoutModal').classList.add('show');
+    }
+
+    window.hideLogoutModal = function() {
+      document.getElementById('logoutModal').classList.remove('show');
+    }
+
+    window.confirmLogout = async function() {
+      const confirmBtn = document.getElementById('confirmLogoutBtn');
+      confirmBtn.classList.add('loading');
+      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+
+      try {
+        await handleClockOut();
         
-        try {
-          const today = new Date().toLocaleDateString();
-          const logsRef = collection(db, "staffLogs", user.uid, "history");
-          const todayQuery = query(logsRef, where("date", "==", today));
-          const todaySnap = await getDocs(todayQuery);
-          
-          if (!todaySnap.empty) {
-            const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-            if (activeLog) {
-              await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
-                clockOut: new Date().toLocaleString()
-              }, { merge: true });
-            }
-          }
-
-          const staffRef = doc(db, "users", user.uid);
-          await updateDoc(staffRef, { 
-            availability: false,
-            lastUpdated: serverTimestamp()
-          });
-        } catch (error) {
-          console.error("Error during clock out:", error);
-        }
-      }
-
-      window.showLogoutModal = function() {
-        document.getElementById('logoutModal').classList.add('show');
-      }
-
-      window.hideLogoutModal = function() {
-        document.getElementById('logoutModal').classList.remove('show');
-      }
-
-      window.confirmLogout = async function() {
-        const confirmBtn = document.getElementById('confirmLogoutBtn');
-        confirmBtn.classList.add('loading');
-        confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
-
-        try {
-          await handleClockOut();
-          if (notificationListener) notificationListener();
-          await signOut(auth);
-          window.location.href = "index.html";
-        } catch (error) {
-          console.error("Logout error:", error);
-          confirmBtn.classList.remove('loading');
-          confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-          alert("An error occurred during logout. Please try again.");
-          await signOut(auth);
-          window.location.href = "index.html";
-        }
-      }
-
-      document.getElementById('logoutModal')?.addEventListener('click', function(e) {
-        if (e.target === this) window.hideLogoutModal();
-      });
-
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-          const modal = document.getElementById('logoutModal');
-          if (modal && modal.classList.contains('show')) window.hideLogoutModal();
-        }
-      });
-
-      async function loadDashboardData(userRole) {
         if (customersListener) customersListener();
-        customersListener = onSnapshot(
-          query(collection(db, "appointments"), orderBy("createdAt", "desc"), limit(100)),
-          (snapshot) => {
-            dataCache.customers = [];
-            snapshot.forEach(doc => {
-              dataCache.customers.push({ id: doc.id, ...doc.data() });
-            });
-            updateReservations();
-            updateCounts();
-            updateAgenda();
-          }
-        );
-
         if (cashierListener) cashierListener();
-        cashierListener = onSnapshot(
-          query(collection(db, "cashier_receipt"), orderBy("timestamp", "desc"), limit(200)),
-          (snapshot) => {
-            dataCache.cashierReceipts = [];
-            snapshot.forEach(doc => {
-              dataCache.cashierReceipts.push({ id: doc.id, ...doc.data() });
-            });
-            updateRevenueData();
-          }
-        );
-
         if (inventoryListener) inventoryListener();
-        inventoryListener = onSnapshot(
-          collection(db, "inventory"),
-          (snapshot) => {
-            dataCache.inventory = [];
-            snapshot.forEach(doc => {
-              dataCache.inventory.push({ id: doc.id, ...doc.data() });
-            });
-            updateInventoryAlerts();
-          }
-        );
-
         if (staffListener) staffListener();
-        staffListener = onSnapshot(
-          query(collection(db, "users"), limit(50)),
-          (snapshot) => {
-            dataCache.staff = [];
-            snapshot.forEach(doc => {
-              dataCache.staff.push({ id: doc.id, ...doc.data() });
-            });
-            updateStaffAvailability();
-          }
-        );
-      }
-
-      function updateReservations() {
-        const reservationTable = document.getElementById("reservationTable");
-        reservationTable.innerHTML = "";
+        if (purchaseOrderListener) purchaseOrderListener();
         
-        if (dataCache.customers.length === 0) {
-          reservationTable.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>';
-          return;
+        await signOut(auth);
+        window.location.href = "index.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        confirmBtn.classList.remove('loading');
+        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+        alert("An error occurred during logout. Please try again.");
+        await signOut(auth);
+        window.location.href = "index.html";
+      }
+    }
+
+    document.getElementById('logoutModal')?.addEventListener('click', function(e) {
+      if (e.target === this) window.hideLogoutModal();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('logoutModal');
+        if (modal && modal.classList.contains('show')) window.hideLogoutModal();
+      }
+    });
+
+    function loadDashboardData() {
+      if (customersListener) customersListener();
+      customersListener = onSnapshot(
+        query(collection(db, "appointments"), orderBy("createdAt", "desc"), limit(100)),
+        (snapshot) => {
+          dataCache.customers = [];
+          snapshot.forEach(doc => {
+            dataCache.customers.push({ id: doc.id, ...doc.data() });
+          });
+          updateReservations();
+          updateCounts();
+          updateAgenda();
         }
+      );
 
-        let count = 0;
-        dataCache.customers.forEach(data => {
-          if (count >= 5) return;
-          const tr = document.createElement("tr");
-          tr.className = "border-b";
-          tr.innerHTML = `
-            <td>${data.name || data.customer || "N/A"}</td>
-            <td>${data.appointment || data.time || "N/A"}</td>
-            <td>${(data.status || "Pending").charAt(0).toUpperCase() + (data.status || "Pending").slice(1)}</td>
-            <td>${data.service || "N/A"}</td>
-            <td>${data.staff || "N/A"}</td>
-          `;
-          reservationTable.appendChild(tr);
-          count++;
-        });
+      if (cashierListener) cashierListener();
+      cashierListener = onSnapshot(
+        query(collection(db, "cashier_receipt"), orderBy("timestamp", "desc"), limit(200)),
+        (snapshot) => {
+          dataCache.cashierReceipts = [];
+          snapshot.forEach(doc => {
+            dataCache.cashierReceipts.push({ id: doc.id, ...doc.data() });
+          });
+          updateRevenueData();
+        }
+      );
+
+      if (staffListener) staffListener();
+      staffListener = onSnapshot(
+        query(collection(db, "users"), limit(50)),
+        (snapshot) => {
+          dataCache.staff = [];
+          snapshot.forEach(doc => {
+            dataCache.staff.push({ id: doc.id, ...doc.data() });
+          });
+          updateStaffAvailability();
+        }
+      );
+    }
+
+    function updateReservations() {
+      const reservationTable = document.getElementById("reservationTable");
+      reservationTable.innerHTML = "";
+      
+      if (dataCache.customers.length === 0) {
+        reservationTable.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>';
+        return;
       }
 
-      function updateCounts() {
-        let completed = 0;
-        let pending = 0;
-        let cancelled = 0;
+      let count = 0;
+      dataCache.customers.forEach(data => {
+        if (count >= 5) return;
+        const tr = document.createElement("tr");
+        tr.className = "border-b";
+        tr.innerHTML = `
+          <td>${data.name || data.customer || "N/A"}</td>
+          <td>${data.appointment || data.time || "N/A"}</td>
+          <td>${(data.status || "Pending").charAt(0).toUpperCase() + (data.status || "Pending").slice(1)}</td>
+          <td>${data.service || "N/A"}</td>
+          <td>${data.staff || "N/A"}</td>
+        `;
+        reservationTable.appendChild(tr);
+        count++;
+      });
+    }
 
-        dataCache.customers.forEach(data => {
-          const status = (data.status || '').toLowerCase();
-          if (status === 'completed') completed++;
-          else if (status === 'pending') pending++;
-          else if (status === 'cancelled' || status === 'canceled') cancelled++;
+    function updateCounts() {
+      let completed = 0, pending = 0, cancelled = 0;
+
+      dataCache.customers.forEach(data => {
+        const status = (data.status || '').toLowerCase();
+        if (status === 'completed') completed++;
+        else if (status === 'pending') pending++;
+        else if (status === 'cancelled' || status === 'canceled') cancelled++;
+      });
+
+      document.getElementById("completedCount").textContent = completed.toString().padStart(2, "0");
+      document.getElementById("pendingCount").textContent = pending.toString().padStart(2, "0");
+      document.getElementById("cancelledCount").textContent = cancelled.toString().padStart(2, "0");
+    }
+
+    function updateAgenda() {
+      const agendaList = document.getElementById("agendaList");
+      const todayISO = new Date().toISOString().split("T")[0];
+      
+      const todaysAppointments = dataCache.customers.filter(data => 
+        data.date === todayISO && (data.status || '').toLowerCase() === 'pending'
+      ).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+
+      agendaList.innerHTML = "";
+      if (todaysAppointments.length === 0) {
+        agendaList.innerHTML = '<li class="text-gray-500 italic">No appointments today</li>';
+      } else {
+        todaysAppointments.forEach(a => {
+          const li = document.createElement('li');
+          li.textContent = `${a.time || '-'} - ${a.name || a.customer || 'Customer'} - ${a.service || '-'}`;
+          agendaList.appendChild(li);
         });
-
-        document.getElementById("completedCount").textContent = completed.toString().padStart(2, "0");
-        document.getElementById("pendingCount").textContent = pending.toString().padStart(2, "0");
-        document.getElementById("cancelledCount").textContent = cancelled.toString().padStart(2, "0");
       }
+    }
 
-      function updateAgenda() {
-        const agendaList = document.getElementById("agendaList");
-        const todayISO = new Date().toISOString().split("T")[0];
+    let currentInventoryIndex = 0;
+    let inventoryItems = [];
+    let inventoryInterval = null;
+
+function createInventoryCarousel() {
+  const inventoryAlerts = document.getElementById("inventoryAlerts");
+  const inventoryNav = document.getElementById("inventoryNav");
+  inventoryAlerts.innerHTML = "";
+  inventoryNav.innerHTML = "";
+  
+  if (inventoryItems.length === 0) {
+    inventoryAlerts.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-500 italic"><i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i><p>No inventory alerts</p></div>';
+    inventoryAlerts.style.height = '140px';
+    if (inventoryInterval) clearInterval(inventoryInterval);
+    return;
+  }
+
+  inventoryAlerts.style.position = 'relative';
+  inventoryAlerts.style.height = '140px';
+  inventoryAlerts.style.overflow = 'hidden';
+
+  inventoryItems.forEach((item, index) => {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'inventory-alert-item';
+    alertDiv.style.position = 'absolute';
+    alertDiv.style.top = '0';
+    alertDiv.style.left = '0';
+    alertDiv.style.width = '100%';
+    alertDiv.style.opacity = index === currentInventoryIndex ? '1' : '0';
+    alertDiv.style.transition = 'opacity 0.5s ease';
+    alertDiv.style.padding = '1rem';
+    alertDiv.style.borderRadius = '0.75rem';
+    alertDiv.style.border = `2px solid ${item.borderColor}`;
+    alertDiv.style.background = item.bgColor;
+    
+    // Calculate percentage for progress bar
+    let percentage = 0;
+    if (item.statusText === "OVERSTOCK") {
+      percentage = Math.min((item.quantity / item.minStock) * 100, 200);
+    } else {
+      percentage = Math.min((item.quantity / item.minStock) * 100, 100);
+    }
+    
+    // Icon mapping
+    let icon = 'fa-circle-exclamation';
+    if (item.statusText === "OUT OF STOCK") icon = 'fa-triangle-exclamation';
+    if (item.statusText === "OVERSTOCK") icon = 'fa-boxes-stacked';
+    
+    alertDiv.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'}; color: white; flex-shrink: 0;">
+          <i class="fa-solid ${icon}"></i>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="flex justify-between items-start mb-2">
+            <div style="flex: 1; min-width: 0;">
+              <div class="font-semibold text-sm text-gray-800" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.productName}</div>
+              <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-top: 0.25rem; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'}; color: white;">${item.statusText}</span>
+            </div>
+            <div class="text-right" style="margin-left: 0.5rem;">
+              <div class="font-bold text-lg ${item.statusColor}">${item.quantity}</div>
+              <div class="text-xs text-gray-600">/ ${item.minStock}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div style="flex: 1; background: rgba(255, 255, 255, 0.7); border-radius: 9999px; height: 8px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);">
+              <div style="height: 100%; border-radius: 9999px; transition: width 0.5s ease; width: ${percentage}%; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'};"></div>
+            </div>
+            <span class="text-xs font-semibold text-gray-700">${Math.round(percentage)}%</span>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    if (window.appState.userRole === 'admin') {
+      alertDiv.style.cursor = 'pointer';
+      alertDiv.onclick = () => window.location.href = 'inventory.html';
+      alertDiv.onmouseover = () => {
+        alertDiv.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+        alertDiv.style.transform = 'translateY(-2px)';
+      };
+      alertDiv.onmouseout = () => {
+        alertDiv.style.boxShadow = 'none';
+        alertDiv.style.transform = 'translateY(0)';
+      };
+    }
+    
+    inventoryAlerts.appendChild(alertDiv);
+
+    // Create navigation dot
+    const dot = document.createElement('div');
+    dot.style.width = index === currentInventoryIndex ? '24px' : '10px';
+    dot.style.height = '10px';
+    dot.style.borderRadius = index === currentInventoryIndex ? '5px' : '50%';
+    dot.style.background = index === currentInventoryIndex ? '#da5c73' : '#d1d5db';
+    dot.style.cursor = 'pointer';
+    dot.style.transition = 'all 0.3s ease';
+    dot.onclick = () => goToInventorySlide(index);
+    dot.onmouseover = () => {
+      if (index !== currentInventoryIndex) {
+        dot.style.background = '#b97b8b';
+        dot.style.transform = 'scale(1.2)';
+      }
+    };
+    dot.onmouseout = () => {
+      if (index !== currentInventoryIndex) {
+        dot.style.background = '#d1d5db';
+        dot.style.transform = 'scale(1)';
+      }
+    };
+    inventoryNav.appendChild(dot);
+  });
+
+  if (inventoryItems.length > 1) {
+    if (inventoryInterval) clearInterval(inventoryInterval);
+    inventoryInterval = setInterval(() => {
+      currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
+      goToInventorySlide(currentInventoryIndex);
+    }, 5000);
+  }
+}
+
+function goToInventorySlide(index) {
+  currentInventoryIndex = index;
+  const alerts = document.querySelectorAll('.inventory-alert-item');
+  const dots = document.querySelectorAll('#inventoryNav > div');
+  
+  alerts.forEach((alert, i) => {
+    alert.style.opacity = i === index ? '1' : '0';
+  });
+  
+  dots.forEach((dot, i) => {
+    dot.style.width = i === index ? '24px' : '10px';
+    dot.style.borderRadius = i === index ? '5px' : '50%';
+    dot.style.background = i === index ? '#da5c73' : '#d1d5db';
+  });
+  
+  if (inventoryInterval) {
+    clearInterval(inventoryInterval);
+    if (inventoryItems.length > 1) {
+      inventoryInterval = setInterval(() => {
+        currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
+        goToInventorySlide(currentInventoryIndex);
+      }, 5000);
+    }
+  }
+}
+    window.goToInventorySlide = goToInventorySlide;
+
+    function updateInventoryAlerts() {
+      const alertItems = [];
+      dataCache.inventory.forEach(data => {
+        const productName = data.name || "Unnamed Product";
+        const quantity = Number(data.quantity || data.qty || 0);
+        const minStock = Number(data.minStock || 10);
+        const overstockThreshold = minStock * 1.5;
         
-        const todaysAppointments = dataCache.customers.filter(data => 
-          data.date === todayISO && (data.status || '').toLowerCase() === 'pending'
-        ).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-
-        agendaList.innerHTML = "";
-        if (todaysAppointments.length === 0) {
-          agendaList.innerHTML = '<li class="text-gray-500 italic">No appointments today</li>';
-        } else {
-          todaysAppointments.forEach(a => {
-            const li = document.createElement('li');
-            li.textContent = `${a.time || '-'} - ${a.name || a.customer || 'Customer'} - ${a.service || '-'}`;
-            agendaList.appendChild(li);
+        // Out of stock - Red
+        if (quantity === 0) {
+          alertItems.push({ 
+            productName, 
+            quantity, 
+            minStock, 
+            statusText: "OUT OF STOCK", 
+            statusColor: "text-red-600",
+            bgColor: '#ffe6e6',
+            borderColor: '#ffb3b3',
+            barColor: 'bg-red-500',
+            priority: 1
           });
         }
-      }
-
-      const inventoryAlerts = document.getElementById("inventoryAlerts");
-      const inventoryNav = document.getElementById("inventoryNav");
-      let currentInventoryIndex = 0;
-      let inventoryItems = [];
-      let inventoryInterval = null;
-
-      function createInventoryCarousel() {
-        inventoryAlerts.innerHTML = "";
-        inventoryNav.innerHTML = "";
-        
-        if (inventoryItems.length === 0) {
-          inventoryAlerts.innerHTML = '<p class="text-gray-500 italic">No low stock alerts</p>';
-          if (inventoryInterval) clearInterval(inventoryInterval);
-          return;
+        // Low stock - Yellow
+        else if (quantity > 0 && quantity <= minStock) {
+          alertItems.push({ 
+            productName, 
+            quantity, 
+            minStock, 
+            statusText: "LOW STOCK", 
+            statusColor: "text-yellow-600",
+            bgColor: '#fff4e6',
+            borderColor: '#ffd1a8',
+            barColor: 'bg-yellow-500',
+            priority: 2
+          });
         }
-
-        const carousel = document.createElement('div');
-        carousel.style.cssText = `display: flex; flex-direction: column; gap: 0.5rem; transition: transform 0.5s ease;`;
-        carousel.id = 'inventoryCarousel';
-
-        inventoryItems.forEach((item, index) => {
-          const alertDiv = document.createElement('div');
-          alertDiv.className = 'p-3 rounded transition-all inventory-alert-item';
-          alertDiv.style.background = item.quantity === 0 ? '#ffe6e6' : '#fff4e6';
-          alertDiv.style.border = item.quantity === 0 ? '1px solid #ffb3b3' : '1px solid #ffd1a8';
-          alertDiv.style.opacity = index === currentInventoryIndex ? '1' : '0';
-          alertDiv.style.position = index === 0 ? 'relative' : 'absolute';
-          alertDiv.style.width = '100%';
-          alertDiv.style.transition = 'opacity 0.5s ease';
-          alertDiv.innerHTML = `
-            <div class="flex justify-between items-start">
-              <div class="flex-1">
-                <div class="font-semibold text-sm text-gray-800">${item.productName}</div>
-                <div class="text-xs ${item.statusColor} font-bold mt-1">${item.statusText}</div>
-              </div>
-              <div class="text-right text-xs">
-                <div class="font-bold ${item.statusColor}">${item.quantity} / ${item.minStock}</div>
-              </div>
-            </div>
-            <div class="mt-2 flex items-center gap-2">
-              <div class="flex-1 bg-gray-200 rounded-full h-2">
-                <div class="h-2 rounded-full transition-all ${item.quantity === 0 ? 'bg-red-500' : 'bg-yellow-500'}" 
-                    style="width: ${Math.min((item.quantity / item.minStock) * 100, 100)}%"></div>
-              </div>
-              <span class="text-xs text-gray-600">${Math.round((item.quantity / item.minStock) * 100)}%</span>
-            </div>
-          `;
-          
-          if (window.appState.userRole === 'admin') {
-            alertDiv.style.cursor = 'pointer';
-            alertDiv.onclick = () => window.location.href = 'inventory.html';
-            alertDiv.onmouseover = () => alertDiv.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-            alertDiv.onmouseout = () => alertDiv.style.boxShadow = 'none';
-          }
-          
-          carousel.appendChild(alertDiv);
-
-          const dot = document.createElement('div');
-          dot.style.cssText = `width: 8px; height: 8px; border-radius: 50%; background: ${index === currentInventoryIndex ? '#da5c73' : '#d1d5db'}; cursor: pointer; transition: all 0.3s ease;`;
-          dot.onclick = () => goToInventorySlide(index);
-          inventoryNav.appendChild(dot);
-        });
-
-        inventoryAlerts.appendChild(carousel);
-
-        if (inventoryItems.length > 1) {
-          if (inventoryInterval) clearInterval(inventoryInterval);
-          startInventoryAutoScroll();
+        // Overstock - Blue
+        else if (quantity > overstockThreshold) {
+          alertItems.push({ 
+            productName, 
+            quantity, 
+            minStock, 
+            statusText: "OVERSTOCK", 
+            statusColor: "text-blue-600",
+            bgColor: '#e6f2ff',
+            borderColor: '#a8d1ff',
+            barColor: 'bg-blue-500',
+            priority: 3
+          });
         }
-      }
+      });
 
-      function goToInventorySlide(index) {
-        currentInventoryIndex = index;
-        const alerts = inventoryAlerts.querySelectorAll('[style*="position"]');
-        const dots = inventoryNav.querySelectorAll('div');
+      // Sort by priority (out of stock first, then low stock, then overstock)
+      alertItems.sort((a, b) => {
+        if (a.priority !== b.priority) return a.priority - b.priority;
+        return a.quantity - b.quantity;
+      });
+      
+      inventoryItems = alertItems;
+      currentInventoryIndex = 0;
+      createInventoryCarousel();
+    }
+
+    let revenueChart = null;
+
+    function updateRevenueData() {
+      const totalsByDay = {"Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0};
+      let grandTotal = 0;
+
+      dataCache.cashierReceipts.forEach(data => {
+        const cost = Number(data.subtotal || data.amount || data.price || data.total_cost || 0);
         
-        alerts.forEach((alert, i) => alert.style.opacity = i === index ? '1' : '0');
-        dots.forEach((dot, i) => dot.style.background = i === index ? '#da5c73' : '#d1d5db');
-        
-        if (inventoryInterval) {
-          clearInterval(inventoryInterval);
-          startInventoryAutoScroll();
-        }
-      }
-
-      function startInventoryAutoScroll() {
-        inventoryInterval = setInterval(() => {
-          currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
-          goToInventorySlide(currentInventoryIndex);
-        }, 5000);
-      }
-
-      window.goToInventorySlide = goToInventorySlide;
-
-      function updateInventoryAlerts() {
-        const lowStockItems = [];
-        dataCache.inventory.forEach(data => {
-          const productName = data.name || "Unnamed Product";
-          const quantity = (typeof data.quantity !== "undefined") ? Number(data.quantity) : Number(data.qty) || 0;
-          const minStock = Number(data.minStock) || 10;
-          
-          if (quantity <= minStock) {
-            const statusText = quantity === 0 ? "OUT OF STOCK" : "LOW STOCK";
-            const statusColor = quantity === 0 ? "text-red-600" : "text-yellow-600";
-            lowStockItems.push({ productName, quantity, minStock, statusText, statusColor });
-          }
-        });
-
-        lowStockItems.sort((a, b) => a.quantity - b.quantity);
-        inventoryItems = lowStockItems;
-        currentInventoryIndex = 0;
-        createInventoryCarousel();
-      }
-
-      const revenueTotal = document.getElementById("revenueTotal");
-      let revenueChart = null;
-
-      function updateRevenueData() {
-        const totalsByDay = {"Monday": 0, "Tuesday": 0, "Wednesday": 0, "Thursday": 0, "Friday": 0, "Saturday": 0, "Sunday": 0};
-        let grandTotal = 0;
-        let completed = 0;
-
-        dataCache.cashierReceipts.forEach(data => {
-          const cost = Number(data.subtotal || data.amount || data.price || data.total_cost || 0);
-          if (data.subtotal || data.receiptNumber || data.payment) completed++;
-          
-          let day = null;
-          if (data.day) {
-            day = data.day;
-          } else if (data.timestamp && typeof data.timestamp.toDate === "function") {
-            day = data.timestamp.toDate().toLocaleDateString("en-US", { weekday: "long" });
-          } else if (data.createdAt) {
-            try {
-              if (typeof data.createdAt === "string") {
-                const d = new Date(data.createdAt);
-                if (!isNaN(d)) day = d.toLocaleDateString("en-US", { weekday: "long" });
-              } else if (typeof data.createdAt.toDate === "function") {
-                day = data.createdAt.toDate().toLocaleDateString("en-US", { weekday: "long" });
-              }
-            } catch (e) {}
-          }
-          
-          if (day && totalsByDay[day] !== undefined) totalsByDay[day] += cost;
-          grandTotal += cost;
-        });
-
-        revenueTotal.textContent = `Total of: ₱${grandTotal.toLocaleString("en-PH", {minimumFractionDigits: 2})}`;
-        const daysOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const revenueData = daysOrder.map(d => totalsByDay[d] || 0);
-
-        if (revenueChart) {
-          revenueChart.data.datasets[0].data = revenueData;
-          revenueChart.update();
-        } else {
-          const ctx = document.getElementById('revenueChart').getContext('2d');
-          revenueChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: daysOrder,
-              datasets: [{label: 'Revenue', data: revenueData, backgroundColor: '#f5a3b5', borderColor: '#da5c73', borderWidth: 1}]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: true,
-              plugins: {legend: {display: false}},
-              scales: {y: {beginAtZero: true, ticks: {callback: function(value) {return '₱' + value.toLocaleString();}}}}
+        let day = null;
+        if (data.day) {
+          day = data.day;
+        } else if (data.timestamp && typeof data.timestamp.toDate === "function") {
+          day = data.timestamp.toDate().toLocaleDateString("en-US", { weekday: "long" });
+        } else if (data.createdAt) {
+          try {
+            if (typeof data.createdAt === "string") {
+              const d = new Date(data.createdAt);
+              if (!isNaN(d)) day = d.toLocaleDateString("en-US", { weekday: "long" });
+            } else if (typeof data.createdAt.toDate === "function") {
+              day = data.createdAt.toDate().toLocaleDateString("en-US", { weekday: "long" });
             }
-          });
+          } catch (e) {}
         }
+        
+        if (day && totalsByDay[day] !== undefined) totalsByDay[day] += cost;
+        grandTotal += cost;
+      });
 
-        updateTopServices();
-      }
+      document.getElementById("revenueTotal").textContent = `Total of: ₱${grandTotal.toLocaleString("en-PH", {minimumFractionDigits: 2})}`;
+      const daysOrder = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const revenueData = daysOrder.map(d => totalsByDay[d] || 0);
 
-      let topServicesChart = null;
-
-      function updateTopServices() {
-        const serviceCounts = {};
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-        dataCache.cashierReceipts.forEach(data => {
-          let docDate = null;
-          if (data.timestamp && typeof data.timestamp.toDate === "function") {
-            docDate = data.timestamp.toDate();
-          } else if (data.createdAt) {
-            try {
-              if (typeof data.createdAt === "string") {
-                docDate = new Date(data.createdAt);
-              } else if (typeof data.createdAt.toDate === "function") {
-                docDate = data.createdAt.toDate();
-              }
-            } catch (e) {}
-          }
-
-          if (!docDate || docDate >= sevenDaysAgo) {
-            const items = data.items || [];
-            items.forEach(item => {
-              const name = item.name || "Unknown Service";
-              serviceCounts[name] = (serviceCounts[name] || 0) + 1;
-            });
+      if (revenueChart) {
+        revenueChart.data.datasets[0].data = revenueData;
+        revenueChart.update();
+      } else {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        revenueChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: daysOrder,
+            datasets: [{label: 'Revenue', data: revenueData, backgroundColor: '#f5a3b5', borderColor: '#da5c73', borderWidth: 1}]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {legend: {display: false}},
+            scales: {y: {beginAtZero: true, ticks: {callback: function(value) {return '₱' + value.toLocaleString();}}}}
           }
         });
-
-        const sorted = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
-        const labels = sorted.map(s => s[0]);
-        const counts = sorted.map(s => s[1]);
-        const colors = ['#5b9bd5', '#70ad47', '#ffc000'];
-
-        if (topServicesChart) {
-          topServicesChart.data.labels = labels;
-          topServicesChart.data.datasets[0].data = counts;
-          topServicesChart.data.datasets[0].backgroundColor = colors.slice(0, counts.length);
-          topServicesChart.update();
-        } else {
-          const ctx = document.getElementById('topServicesChart').getContext('2d');
-          topServicesChart = new Chart(ctx, {
-            type: 'bar',
-            data: {labels: labels, datasets: [{label: 'Services Sold', data: counts, backgroundColor: colors, borderWidth: 0}]},
-            options: {indexAxis: 'y', responsive: true, maintainAspectRatio: true, plugins: {legend: {display: false}}, scales: {x: {beginAtZero: true, ticks: {stepSize: 1, precision: 0}}}}
-          });
-        }
       }
 
-      function updateStaffAvailability() {
-        const staffAvailabilityList = document.getElementById("staffAvailabilityList");
-        staffAvailabilityList.innerHTML = '';
+      updateTopServices();
+    }
 
-        const onlineUsers = [];
-        let currentUserInfo = null;
+    let topServicesChart = null;
 
-        dataCache.staff.forEach(userData => {
-          const userId = userData.id;
-          const name = userData.fullName || userData.username || "Unnamed";
-          const isAvailable = userData.availability === true;
+    function updateTopServices() {
+      const serviceCounts = {};
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-          if (userId === window.appState.currentUserId) {
-            currentUserInfo = { name, isAvailable };
-          }
-          if (!isAvailable || userId === window.appState.currentUserId) return;
-          onlineUsers.push({ id: userId, name });
+      dataCache.cashierReceipts.forEach(data => {
+        let docDate = null;
+        if (data.timestamp && typeof data.timestamp.toDate === "function") {
+          docDate = data.timestamp.toDate();
+        } else if (data.createdAt) {
+          try {
+            if (typeof data.createdAt === "string") {
+              docDate = new Date(data.createdAt);
+            } else if (typeof data.createdAt.toDate === "function") {
+              docDate = data.createdAt.toDate();
+            }
+          } catch (e) {}
+        }
+
+        if (!docDate || docDate >= sevenDaysAgo) {
+          const items = data.items || [];
+          items.forEach(item => {
+            const name = item.name || "Unknown Service";
+            serviceCounts[name] = (serviceCounts[name] || 0) + 1;
+          });
+        }
+      });
+
+      const sorted = Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const labels = sorted.map(s => s[0]);
+      const counts = sorted.map(s => s[1]);
+      const colors = ['#5b9bd5', '#70ad47', '#ffc000'];
+
+      if (topServicesChart) {
+        topServicesChart.data.labels = labels;
+        topServicesChart.data.datasets[0].data = counts;
+        topServicesChart.data.datasets[0].backgroundColor = colors.slice(0, counts.length);
+        topServicesChart.update();
+      } else {
+        const ctx = document.getElementById('topServicesChart').getContext('2d');
+        topServicesChart = new Chart(ctx, {
+          type: 'bar',
+          data: {labels: labels, datasets: [{label: 'Services Sold', data: counts, backgroundColor: colors, borderWidth: 0}]},
+          options: {indexAxis: 'y', responsive: true, maintainAspectRatio: true, plugins: {legend: {display: false}}, scales: {x: {beginAtZero: true, ticks: {stepSize: 1, precision: 0}}}}
         });
+      }
+    }
 
-        if (currentUserInfo && currentUserInfo.isAvailable) {
+    function updateStaffAvailability() {
+      const staffAvailabilityList = document.getElementById("staffAvailabilityList");
+      staffAvailabilityList.innerHTML = '';
+
+      const onlineUsers = [];
+      let currentUserInfo = null;
+
+      dataCache.staff.forEach(userData => {
+        const userId = userData.id;
+        const name = userData.fullName || userData.username || "Unnamed";
+        const isAvailable = userData.availability === true;
+
+        if (userId === window.appState.currentUserId) {
+          currentUserInfo = { name, isAvailable };
+        }
+        if (!isAvailable || userId === window.appState.currentUserId) return;
+        onlineUsers.push({ id: userId, name });
+      });
+
+      if (currentUserInfo && currentUserInfo.isAvailable) {
+        const div = document.createElement("div");
+        div.className = "staff-availability-item";
+        div.style.fontWeight = "600";
+        div.style.background = "#d1fae5";
+        div.innerHTML = `<div class="status-dot"></div><span>${currentUserInfo.name} (You)</span>`;
+        staffAvailabilityList.appendChild(div);
+      }
+
+      if (onlineUsers.length === 0) {
+        if (!currentUserInfo || !currentUserInfo.isAvailable) {
+          staffAvailabilityList.innerHTML = '<p class="text-gray-500 italic text-sm">No users online</p>';
+        }
+      } else {
+        onlineUsers.forEach(user => {
           const div = document.createElement("div");
           div.className = "staff-availability-item";
-          div.style.fontWeight = "600";
-          div.style.background = "#d1fae5";
-          div.innerHTML = `<div class="status-dot"></div><span>${currentUserInfo.name} (You)</span>`;
+          div.innerHTML = `<div class="status-dot"></div><span>${user.name}</span>`;
           staffAvailabilityList.appendChild(div);
-        }
-
-        if (onlineUsers.length === 0) {
-          if (!currentUserInfo || !currentUserInfo.isAvailable) {
-            staffAvailabilityList.innerHTML = '<p class="text-gray-500 italic text-sm">No users online</p>';
-          }
-        } else {
-          onlineUsers.forEach(user => {
-            const div = document.createElement("div");
-            div.className = "staff-availability-item";
-            div.innerHTML = `<div class="status-dot"></div><span>${user.name}</span>`;
-            staffAvailabilityList.appendChild(div);
-          });
-        }
-      }
-
-      onAuthStateChanged(auth, async (user) => {
-        if (user) {
-          window.appState.currentUserId = user.uid;
-          window.appState.currentUserEmail = user.email;
-          
-          try {
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-            if (userSnap.exists()) {
-              const data = userSnap.data();
-              const userRole = data.role || "staff";
-              window.appState.userRole = userRole;
-              window.appState.currentUserFullName = data.username || data.fullName || user.email || "User";
-              
-              document.getElementById("usernameDisplay").textContent = window.appState.currentUserFullName;
-              document.getElementById("logoutUsername").textContent = window.appState.currentUserFullName;
-              
-              if (userRole === "admin") {
-                document.documentElement.classList.add('admin-loaded');
-                document.documentElement.classList.remove('staff-loaded');
-              } else {
-                document.documentElement.classList.add('staff-loaded');
-                document.documentElement.classList.remove('admin-loaded');
-              }
-
-              const today = new Date().toLocaleDateString();
-              const logsRef = collection(db, "staffLogs", user.uid, "history");
-              const todayQuery = query(logsRef, where("date", "==", today));
-              const todaySnap = await getDocs(todayQuery);
-              
-              let needsNewLog = true;
-              if (!todaySnap.empty) {
-                const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
-                if (activeSession) needsNewLog = false;
-              }
-              
-              if (needsNewLog) {
-                await addDoc(logsRef, {
-                  date: today,
-                  clockIn: new Date().toLocaleString(),
-                  clockOut: null,
-                  timestamp: serverTimestamp()
-                });
-              }
-
-              await updateDoc(userRef, { 
-                availability: true,
-                lastUpdated: serverTimestamp()
-              });
-
-              loadDashboardData(userRole);
-            }
-          } catch (err) {
-            console.error("Error fetching user document:", err);
-            document.documentElement.classList.add('staff-loaded');
-            document.documentElement.classList.remove('admin-loaded');
-          }
-          
-          loadNotifications();
-        } else {
-          window.location.href = 'index.html';
-        }
-      });
-
-      document.getElementById('logoutBtn')?.addEventListener('click', () => window.showLogoutModal());
-      window.addEventListener("beforeunload", async () => await handleClockOut());
-      
-      window.toggleUserMenu = function(event) {
-        event.stopPropagation();
-        const userMenu = document.getElementById('userMenu');
-        userMenu.classList.toggle('hidden');
-      }
-      
-      window.addEventListener('click', (e) => {
-        const userMenu = document.getElementById('userMenu');
-        const btn = document.getElementById('userMenuButton');
-        if (!btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
-          userMenu.classList.add('hidden');
-        }
-      });
-    </script>
-
-    <script>
-      class MagicBentoEffect {
-        constructor(gridSelector) {
-          this.grid = document.querySelector(gridSelector);
-          if (!this.grid) return;
-          
-          this.cards = this.grid.querySelectorAll('.magic-card');
-          this.spotlight = null;
-          this.particleCount = 14;
-          this.glowColor = '132, 0, 255';
-          this.spotlightRadius = 450;
-          this.isMobile = window.innerWidth <= 768;
-          this.particlesCache = new WeakMap();
-          
-          if (!this.isMobile) {
-            this.init();
-          }
-        }
-
-        init() {
-          this.createSpotlight();
-          this.cards.forEach(card => this.initCard(card));
-          document.addEventListener('mousemove', this.handleMouseMove.bind(this));
-        }
-
-        createSpotlight() {
-          this.spotlight = document.createElement('div');
-          this.spotlight.className = 'global-spotlight';
-          document.body.appendChild(this.spotlight);
-        }
-
-        createParticleElement(x, y) {
-          const el = document.createElement('div');
-          el.className = 'particle';
-          el.style.left = `${x}px`;
-          el.style.top = `${y}px`;
-          return el;
-        }
-
-        initCard(card) {
-          const particles = [];
-          const rect = card.getBoundingClientRect();
-          let isHovering = false;
-          
-          if (!this.particlesCache.has(card)) {
-            const cachedParticles = [];
-            for (let i = 0; i < this.particleCount; i++) {
-              cachedParticles.push(this.createParticleElement(
-                Math.random() * card.offsetWidth,
-                Math.random() * card.offsetHeight
-              ));
-            }
-            this.particlesCache.set(card, cachedParticles);
-          }
-          
-          card.addEventListener('mouseenter', () => {
-            isHovering = true;
-            const cached = this.particlesCache.get(card);
-            cached.forEach((template, i) => {
-              setTimeout(() => {
-                if (!isHovering) return;
-                
-                const particle = template.cloneNode(true);
-                card.appendChild(particle);
-                particles.push(particle);
-                
-                gsap.fromTo(particle,
-                  { scale: 0, opacity: 0 },
-                  { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.7)' }
-                );
-
-                gsap.to(particle, {
-                  x: (Math.random() - 0.5) * 100,
-                  y: (Math.random() - 0.5) * 100,
-                  rotation: Math.random() * 360,
-                  duration: 2 + Math.random() * 2,
-                  ease: 'none',
-                  repeat: -1,
-                  yoyo: true
-                });
-
-                gsap.to(particle, {
-                  opacity: 0.4,
-                  duration: 1.2,
-                  ease: 'power2.inOut',
-                  repeat: -1,
-                  yoyo: true
-                });
-              }, i * 100);
-            });
-
-            gsap.to(card, {
-              rotateX: 5,
-              rotateY: 5,
-              duration: 0.3,
-              ease: 'power2.out',
-              transformPerspective: 1000
-            });
-          });
-
-          card.addEventListener('mouseleave', () => {
-            isHovering = false;
-            
-            particles.forEach(p => {
-              gsap.to(p, {
-                scale: 0,
-                opacity: 0,
-                duration: 0.3,
-                onComplete: () => p.remove()
-              });
-            });
-            particles.length = 0;
-
-            gsap.to(card, {
-              rotateX: 0,
-              rotateY: 0,
-              duration: 0.3,
-              ease: 'power2.out'
-            });
-          });
-
-          card.addEventListener('mousemove', (e) => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const centerX = rect.width / 2;
-            const centerY = rect.height / 2;
-
-            const rotateX = ((y - centerY) / centerY) * -10;
-            const rotateY = ((x - centerX) / centerX) * 10;
-
-            gsap.to(card, {
-              rotateX,
-              rotateY,
-              duration: 0.1,
-              ease: 'power2.out',
-              transformPerspective: 1000
-            });
-
-            const relativeX = (x / rect.width) * 100;
-            const relativeY = (y / rect.height) * 100;
-            card.style.setProperty('--glow-x', `${relativeX}%`);
-            card.style.setProperty('--glow-y', `${relativeY}%`);
-            card.style.setProperty('--glow-intensity', '1');
-            card.style.setProperty('--glow-radius', `${this.spotlightRadius}px`);
-          });
-        }
-
-        handleMouseMove(e) {
-          const section = this.grid.closest('.bento-section');
-          const rect = section?.getBoundingClientRect() || this.grid.getBoundingClientRect();
-          const mouseInGrid = e.clientX >= rect.left && 
-                            e.clientX <= rect.right && 
-                            e.clientY >= rect.top && 
-                            e.clientY <= rect.bottom;
-
-          if (!mouseInGrid) {
-            gsap.to(this.spotlight, { opacity: 0, duration: 0.3 });
-            this.cards.forEach(card => {
-              card.style.setProperty('--glow-intensity', '0');
-            });
-            return;
-          }
-
-          gsap.to(this.spotlight, {
-            left: e.clientX,
-            top: e.clientY,
-            duration: 0.1,
-            ease: 'power2.out'
-          });
-
-          const proximity = this.spotlightRadius * 0.5;
-          const fadeDistance = this.spotlightRadius * 0.75;
-          let minDistance = Infinity;
-
-          this.cards.forEach(card => {
-            const cardRect = card.getBoundingClientRect();
-            const centerX = cardRect.left + cardRect.width / 2;
-            const centerY = cardRect.top + cardRect.height / 2;
-            const distance = Math.hypot(e.clientX - centerX, e.clientY - centerY) - 
-                            Math.max(cardRect.width, cardRect.height) / 2;
-            const effectiveDistance = Math.max(0, distance);
-
-            minDistance = Math.min(minDistance, effectiveDistance);
-
-            let glowIntensity = 0;
-            if (effectiveDistance <= proximity) {
-              glowIntensity = 1;
-            } else if (effectiveDistance <= fadeDistance) {
-              glowIntensity = (fadeDistance - effectiveDistance) / (fadeDistance - proximity);
-            }
-
-            const relativeX = ((e.clientX - cardRect.left) / cardRect.width) * 100;
-            const relativeY = ((e.clientY - cardRect.top) / cardRect.height) * 100;
-            
-            card.style.setProperty('--glow-x', `${relativeX}%`);
-            card.style.setProperty('--glow-y', `${relativeY}%`);
-            card.style.setProperty('--glow-intensity', glowIntensity.toString());
-            card.style.setProperty('--glow-radius', `${this.spotlightRadius}px`);
-          });
-
-          const targetOpacity = minDistance <= proximity ? 1.2 :
-                              minDistance <= fadeDistance ? 
-                              ((fadeDistance - minDistance) / (fadeDistance - proximity)) * 1.2 : 0;
-
-          gsap.to(this.spotlight, {
-            opacity: targetOpacity,
-            duration: targetOpacity > 0 ? 0.2 : 0.5,
-            ease: 'power2.out'
-          });
-        }
-      }
-
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          if (window.innerWidth > 768) {
-            new MagicBentoEffect('#dashboardGrid');
-          }
         });
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        window.appState.currentUserId = user.uid;
+        window.appState.currentUserEmail = user.email;
+        
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            const userRole = data.role || "staff";
+            window.appState.userRole = userRole;
+            window.appState.currentUserFullName = data.username || data.fullName || user.email || "User";
+            
+            document.getElementById("usernameDisplay").textContent = window.appState.currentUserFullName;
+            document.getElementById("logoutUsername").textContent = window.appState.currentUserFullName;
+            
+            if (userRole === "admin") {
+              document.documentElement.classList.add('admin-loaded');
+              document.documentElement.classList.remove('staff-loaded');
+            } else {
+              document.documentElement.classList.add('staff-loaded');
+              document.documentElement.classList.remove('admin-loaded');
+            }
+
+            const today = new Date().toLocaleDateString();
+            const logsRef = collection(db, "staffLogs", user.uid, "history");
+            const todayQuery = query(logsRef, where("date", "==", today));
+            const todaySnap = await getDocs(todayQuery);
+            
+            let needsNewLog = true;
+            if (!todaySnap.empty) {
+              const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
+              if (activeSession) needsNewLog = false;
+            }
+            
+            if (needsNewLog) {
+              await addDoc(logsRef, {
+                date: today,
+                clockIn: new Date().toLocaleString(),
+                clockOut: null,
+                timestamp: serverTimestamp()
+              });
+            }
+
+            await updateDoc(userRef, { 
+              availability: true,
+              lastUpdated: serverTimestamp()
+            });
+
+            loadDashboardData();
+            monitorInventory();
+            monitorPurchaseOrders();
+          }
+        } catch (err) {
+          console.error("Error fetching user document:", err);
+          document.documentElement.classList.add('staff-loaded');
+          document.documentElement.classList.remove('admin-loaded');
+        }
       } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    document.getElementById('logoutBtn')?.addEventListener('click', () => window.showLogoutModal());
+    window.addEventListener("beforeunload", async () => await handleClockOut());
+    
+    window.toggleUserMenu = function(event) {
+      event.stopPropagation();
+      document.getElementById('userMenu').classList.toggle('hidden');
+    }
+    
+    window.addEventListener('click', (e) => {
+      const userMenu = document.getElementById('userMenu');
+      const btn = document.getElementById('userMenuButton');
+      if (btn && !btn.contains(e.target) && userMenu && !userMenu.contains(e.target)) {
+        userMenu.classList.add('hidden');
+      }
+    });
+  </script>
+
+  <script>
+    class MagicBentoEffect {
+      constructor(gridSelector) {
+        this.grid = document.querySelector(gridSelector);
+        if (!this.grid) return;
+        
+        this.cards = this.grid.querySelectorAll('.magic-card');
+        this.spotlight = null;
+        this.particleCount = 10;
+        this.isMobile = window.innerWidth <= 768;
+        this.particlesCache = new WeakMap();
+        
+        if (!this.isMobile) this.init();
+      }
+
+      init() {
+        this.createSpotlight();
+        this.cards.forEach(card => this.initCard(card));
+        document.addEventListener('mousemove', this.handleMouseMove.bind(this));
+      }
+
+      createSpotlight() {
+        this.spotlight = document.createElement('div');
+        this.spotlight.className = 'global-spotlight';
+        document.body.appendChild(this.spotlight);
+      }
+
+      initCard(card) {
+        const particles = [];
+        let isHovering = false;
+        
+        if (!this.particlesCache.has(card)) {
+          const cached = [];
+          for (let i = 0; i < this.particleCount; i++) {
+            const el = document.createElement('div');
+            el.className = 'particle';
+            el.style.left = `${Math.random() * card.offsetWidth}px`;
+            el.style.top = `${Math.random() * card.offsetHeight}px`;
+            cached.push(el);
+          }
+          this.particlesCache.set(card, cached);
+        }
+        
+        card.addEventListener('mouseenter', () => {
+          isHovering = true;
+          const cached = this.particlesCache.get(card);
+          cached.forEach((template, i) => {
+            setTimeout(() => {
+              if (!isHovering) return;
+              
+              const particle = template.cloneNode(true);
+              card.appendChild(particle);
+              particles.push(particle);
+              
+              gsap.fromTo(particle, { scale: 0, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.3, ease: 'back.out(1.7)' });
+              gsap.to(particle, { x: (Math.random() - 0.5) * 100, y: (Math.random() - 0.5) * 100, rotation: Math.random() * 360, duration: 2 + Math.random() * 2, ease: 'none', repeat: -1, yoyo: true });
+              gsap.to(particle, { opacity: 0.4, duration: 1.2, ease: 'power2.inOut', repeat: -1, yoyo: true });
+            }, i * 100);
+          });
+
+          gsap.to(card, { rotateX: 5, rotateY: 5, duration: 0.3, ease: 'power2.out', transformPerspective: 1000 });
+        });
+
+        card.addEventListener('mouseleave', () => {
+          isHovering = false;
+          particles.forEach(p => gsap.to(p, { scale: 0, opacity: 0, duration: 0.3, onComplete: () => p.remove() }));
+          particles.length = 0;
+          gsap.to(card, { rotateX: 0, rotateY: 0, duration: 0.3, ease: 'power2.out' });
+        });
+
+        card.addEventListener('mousemove', (e) => {
+          const rect = card.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+
+          gsap.to(card, { rotateX: ((y - centerY) / centerY) * -10, rotateY: ((x - centerX) / centerX) * 10, duration: 0.1, ease: 'power2.out', transformPerspective: 1000 });
+
+          card.style.setProperty('--glow-x', `${(x / rect.width) * 100}%`);
+          card.style.setProperty('--glow-y', `${(y / rect.height) * 100}%`);
+          card.style.setProperty('--glow-intensity', '1');
+        });
+      }
+
+      handleMouseMove(e) {
+        const section = this.grid.closest('.bento-section');
+        const rect = section?.getBoundingClientRect() || this.grid.getBoundingClientRect();
+        const mouseInGrid = e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
+
+        if (!mouseInGrid) {
+          gsap.to(this.spotlight, { opacity: 0, duration: 0.3 });
+          this.cards.forEach(card => card.style.setProperty('--glow-intensity', '0'));
+          return;
+        }
+
+        gsap.to(this.spotlight, { left: e.clientX, top: e.clientY, duration: 0.1, ease: 'power2.out' });
+
+        let minDistance = Infinity;
+        this.cards.forEach(card => {
+          const cardRect = card.getBoundingClientRect();
+          const centerX = cardRect.left + cardRect.width / 2;
+          const centerY = cardRect.top + cardRect.height / 2;
+          const distance = Math.hypot(e.clientX - centerX, e.clientY - centerY) - Math.max(cardRect.width, cardRect.height) / 2;
+          const effectiveDistance = Math.max(0, distance);
+          minDistance = Math.min(minDistance, effectiveDistance);
+
+          const proximity = 225;
+          const fadeDistance = 337.5;
+          let glowIntensity = 0;
+          if (effectiveDistance <= proximity) glowIntensity = 1;
+          else if (effectiveDistance <= fadeDistance) glowIntensity = (fadeDistance - effectiveDistance) / (fadeDistance - proximity);
+
+          card.style.setProperty('--glow-x', `${((e.clientX - cardRect.left) / cardRect.width) * 100}%`);
+          card.style.setProperty('--glow-y', `${((e.clientY - cardRect.top) / cardRect.height) * 100}%`);
+          card.style.setProperty('--glow-intensity', glowIntensity.toString());
+        });
+
+        const targetOpacity = minDistance <= 225 ? 1.2 : minDistance <= 337.5 ? ((337.5 - minDistance) / 112.5) * 1.2 : 0;
+        gsap.to(this.spotlight, { opacity: targetOpacity, duration: targetOpacity > 0 ? 0.2 : 0.5, ease: 'power2.out' });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.innerWidth > 768) new MagicBentoEffect('#dashboardGrid');
+      });
+    } else {
+      if (window.innerWidth > 768) new MagicBentoEffect('#dashboardGrid');
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
         if (window.innerWidth > 768) {
+          const oldSpotlight = document.querySelector('.global-spotlight');
+          if (oldSpotlight) oldSpotlight.remove();
           new MagicBentoEffect('#dashboardGrid');
         }
-      }
+      }, 250);
+    });
+  </script>
 
-      let resizeTimer;
-      window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => {
-          const wasMobile = window.innerWidth <= 768;
-          if (!wasMobile) {
-            const oldSpotlight = document.querySelector('.global-spotlight');
-            if (oldSpotlight) oldSpotlight.remove();
-            new MagicBentoEffect('#dashboardGrid');
-          }
-        }, 250);
-      });
-    </script>
-
-  </body>
-  </html>
+</body>
+</html>

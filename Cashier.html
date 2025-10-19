@@ -7,9 +7,60 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-  <link rel="stylesheet" href="cashier.css" />
+  <!-- EmailJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
-    /* Sidebar Bubble Notification Styles */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+    * {
+      font-family: 'Poppins', sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #fef4f3 0%, #f8e8e6 100%);
+      min-height: 100vh;
+    }
+
+    .sidebar-btn { 
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: transparent;
+      color: #da5c73;
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: .3s;
+      position: relative;
+    }
+
+    .sidebar-btn:hover { 
+      background: #da5c73;
+      color: white;
+      transform: scale(1.1);
+    }
+
+    .sidebar-btn.active { 
+      background: #da5c73;
+      color: white;
+    }
+
+    .sidebar-btn[title="Dashboard"],
+    .sidebar-btn[title="Reports"],
+    .sidebar-btn[title="Cashier"],
+    .sidebar-btn[title="Staff"] {
+      display: flex;
+    }
+
+    html.admin-loaded .sidebar-btn {
+      display: flex !important;
+    }
+
     .sidebar-bubble {
       position: absolute;
       top: -8px;
@@ -41,8 +92,318 @@
       }
     }
 
-    .sidebar-btn {
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .service-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 2px solid transparent;
       position: relative;
+      overflow: hidden;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(218, 92, 115, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .service-card:hover::before {
+      left: 100%;
+    }
+
+    .service-card:hover {
+      border-color: #da5c73;
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(218, 92, 115, 0.2);
+    }
+
+    .service-card:active {
+      transform: translateY(-2px);
+    }
+
+    .cart-item {
+      animation: slideIn 0.3s ease;
+    }
+
+    .payment-method-btn {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: 2px solid #fce4ec;
+      background: white;
+      color: #b97b8b;
+      font-weight: 500;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .payment-method-btn:hover {
+      background: #fce4ec;
+      border-color: #da5c73;
+    }
+
+    .payment-method-btn.active {
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      color: white;
+      border-color: #da5c73;
+      box-shadow: 0 2px 8px rgba(218, 92, 115, 0.3);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(218, 92, 115, 0.3);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #da5c73;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .category-menu {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .menu-buttons-container {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .all-services-btn,
+    .all-products-btn {
+      color: white;
+      padding: 12px 15px;
+      border-radius: 12px;
+      border: none;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .all-services-btn {
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.3);
+    }
+
+    .all-services-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(218, 92, 115, 0.4);
+    }
+
+    .all-products-btn {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    .all-products-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(139, 92, 246, 0.4);
+    }
+
+    .all-services-btn i,
+    .all-products-btn i {
+      transition: transform 0.3s ease;
+    }
+
+    .all-services-btn.active i,
+    .all-products-btn.active i {
+      transform: rotate(180deg);
+    }
+
+    .product-btn {
+      border-color: #e9d5ff;
+      color: #7c3aed;
+    }
+
+    .product-btn:hover {
+      background: linear-gradient(135deg, #e9d5ff 0%, #ddd6fe 100%);
+      border-color: #8b5cf6;
+    }
+
+    .product-btn.active {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      color: white;
+      border-color: #8b5cf6;
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+    }
+
+    .category-dropdown {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .category-dropdown.open {
+      max-height: 500px;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding-top: 12px;
+    }
+
+    .category-btn {
+      background: white;
+      border: 2px solid #fce4ec;
+      padding: 12px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 500;
+      font-size: 13px;
+      color: #b97b8b;
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+
+    .category-btn:hover {
+      background: linear-gradient(135deg, #fce4ec 0%, #f8bbd9 100%);
+      border-color: #da5c73;
+      transform: translateX(0) translateY(-2px);
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.2);
+    }
+
+    .category-btn.active {
+      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
+      color: white;
+      border-color: #da5c73;
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.3);
+    }
+
+    .category-btn.first-row {
+      animation: slideInLeft 0.4s ease forwards;
+    }
+
+    .category-btn.first-row:nth-child(1) {
+      animation-delay: 0.1s;
+    }
+
+    .category-btn.first-row:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .category-btn.first-row:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .category-btn.first-row:nth-child(4) {
+      animation-delay: 0.4s;
+    }
+
+    .category-btn.remaining-rows {
+      animation: slideInTop 0.4s ease forwards;
+      animation-delay: 0.5s;
+    }
+
+    @keyframes slideInLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideInTop {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .cart-item.removing {
+      animation: fadeOut 0.3s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+    }
+
+    /* Customer Dropdown Styles */
+    .customer-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #fce4ec;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .customer-option:hover {
+      background: #fce4ec;
     }
 
     /* Logout Modal Styles */
@@ -203,12 +564,47 @@
       animation: spin 1s linear infinite;
     }
 
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    @media (max-width: 640px) {
+      .sidebar {
+        width: 60px;
+      }
+      
+      main {
+        margin-left: 60px;
+      }
+      
+      .sidebar-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+      }
+      
+      .glass-card {
+        padding: 1rem;
+      }
+      
+      .service-card {
+        padding: 0.75rem;
+      }
+      
+      .menu-buttons-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .category-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      #servicesList {
+        grid-template-columns: 1fr;
+      }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 768px) {
+      .category-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
       .logout-modal {
         padding: 1.5rem;
       }
@@ -221,6 +617,26 @@
         width: 100%;
       }
     }
+
+    @media (max-width: 1024px) {
+      .category-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .service-card, .cart-item, .category-btn {
+      user-select: none;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+    }
+
+    @media (max-width: 640px) {
+      button, .sidebar-btn, .category-btn, .payment-method-btn {
+        min-height: 44px;
+        min-width: 44px;
+      }
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
@@ -230,17 +646,39 @@
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
-    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
-    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'"><i class="fa-solid fa-calendar-check"></i></button>
-    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'"><i class="fa-solid fa-users"></i></button>
-    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'"><i class="fa-solid fa-user-tie"></i></button>
-    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'"><i class="fa-solid fa-scissors"></i></button>
-    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'"><i class="fa-solid fa-chart-line"></i></button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'"><i class="fa-solid fa-box-open"></i></button>
-    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'"><i class="fa-solid fa-user-plus"></i></button>
-    <button class="sidebar-btn active" title="Cashier"><i class="fa-solid fa-cash-register"></i></button>
-    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'"><i class="fa-solid fa-file-invoice"></i></button>
-    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'"><i class="fa-solid fa-receipt"></i></button>
+    <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'">
+      <i class="fa-solid fa-table-columns"></i>
+    </button>
+    <button class="sidebar-btn" title="Reservations" onclick="window.location.href='calendar.html'" id="calendarBtn">
+      <i class="fa-solid fa-calendar-check"></i>
+    </button>
+    <button class="sidebar-btn" title="Customers" onclick="window.location.href='customer.html'">
+      <i class="fa-solid fa-users"></i>
+    </button>
+    <button class="sidebar-btn" title="Staff" onclick="window.location.href='staff.html'">
+      <i class="fa-solid fa-user-tie"></i>
+    </button>
+    <button class="sidebar-btn" title="Services" onclick="window.location.href='services.html'">
+      <i class="fa-solid fa-scissors"></i>
+    </button>
+    <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'">
+      <i class="fa-solid fa-chart-line"></i>
+    </button>
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'" id="inventoryBtn">
+      <i class="fa-solid fa-box-open"></i>
+    </button>
+    <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'">
+      <i class="fa-solid fa-user-plus"></i>
+    </button>
+    <button class="sidebar-btn active" title="Cashier">
+      <i class="fa-solid fa-cash-register"></i>
+    </button>
+    <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'">
+      <i class="fa-solid fa-file-invoice"></i>
+    </button>
+    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'" id="purchaseOrderBtn">
+      <i class="fa-solid fa-receipt"></i>
+    </button>
   </aside>
 
   <main class="flex-1 ml-20">
@@ -259,9 +697,13 @@
             <div class="flex items-center gap-4">
               <span class="font-semibold text-lg" id="usernameDisplay">Loading...</span>
               <div class="relative">
-                <button id="userMenuButton" onclick="toggleUserMenu()"><i class="fa-solid fa-user-circle text-2xl"></i></button>
+                <button id="userMenuButton" onclick="toggleUserMenu()">
+                  <i class="fa-solid fa-user-circle text-2xl"></i>
+                </button>
                 <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow z-50">
-                  <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="showLogoutModal()"><i class="fa-solid fa-right-from-bracket mr-2"></i>Logout</button>
+                  <button class="w-full text-left px-3 py-2 hover:bg-gray-100" onclick="showLogoutModal()">
+                    <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+                  </button>
                 </div>
               </div>
             </div>
@@ -333,13 +775,20 @@
 
             <!-- Customer Info -->
             <div class="mb-4 space-y-2">
-              <input
-                type="text"
-                id="customerName"
-                placeholder="Customer Name *"
-                class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
-                required
-              />
+              <div class="relative">
+                <input
+                  type="text"
+                  id="customerName"
+                  placeholder="Customer Name * (Type or select customer)"
+                  class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
+                  required
+                  onfocus="toggleCustomerDropdown()"
+                  oninput="filterCustomers()"
+                  autocomplete="off"
+                />
+                <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <div id="customerDropdown" class="customer-dropdown hidden"></div>
+              </div>
               <input
                 type="email"
                 id="customerEmail"
@@ -357,11 +806,10 @@
                   type="tel"
                   id="customerPhone"
                   placeholder="Mobile No. (Optional)"
-                  maxlength="11"
                   class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
                   oninput="validatePhoneNumber(this)"
                 />
-                <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Mobile number must start with 09 and be 11 digits</p>
+                <p id="phoneError" class="text-xs text-red-500 mt-1 hidden">Mobile number must be valid (09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)</p>
               </div>
             </div>
 
@@ -497,6 +945,7 @@
 
   <script type="module" src="cashier.js"></script>
   <script>
+    // Update logout time
     setInterval(() => {
       const now = new Date();
       const timeElement = document.getElementById('logoutTime');

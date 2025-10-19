@@ -19,7 +19,8 @@ let editMode = false;
 let categories = [];
 let currentUser = null;
 let servicesListener = null;
-let notificationListener = null;
+let inventoryListener = null;
+let purchaseOrderListener = null;
 
 // Cache for user data and categories
 let userDataCache = null;
@@ -138,7 +139,8 @@ async function confirmLogout() {
     
     // Detach listeners
     if (servicesListener) servicesListener();
-    if (notificationListener) notificationListener();
+    if (inventoryListener) inventoryListener();
+    if (purchaseOrderListener) purchaseOrderListener();
     
     await auth.signOut();
     window.location.href = "index.html";
@@ -520,146 +522,109 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Notification System - SIDEBAR BUBBLE NOTIFICATIONS
-function loadNotifications() {
-  if (notificationListener) {
-    notificationListener();
+// Monitor inventory for sidebar bubble - OPTIMIZED single listener
+function monitorInventory() {
+  if (inventoryListener) {
+    inventoryListener();
   }
 
-  notificationListener = db.collection('notifications')
-    .orderBy('timestamp', 'desc')
+  // Only listen for status changes, limit to 100 items to reduce reads
+  inventoryListener = db.collection('inventory')
+    .limit(100)
     .onSnapshot((snapshot) => {
-      const notifications = [];
+      let noStockCount = 0;
+      let lowStockCount = 0;
+      let overstockCount = 0;
       
       snapshot.forEach(doc => {
-        notifications.push({
-          id: doc.id,
-          ...doc.data()
-        });
+        const item = doc.data();
+        const qty = item.qty || 0;
+        const minStock = item.minStock || 10;
+        const status = item.status || '';
+        
+        if (status === 'out-of-stock' || qty === 0) {
+          noStockCount++;
+        } else if (status === 'low-stock' || qty <= minStock) {
+          lowStockCount++;
+        } else if (qty > (minStock * 1.5) && qty > 0) {
+          overstockCount++;
+        }
       });
-
-      // Update sidebar bubbles based on notification types
-      updateSidebarBubbles(notifications);
+      
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+    }, (error) => {
+      console.error('Error monitoring inventory:', error);
     });
 }
 
-// Mark notifications as read for current page
-async function markCurrentPageNotificationsRead() {
-  const currentPage = window.location.pathname;
-  let notificationType = null;
+function updateInventoryBubble(noStock, lowStock, overstock) {
+  const button = document.querySelector('button[title="Inventory"]');
+  if (!button) return;
   
-  // Determine notification type based on current page
-  if (currentPage.includes('calendar.html')) {
-    notificationType = 'appointment';
-  } else if (currentPage.includes('purchase-order.html')) {
-    notificationType = 'purchase_order';
-  } else if (currentPage.includes('inventory.html')) {
-    notificationType = 'low_stock';
-  }
-  
-  // Mark notifications as read for this page
-  if (notificationType) {
-    try {
-      const snapshot = await db.collection('notifications')
-        .where('type', '==', notificationType)
-        .where('read', '==', false)
-        .get();
-      
-      if (!snapshot.empty) {
-        const batch = db.batch();
-        snapshot.forEach(doc => {
-          batch.update(doc.ref, { read: true });
-        });
-        await batch.commit();
-        console.log(`Marked ${notificationType} notifications as read`);
-      }
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  }
-}
-
-function updateSidebarBubbles(notifications) {
-  // Count unread notifications by type
-  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
-  
-  // Update calendar bubble (appointments)
-  updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
-  
-  // Update purchase order bubble
-  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
-  
-  // Update inventory bubble (low stock)
-  updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
-}
-
-function updateBubble(bubbleId, count, color) {
-  let bubble = document.getElementById(bubbleId);
+  let bubble = button.querySelector('.sidebar-bubble');
   
   if (!bubble) {
-    // Create bubble if it doesn't exist
-    const button = getBubbleButton(bubbleId);
-    if (button) {
-      bubble = document.createElement('span');
-      bubble.id = bubbleId;
-      bubble.className = 'sidebar-bubble';
-      button.style.position = 'relative';
-      button.appendChild(bubble);
-    }
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
   }
   
-  if (bubble) {
-    if (count > 0) {
-      bubble.textContent = count > 99 ? '99+' : count;
-      bubble.style.backgroundColor = color;
-      bubble.style.display = 'flex';
-    } else {
-      bubble.style.display = 'none';
-    }
+  // Priority: No stock (red) > Low stock (yellow) > Overstock (blue)
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
-function getBubbleButton(bubbleId) {
-  const buttonMap = {
-    'calendarBubble': document.querySelector('button[title="Reservations"]'),
-    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-    'inventoryBubble': document.querySelector('button[title="Inventory"]')
-  };
-  return buttonMap[bubbleId];
+// Monitor purchase orders for sidebar bubble - OPTIMIZED single listener
+function monitorPurchaseOrders() {
+  if (purchaseOrderListener) {
+    purchaseOrderListener();
+  }
+
+  purchaseOrderListener = db.collection('purchaseOrders')
+    .where('status', '==', 'pending')
+    .limit(100)
+    .onSnapshot((snapshot) => {
+      const newOrderCount = snapshot.size;
+      updatePurchaseOrderBubble(newOrderCount);
+    }, (error) => {
+      console.error('Error monitoring purchase orders:', error);
+    });
 }
 
-function toggleNotifications() {
-  // Removed - no longer needed
-}
-
-async function viewNotification(id) {
-  // Removed - no longer needed
-}
-
-async function viewLowStockNotification(id) {
-  // Removed - no longer needed
-}
-
-function closeNotificationModal() {
-  // Removed - no longer needed
-}
-
-async function markAllRead() {
-  // Removed - no longer needed
-}
-
-async function clearAllNotifications() {
-  // Removed - no longer needed
-}
-
-async function approveAppointment(notificationId, appointmentId) {
-  // Removed - no longer needed
-}
-
-async function rejectAppointment(notificationId, appointmentId) {
-  // Removed - no longer needed
+function updatePurchaseOrderBubble(count) {
+  const button = document.querySelector('button[title="Purchase Order"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
 }
 
 // Generate next Service ID - from in-memory data
@@ -1084,7 +1049,8 @@ async function handleDeleteService() {
 // Cleanup function
 function cleanup() {
   if (servicesListener) servicesListener();
-  if (notificationListener) notificationListener();
+  if (inventoryListener) inventoryListener();
+  if (purchaseOrderListener) purchaseOrderListener();
   userDataCache = null;
   categoriesCache = null;
   servicesData = [];
@@ -1104,12 +1070,10 @@ document.addEventListener('DOMContentLoaded', function() {
   
   loadCurrentUserName();
   loadServicesFromFirebase(); // This will also load categories
-  loadNotifications();
   
-  // Mark current page notifications as read after a short delay
-  setTimeout(() => {
-    markCurrentPageNotificationsRead();
-  }, 1000);
+  // Monitor inventory and purchase orders for sidebar bubbles
+  monitorInventory();
+  monitorPurchaseOrders();
 
   // Setup logout button handler
   const logoutBtn = document.getElementById('logoutBtn');
