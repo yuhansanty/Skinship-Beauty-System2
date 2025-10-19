@@ -84,9 +84,13 @@ function applyRoleBasedVisibility(role) {
   }
 })();
 
-// ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
+// Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
 
-// Monitor inventory for sidebar bubble
 function monitorInventory() {
   if (inventoryListener) {
     inventoryListener();
@@ -97,9 +101,20 @@ function monitorInventory() {
     (snapshot) => {
       inventoryDataCache = [];
       snapshot.forEach(doc => {
+        const product = doc.data();
+        const qty = product.qty || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        product.status = determineStatus(qty, minStock);
+        
+        // Recalculate total
+        product.total = qty * price;
+        
         inventoryDataCache.push({
           id: doc.id,
-          ...doc.data()
+          ...product
         });
       });
       updateInventoryBubble();

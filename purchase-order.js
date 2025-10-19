@@ -291,6 +291,15 @@ function loadInventoryItemsAndCategories() {
         snapshot.forEach(doc => {
           const item = doc.data();
           item.firebaseId = doc.id;
+          
+          // Recalculate status based on current quantity
+          const qty = item.qty || 0;
+          const minStock = item.minStock || 10;
+          item.status = determineStatus(qty, minStock);
+          
+          // Recalculate total
+          item.total = qty * (item.price || 0);
+          
           inventoryItems.push(item);
           
           if (item.category) {

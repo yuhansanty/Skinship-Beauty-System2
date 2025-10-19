@@ -6,6 +6,7 @@
   <title>Customer Details | Skinship Beauty</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     /* Sidebar Bubble Notification Styles */
 .sidebar-bubble {
@@ -609,6 +610,9 @@
           <button id="editSelectedBtn" class="bg-[#da5c73] text-white px-6 py-2 rounded-full hover:bg-[#b97b8b] transition-colors opacity-50 cursor-not-allowed" disabled onclick="editSelectedCustomer()">
             <i class="fa-solid fa-edit mr-2"></i>Edit Selected
           </button>
+          <button id="bulkStatusBtn" class="bg-[#8b5cf6] text-white px-6 py-2 rounded-full hover:bg-[#7c3aed] transition-colors opacity-50 cursor-not-allowed" disabled onclick="openBulkStatusModal()">
+            <i class="fa-solid fa-list-check mr-2"></i>Update Status
+          </button>
           <button class="bg-[#da5c73] text-white px-6 py-2 rounded-full hover:bg-[#b97b8b] transition-colors" onclick="openAddModal()">
             <i class="fa-solid fa-plus mr-2"></i>Add Customer
           </button>
@@ -665,8 +669,8 @@
         </div>
 
         <div class="form-row">
-          <label class="form-label">Email Address *</label>
-          <input type="email" class="form-input" id="customerEmail" placeholder="example@gmail.com" required>
+          <label class="form-label">Email Address (Optional)</label>
+          <input type="email" class="form-input" id="customerEmail" placeholder="example@gmail.com">
           <span class="error-message" id="emailError">Please enter a valid email address</span>
         </div>
         
@@ -689,9 +693,9 @@
         </div>
         
         <div class="form-row">
-          <label class="form-label">Contact Number *</label>
-          <input type="tel" class="form-input" id="contactNumber" placeholder="09XXXXXXXXX" maxlength="11" required>
-          <span class="error-message" id="phoneError">Please enter a valid 11-digit Philippine number starting with 09</span>
+          <label class="form-label">Contact Number (Optional - 09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)</label>
+          <input type="tel" class="form-input" id="contactNumber" placeholder="09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX" maxlength="13">
+          <span class="error-message" id="phoneError">Mobile number must be valid (09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)</span>
         </div>
         
         <div class="form-row">
@@ -713,6 +717,40 @@
         <button class="modal-btn btn-delete" id="deleteBtn" style="display: none;" onclick="deleteCustomer()">Delete</button>
         <button class="modal-btn btn-cancel" onclick="closeEditModal()">Cancel</button>
         <button class="modal-btn btn-save" onclick="saveCustomer()">Save Customer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Status Update Modal -->
+  <div class="modal" id="bulkStatusModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Update Status</h2>
+        <button class="close-btn" onclick="closeBulkStatusModal()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="form-grid">
+        <div class="form-row">
+          <label class="form-label">Selected Customers: <span id="bulkCustomerCount" class="font-bold text-[#da5c73]">0</span></label>
+        </div>
+        
+        <div class="form-row">
+          <label class="form-label">New Status *</label>
+          <select class="form-input" id="bulkStatusSelect" required>
+            <option value="">Select status</option>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Cancelled">Cancelled</option>
+            <option value="Completed">Completed</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="modal-buttons">
+        <button class="modal-btn btn-cancel" onclick="closeBulkStatusModal()">Cancel</button>
+        <button class="modal-btn btn-save" onclick="saveBulkStatus()">Update Status</button>
       </div>
     </div>
   </div>
@@ -793,20 +831,86 @@
     let inventoryListener = null;
     let purchaseOrderListener = null;
 
-    // ==================== OPTIMIZED DATA LOADING ====================
+    emailjs.init("05pESgFVX7W6C_9dz");
     
-    // Cache for services data
+    function normalizePhoneNumber(phone) {
+      if (!phone) return '';
+      
+      let cleaned = phone.replace(/[^\d+]/g, '');
+      
+      if (cleaned.startsWith('+639')) {
+        let digits = cleaned.substring(3).replace(/\D/g, '');
+        if (digits.length === 10) {
+          return '0' + digits;
+        }
+      }
+      
+      if (cleaned.startsWith('639') && !cleaned.startsWith('+')) {
+        let digits = cleaned.substring(2);
+        if (digits.length === 10) {
+          return '0' + digits;
+        }
+      }
+      
+      if (cleaned.startsWith('09') && cleaned.length === 11) {
+        return cleaned;
+      }
+      
+      return phone;
+    }
+
+    window.normalizePhoneNumber = normalizePhoneNumber;
+    
+    async function sendAppointmentEmail(customerData) {
+      if (!customerData.email) {
+        console.log('No email provided, skipping email notification');
+        return;
+      }
+
+      try {
+        const serviceName = customerData.service;
+        const bookingDate = new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        
+        const templateParams = {
+          to_email: customerData.email,
+          customer_name: customerData.name,
+          service: serviceName,
+          appointment_date: customerData.date,
+          appointment_time: customerData.time,
+          staff: customerData.staff,
+          customer_phone: customerData.phone || 'Not provided',
+          booking_date: bookingDate,
+          message: ''
+        };
+
+ 
+        await emailjs.send(
+          'service_ehjfcod',
+          'template_avbj0m7',
+          templateParams
+        );
+        
+        console.log('Email sent successfully to:', customerData.email);
+      } catch (error) {
+        console.error('Error sending email:', error);
+      }
+    }
+
+    window.sendAppointmentEmail = sendAppointmentEmail;
+
     let servicesCache = {
       byId: new Map(),
       byCategory: new Map()
     };
 
-    // Load all data once on initialization
     async function loadInitialData() {
       try {
         console.log("Loading initial data...");
         
-        // Single read: Get all services
         const servicesSnapshot = await getDocs(collection(db, "services"));
         servicesCache.byId.clear();
         servicesCache.byCategory.clear();
@@ -825,7 +929,6 @@
         
         console.log("Loaded services:", servicesCache.byId.size);
         
-        // Single read: Get all appointments
         const appointmentsSnapshot = await getDocs(collection(db, "appointments"));
         allCustomers = appointmentsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -838,19 +941,16 @@
         
         console.log("Loaded appointments:", allCustomers.length);
         
-        // Single read: Get all staff
         const staffSnapshot = await getDocs(collection(db, "users"));
         allStaff = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         
         console.log("Loaded staff:", allStaff.length);
         
-        // Update UI
         populateServiceDropdown();
         populateServiceSelect();
         populateStaffDropdown();
         renderTable();
         
-        // Setup real-time listener for changes only
         setupCustomersListener();
         
       } catch (error) {
@@ -858,7 +958,6 @@
       }
     }
 
-    // Setup lightweight real-time listener
     function setupCustomersListener() {
       if (customersListener) {
         customersListener();
@@ -904,15 +1003,17 @@
       );
     }
 
-    // Get service name from cache
     function getServiceNameById(serviceId) {
       const service = servicesCache.byId.get(serviceId);
       return service ? service.name : serviceId;
     }
 
-    // ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
-    
-    // Monitor inventory for sidebar bubble
+    function determineStatus(qty, minStock) {
+      if (qty === 0) return 'out-of-stock';
+      if (qty <= minStock) return 'low-stock';
+      return 'in-stock';
+    }
+
     function monitorInventoryStatus() {
       if (inventoryListener) {
         inventoryListener();
@@ -923,7 +1024,15 @@
         (snapshot) => {
           const inventoryData = [];
           snapshot.forEach(doc => {
-            inventoryData.push({ id: doc.id, ...doc.data() });
+            const product = doc.data();
+            const qty = product.qty || 0;
+            const price = product.price || 0;
+            const minStock = product.minStock || 10;
+            
+            product.status = determineStatus(qty, minStock);
+            product.total = qty * price;
+            
+            inventoryData.push({ id: doc.id, ...product });
           });
 
           const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
@@ -956,22 +1065,21 @@
       
       if (noStock > 0) {
         bubble.textContent = noStock > 99 ? '99+' : noStock;
-        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.backgroundColor = '#dc2626';
         bubble.style.display = 'flex';
       } else if (lowStock > 0) {
         bubble.textContent = lowStock > 99 ? '99+' : lowStock;
-        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.backgroundColor = '#f59e0b';
         bubble.style.display = 'flex';
       } else if (overstock > 0) {
         bubble.textContent = overstock > 99 ? '99+' : overstock;
-        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.backgroundColor = '#3b82f6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Monitor purchase orders for sidebar bubble
     function monitorPurchaseOrders() {
       if (purchaseOrderListener) {
         purchaseOrderListener();
@@ -1005,14 +1113,13 @@
       
       if (count > 0) {
         bubble.textContent = count > 99 ? '99+' : count;
-        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.backgroundColor = '#8b5cf6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Clock out function
     async function handleClockOut() {
       const user = auth.currentUser;
       if (!user) return;
@@ -1045,7 +1152,6 @@
       }
     }
 
-    // Logout modal functions
     window.showLogoutModal = function() {
       document.getElementById('logoutModal').classList.add('show');
     }
@@ -1093,7 +1199,6 @@
       }
     });
 
-    // Auth state observer
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUserId = user.uid;
@@ -1107,10 +1212,8 @@
             document.getElementById("logoutUsername").textContent = currentUserFullName;
           }
           
-          // Load all data once
           await loadInitialData();
           
-          // Initialize bubble notifications
           monitorInventoryStatus();
           monitorPurchaseOrders();
           
@@ -1136,6 +1239,8 @@
     window.db = db;
     window.currentUserId = currentUserId;
     window.servicesCache = servicesCache;
+    window.updateDoc = updateDoc;
+    window.getServiceNameById = getServiceNameById;
   </script>
 
   <script>
@@ -1155,6 +1260,7 @@
     function updateEditButton() {
       const checkboxes = document.querySelectorAll('.customer-checkbox:checked');
       const editBtn = document.getElementById('editSelectedBtn');
+      const bulkStatusBtn = document.getElementById('bulkStatusBtn');
       
       if (checkboxes.length === 1) {
         editBtn.disabled = false;
@@ -1164,6 +1270,16 @@
         editBtn.disabled = true;
         editBtn.classList.add('opacity-50', 'cursor-not-allowed');
         editBtn.classList.remove('cursor-pointer');
+      }
+
+      if (checkboxes.length > 1) {
+        bulkStatusBtn.disabled = false;
+        bulkStatusBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        bulkStatusBtn.classList.add('cursor-pointer');
+      } else {
+        bulkStatusBtn.disabled = true;
+        bulkStatusBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        bulkStatusBtn.classList.remove('cursor-pointer');
       }
     }
 
@@ -1185,6 +1301,67 @@
       openEditModalWithData(customer);
     }
 
+    function openBulkStatusModal() {
+      const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
+      if (checkedBoxes.length < 2) {
+        alert('Please select at least 2 customers to update status');
+        return;
+      }
+
+      document.getElementById('bulkCustomerCount').textContent = checkedBoxes.length;
+      document.getElementById('bulkStatusSelect').value = '';
+      document.getElementById('bulkStatusModal').classList.add('show');
+    }
+
+    function closeBulkStatusModal() {
+      document.getElementById('bulkStatusModal').classList.remove('show');
+    }
+
+    async function saveBulkStatus() {
+      const newStatus = document.getElementById('bulkStatusSelect').value;
+      
+      if (!newStatus) {
+        alert('Please select a status');
+        return;
+      }
+
+      const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
+      const customerIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+      if (customerIds.length < 2) {
+        alert('Please select at least 2 customers');
+        return;
+      }
+
+      if (!confirm(`Are you sure you want to update ${customerIds.length} customers to "${newStatus}" status?`)) {
+        return;
+      }
+
+      try {
+        const { doc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
+        
+        const updatePromises = customerIds.map(async (customerId) => {
+          const customerDoc = doc(window.db, "appointments", customerId);
+          await window.updateDoc(customerDoc, { status: newStatus });
+        });
+
+        await Promise.all(updatePromises);
+        
+        alert(`Successfully updated ${customerIds.length} customers to "${newStatus}" status!`);
+        closeBulkStatusModal();
+        
+        document.querySelectorAll('.customer-checkbox').forEach(cb => cb.checked = false);
+        updateEditButton();
+      } catch (error) {
+        console.error("Error updating customer statuses:", error);
+        alert('Failed to update customer statuses. Please try again.');
+      }
+    }
+
+    window.openBulkStatusModal = openBulkStatusModal;
+    window.closeBulkStatusModal = closeBulkStatusModal;
+    window.saveBulkStatus = saveBulkStatus;
+
     async function openEditModalWithData(customer) {
       editMode = true;
       selectedCustomerId = customer.id;
@@ -1204,24 +1381,54 @@
       phoneInput.value = customer.phone || '';
       
       nameInput.readOnly = true;
-      emailInput.readOnly = true;
-      phoneInput.readOnly = true;
       nameInput.classList.add('bg-gray-100', 'cursor-not-allowed');
-      emailInput.classList.add('bg-gray-100', 'cursor-not-allowed');
-      phoneInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+      
+      if (customer.email && customer.email.trim() !== '') {
+        emailInput.readOnly = true;
+        emailInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+      } else {
+        emailInput.readOnly = false;
+        emailInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      }
+      
+      if (customer.phone && customer.phone.trim() !== '') {
+        phoneInput.readOnly = true;
+        phoneInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+      } else {
+        phoneInput.readOnly = false;
+        phoneInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+      }
 
       await populateServiceSelect();
       
       const serviceSelect = document.getElementById('serviceSelect');
+      
       if (customer.service) {
-        const serviceExists = window.servicesCache.byId.has(customer.service);
+        console.log('Customer service value:', customer.service);
         
-        if (serviceExists) {
-          serviceSelect.value = customer.service;
+        let serviceName = customer.service;
+        
+        const serviceData = window.servicesCache.byId.get(customer.service);
+        if (serviceData) {
+          serviceName = serviceData.name;
+          console.log('Found service name by ID:', serviceName);
         } else {
+          for (const [docId, svcData] of window.servicesCache.byId) {
+            if (svcData.id === customer.service) {
+              serviceName = svcData.name;
+              console.log('Found service name by id field:', serviceName);
+              break;
+            }
+          }
+        }
+        
+        serviceSelect.value = serviceName;
+        console.log('Set service select to:', serviceName);
+        
+        if (!serviceSelect.value && serviceName) {
           const customOption = document.createElement('option');
-          customOption.value = customer.service;
-          customOption.textContent = customer.service;
+          customOption.value = serviceName;
+          customOption.textContent = serviceName;
           customOption.selected = true;
           serviceSelect.insertBefore(customOption, serviceSelect.firstChild);
         }
@@ -1335,8 +1542,10 @@
         const services = window.servicesCache.byCategory.get(category);
         services.forEach(service => {
           const option = document.createElement('option');
-          option.value = service.id;
+          option.value = service.name;
           option.textContent = service.name;
+          option.setAttribute('data-service-id', service.id);
+          option.setAttribute('data-doc-id', service.id);
           optgroup.appendChild(option);
         });
         
@@ -1436,8 +1645,7 @@
         
         let displayService = c.service;
         if (c.service) {
-          const service = window.servicesCache.byId.get(c.service);
-          displayService = service ? service.name : c.service;
+          displayService = window.getServiceNameById(c.service);
         }
         
         tr.innerHTML = `
@@ -1483,6 +1691,8 @@
     }
 
     function validateEmail(email) {
+      if (!email) return true;
+      
       const validDomains = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com'];
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       
@@ -1493,7 +1703,19 @@
     }
 
     function validatePhoneNumber(phone) {
-      return /^09\d{9}$/.test(phone);
+      if (!phone) return true;
+      
+      let cleaned = phone.replace(/[^\d+]/g, '');
+      
+      if (cleaned.startsWith('+639')) {
+        return cleaned.length === 13;
+      } else if (cleaned.startsWith('639') && !cleaned.startsWith('+')) {
+        return cleaned.length === 12;
+      } else if (cleaned.startsWith('09')) {
+        return cleaned.length === 11;
+      }
+      
+      return false;
     }
 
     function validateDateTime(dateString) {
@@ -1557,7 +1779,7 @@
     async function saveCustomer() {
       const customerName = document.getElementById('customerName').value.trim();
       const customerEmail = document.getElementById('customerEmail').value.trim();
-      const serviceId = document.getElementById('serviceSelect').value;
+      const serviceName = document.getElementById('serviceSelect').value;
       const status = document.getElementById('statusSelect').value;
       const contactNumber = document.getElementById('contactNumber').value.trim();
       const employee = document.getElementById('employeeSelect').value;
@@ -1572,17 +1794,17 @@
         hasError = true;
       }
 
-      if (!customerEmail || !validateEmail(customerEmail)) {
+      if (customerEmail && !validateEmail(customerEmail)) {
         showError('customerEmail', 'emailError');
         hasError = true;
       }
 
-      if (!serviceId) {
+      if (!serviceName) {
         showError('serviceSelect', 'serviceError');
         hasError = true;
       }
 
-      if (!contactNumber || !validatePhoneNumber(contactNumber)) {
+      if (contactNumber && !validatePhoneNumber(contactNumber)) {
         showError('contactNumber', 'phoneError');
         hasError = true;
       }
@@ -1599,16 +1821,18 @@
 
       if (hasError) return;
       
+      const normalizedPhone = contactNumber ? window.normalizePhoneNumber(contactNumber) : '';
+      
       const dateObj = new Date(dateTime);
       const formattedDate = dateObj.toISOString().split('T')[0];
       const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
       
       const customerData = {
         name: customerName,
-        email: customerEmail,
-        service: serviceId,
+        email: customerEmail || '',
+        service: serviceName,
         status: status,
-        phone: contactNumber,
+        phone: normalizedPhone,
         staff: employee,
         appointment: dateObj.toLocaleString(),
         date: formattedDate,
@@ -1622,11 +1846,21 @@
         if (editMode && selectedCustomerId) {
           const customerDoc = doc(window.db, "appointments", selectedCustomerId);
           await updateDoc(customerDoc, customerData);
+          
+          if (customerEmail) {
+            await window.sendAppointmentEmail(customerData);
+          }
+          
           alert('Customer updated successfully!');
         } else {
           customerData.createdAt = serverTimestamp();
           const customersRef = collection(window.db, "appointments");
           await addDoc(customersRef, customerData);
+          
+          if (customerEmail) {
+            await window.sendAppointmentEmail(customerData);
+          }
+          
           alert('Customer added successfully!');
         }
         
@@ -1647,12 +1881,97 @@
     });
 
     document.getElementById('contactNumber').addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
+      let value = this.value;
+      
+      if (value.startsWith('+639')) {
+        let digits = value.substring(4).replace(/\D/g, '');
+        if (digits.length > 10) {
+          digits = digits.slice(0, 10);
+        }
+        this.value = '+639' + digits;
+      } else if (value.startsWith('+63')) {
+        let rest = value.substring(3).replace(/\D/g, '');
+        if (rest.length > 0 && rest[0] === '9') {
+          if (rest.length > 10) {
+            rest = rest.slice(0, 10);
+          }
+          this.value = '+639' + rest.substring(1);
+        } else {
+          this.value = '+63' + rest.slice(0, 10);
+        }
+      } else if (value.startsWith('639') && !value.startsWith('+')) {
+        let digits = value.substring(3).replace(/\D/g, '');
+        if (digits.length > 10) {
+          digits = digits.slice(0, 10);
+        }
+        this.value = '639' + digits;
+      } else if (value.startsWith('63') && !value.startsWith('639') && !value.startsWith('+')) {
+        let rest = value.substring(2).replace(/\D/g, '');
+        if (rest.length > 0 && rest[0] === '9') {
+          if (rest.length > 10) {
+            rest = rest.slice(0, 10);
+          }
+          this.value = '639' + rest.substring(1);
+        } else {
+          this.value = '63' + rest.slice(0, 10);
+        }
+      } else if (value.startsWith('09')) {
+        let digits = value.replace(/\D/g, '');
+        if (digits.length > 11) {
+          digits = digits.slice(0, 11);
+        }
+        this.value = digits;
+      } else if (value.startsWith('0')) {
+        let digits = value.replace(/\D/g, '');
+        if (digits.length > 1 && digits[1] === '9') {
+          if (digits.length > 11) {
+            digits = digits.slice(0, 11);
+          }
+        }
+        this.value = digits;
+      } else if (value.startsWith('+')) {
+        let rest = value.substring(1).replace(/\D/g, '');
+        this.value = '+' + rest.slice(0, 12);
+      } else {
+        let digits = value.replace(/\D/g, '');
+        if (digits.length > 12) {
+          digits = digits.slice(0, 12);
+        }
+        this.value = digits;
+      }
+      
       const phone = this.value;
       if (phone && !validatePhoneNumber(phone)) {
         showError('contactNumber', 'phoneError');
       } else {
         hideError('contactNumber', 'phoneError');
+      }
+    });
+
+    document.getElementById('contactNumber').addEventListener('keydown', function(e) {
+      const value = this.value;
+      const cursorPosition = this.selectionStart;
+      const isSelectingText = this.selectionStart !== this.selectionEnd;
+      
+      if (e.key === 'Backspace' || e.key === 'Delete' || e.key === 'ArrowLeft' || 
+          e.key === 'ArrowRight' || e.key === 'Tab' || e.key === 'Home' || 
+          e.key === 'End' || e.ctrlKey || e.metaKey) {
+        return;
+      }
+      
+      if (!isSelectingText) {
+        if (value.startsWith('+639') && value.length >= 13) {
+          e.preventDefault();
+          return;
+        }
+        if (value.startsWith('639') && !value.startsWith('+') && value.length >= 12) {
+          e.preventDefault();
+          return;
+        }
+        if (value.startsWith('09') && value.length >= 11) {
+          e.preventDefault();
+          return;
+        }
       }
     });
 

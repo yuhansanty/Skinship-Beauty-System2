@@ -826,18 +826,20 @@ async function handleEditProduct(e) {
   }
   
   const qty = parseInt(document.getElementById('editItemQuantity').value);
+  const price = parseFloat(document.getElementById('editItemPrice').value);
   const minStock = parseInt(document.getElementById('editMinStock').value);
   const status = determineStatus(qty, minStock);
+  const total = qty * price;
   
   const updatedProduct = {
     name: document.getElementById('editItemName').value.trim(),
     category: category,
     qty: qty,
-    price: parseFloat(document.getElementById('editItemPrice').value),
+    price: price,
     minStock: minStock,
     supplier: document.getElementById('editItemSupplier').value.trim(),
     description: document.getElementById('editItemDescription').value.trim(),
-    total: qty * parseFloat(document.getElementById('editItemPrice').value),
+    total: total,
     status: status,
     date: getCurrentDate(),
     lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
@@ -982,6 +984,23 @@ function loadInventoryFromFirebase() {
           const product = change.doc.data();
           product.firebaseId = change.doc.id;
           
+          // Recalculate status and total when document changes
+          const qty = product.qty || 0;
+          const price = product.price || 0;
+          const minStock = product.minStock || 10;
+          
+          // Update status based on current quantity
+          product.status = determineStatus(qty, minStock);
+          
+          // Recalculate total
+          product.total = qty * price;
+          
+          // Update date if not already set to today
+          const today = getCurrentDate();
+          if (!product.date || product.date !== today) {
+            product.date = today;
+          }
+          
           if (change.type === 'added') {
             const exists = inventoryData.find(p => p.firebaseId === product.firebaseId);
             if (!exists) {
@@ -991,6 +1010,20 @@ function loadInventoryFromFirebase() {
             const index = inventoryData.findIndex(p => p.firebaseId === product.firebaseId);
             if (index !== -1) {
               inventoryData[index] = product;
+              
+              // Update Firebase with recalculated values if they changed
+              const needsUpdate = 
+                inventoryData[index].status !== change.doc.data().status ||
+                inventoryData[index].total !== change.doc.data().total ||
+                inventoryData[index].date !== change.doc.data().date;
+              
+              if (needsUpdate) {
+                db.collection('inventory').doc(product.firebaseId).update({
+                  status: product.status,
+                  total: product.total,
+                  date: product.date
+                }).catch(err => console.error('Error updating calculated fields:', err));
+              }
             }
           } else if (change.type === 'removed') {
             const index = inventoryData.findIndex(p => p.firebaseId === product.firebaseId);

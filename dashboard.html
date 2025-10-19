@@ -205,6 +205,83 @@
       color: #1f2937;
     }
 
+          .inventory-carousel-wrapper {
+  position: relative;
+  height: 140px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.inventory-alert-item {
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  cursor: pointer;
+}
+
+.inventory-alert-item.active {
+  opacity: 1;
+  position: relative;
+}
+
+.inventory-alert-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+.alert-out-of-stock {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  border: 2px solid #fca5a5;
+}
+
+.alert-low-stock {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #fcd34d;
+}
+
+.alert-overstock {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  border: 2px solid #93c5fd;
+}
+
+.progress-bar-container {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 9999px;
+  height: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+.nav-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-dot.active {
+  background: #da5c73;
+  width: 24px;
+  border-radius: 5px;
+}
+
+.nav-dot:hover {
+  background: #b97b8b;
+  transform: scale(1.2);
+}
+
     .magic-card p,
     .magic-card td,
     .magic-card span,
@@ -546,42 +623,52 @@
   </aside>
 
   <main>
-    <div class="dashboard-container">
-      <div class="flex justify-end items-center gap-4 mb-6">
-        <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
-        <div class="relative">
-          <button id="userMenuButton" onclick="toggleUserMenu(event)"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
-          <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow-lg z-[9999]">
-            <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">
-              <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
-            </button>
-          </div>      
-        </div>
+<div class="dashboard-container">
+  <div class="flex justify-end items-center gap-4 mb-6">
+    <span class="font-semibold text-lg text-white" id="usernameDisplay">Loading...</span>
+    <div class="relative">
+      <button id="userMenuButton" onclick="toggleUserMenu(event)"><i class="fa-solid fa-user-circle text-2xl text-white"></i></button>
+      <div id="userMenu" class="hidden absolute right-0 mt-2 w-36 bg-white rounded shadow-lg z-[9999]">
+        <button id="logoutBtn" class="w-full text-left px-3 py-2 hover:bg-gray-100 rounded">
+          <i class="fa-solid fa-right-from-bracket mr-2"></i>Logout
+        </button>
+      </div>      
+    </div>
+  </div>
+
+  <!-- START OF DASHBOARD GRID -->
+  <div class="dashboard-grid bento-section" id="dashboardGrid">
+    
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="completedCount" class="text-green-600 font-bold text-4xl m-0">0</p>
+        <div class="font-bold text-center">Completed</div>
       </div>
+    </div>
 
-      <div class="dashboard-grid bento-section" id="dashboardGrid">
-        <div style="grid-column: span 3;" class="magic-card shadow">
-          <p id="completedCount" class="text-green-600 font-bold text-lg text-center">0</p>
-          <div class="font-bold text-center">Completed</div>
-        </div>
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="pendingCount" class="text-yellow-600 font-bold text-4xl m-0">00</p>
+        <div class="font-bold text-center">Pending</div>
+      </div>
+    </div>
 
-        <div style="grid-column: span 3;" class="magic-card shadow">
-          <p id="pendingCount" class="text-yellow-600 font-bold text-lg text-center">00</p>
-          <div class="font-bold text-center">Pending</div>
-        </div>
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 0.5rem;">
+        <p id="cancelledCount" class="text-red-600 font-bold text-4xl m-0">00</p>
+        <div class="font-bold text-center">Cancelled</div>
+      </div>
+    </div>
+    
+    <div style="grid-column: span 3;" class="magic-card shadow">
+      <h2 class="font-bold mb-3">Inventory Alerts</h2>
+      <div class="inventory-carousel-wrapper" id="inventoryAlerts">
+        <p class="text-gray-500 italic">Loading alerts...</p>
+      </div>
+      <div id="inventoryNav" class="flex justify-center gap-2 mt-3"></div>
+    </div>
 
-        <div style="grid-column: span 3;" class="magic-card shadow">
-          <p id="cancelledCount" class="text-red-600 font-bold text-lg text-center">00</p>
-          <div class="font-bold text-center">Cancelled</div>
-        </div>
-        
-        <div style="grid-column: span 3;" class="magic-card shadow">
-          <h2 class="font-bold mb-3">Inventory Alerts</h2>
-          <div id="inventoryAlerts" class="text-sm" style="height: 120px; position: relative; overflow: hidden;">
-            <p class="text-gray-500 italic">Loading alerts...</p>
-          </div>
-          <div id="inventoryNav" class="flex justify-center gap-2 mt-3"></div>
-        </div>
+    <!-- Rest of your cards... -->
 
         <div style="grid-column: span 9;" class="magic-card shadow">
           <div class="flex justify-between items-center mb-5">
@@ -732,22 +819,40 @@
       staff: []
     };
 
-    function monitorInventory() {
-      if (inventoryListener) inventoryListener();
+    // Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
 
-      inventoryListener = onSnapshot(
-        collection(db, 'inventory'),
-        (snapshot) => {
-          dataCache.inventory = [];
-          snapshot.forEach((doc) => {
-            dataCache.inventory.push({ id: doc.id, ...doc.data() });
-          });
-          updateInventorySidebarBubbles();
-          updateInventoryAlerts();
-        },
-        (error) => console.error('Error monitoring inventory:', error)
-      );
-    }
+function monitorInventory() {
+  if (inventoryListener) inventoryListener();
+
+  inventoryListener = onSnapshot(
+    collection(db, 'inventory'),
+    (snapshot) => {
+      dataCache.inventory = [];
+      snapshot.forEach((doc) => {
+        const product = doc.data();
+        const qty = product.qty || product.quantity || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        product.status = determineStatus(qty, minStock);
+        
+        // Recalculate total
+        product.total = qty * price;
+        
+        dataCache.inventory.push({ id: doc.id, ...product });
+      });
+      updateInventorySidebarBubbles();
+      updateInventoryAlerts();
+    },
+    (error) => console.error('Error monitoring inventory:', error)
+  );
+}
 
     function updateInventorySidebarBubbles() {
       const noStockCount = dataCache.inventory.filter(item => item.status === 'out-of-stock').length;
@@ -1001,102 +1106,149 @@
     let inventoryItems = [];
     let inventoryInterval = null;
 
-    function createInventoryCarousel() {
-      const inventoryAlerts = document.getElementById("inventoryAlerts");
-      const inventoryNav = document.getElementById("inventoryNav");
-      inventoryAlerts.innerHTML = "";
-      inventoryNav.innerHTML = "";
-      
-      if (inventoryItems.length === 0) {
-        inventoryAlerts.innerHTML = '<p class="text-gray-500 italic">No low stock alerts</p>';
-        if (inventoryInterval) clearInterval(inventoryInterval);
-        return;
-      }
+function createInventoryCarousel() {
+  const inventoryAlerts = document.getElementById("inventoryAlerts");
+  const inventoryNav = document.getElementById("inventoryNav");
+  inventoryAlerts.innerHTML = "";
+  inventoryNav.innerHTML = "";
+  
+  if (inventoryItems.length === 0) {
+    inventoryAlerts.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-500 italic"><i class="fa-solid fa-box-open text-3xl mb-2 opacity-50"></i><p>No inventory alerts</p></div>';
+    inventoryAlerts.style.height = '140px';
+    if (inventoryInterval) clearInterval(inventoryInterval);
+    return;
+  }
 
-      const carousel = document.createElement('div');
-      carousel.id = 'inventoryCarousel';
+  inventoryAlerts.style.position = 'relative';
+  inventoryAlerts.style.height = '140px';
+  inventoryAlerts.style.overflow = 'hidden';
 
-      inventoryItems.forEach((item, index) => {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = 'p-3 rounded transition-all inventory-alert-item';
-        alertDiv.style.background = item.bgColor;
-        alertDiv.style.border = `1px solid ${item.borderColor}`;
-        alertDiv.style.opacity = index === currentInventoryIndex ? '1' : '0';
-        alertDiv.style.position = index === 0 ? 'relative' : 'absolute';
-        alertDiv.style.width = '100%';
-        alertDiv.style.transition = 'opacity 0.5s ease';
-        
-        // Calculate percentage for progress bar
-        let percentage = 0;
-        if (item.statusText === "OVERSTOCK") {
-          // For overstock, show it's beyond 100%
-          percentage = Math.min((item.quantity / item.minStock) * 100, 200);
-        } else {
-          percentage = Math.min((item.quantity / item.minStock) * 100, 100);
-        }
-        
-        alertDiv.innerHTML = `
-          <div class="flex justify-between items-start">
-            <div class="flex-1">
-              <div class="font-semibold text-sm text-gray-800">${item.productName}</div>
-              <div class="text-xs ${item.statusColor} font-bold mt-1">${item.statusText}</div>
+  inventoryItems.forEach((item, index) => {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'inventory-alert-item';
+    alertDiv.style.position = 'absolute';
+    alertDiv.style.top = '0';
+    alertDiv.style.left = '0';
+    alertDiv.style.width = '100%';
+    alertDiv.style.opacity = index === currentInventoryIndex ? '1' : '0';
+    alertDiv.style.transition = 'opacity 0.5s ease';
+    alertDiv.style.padding = '1rem';
+    alertDiv.style.borderRadius = '0.75rem';
+    alertDiv.style.border = `2px solid ${item.borderColor}`;
+    alertDiv.style.background = item.bgColor;
+    
+    // Calculate percentage for progress bar
+    let percentage = 0;
+    if (item.statusText === "OVERSTOCK") {
+      percentage = Math.min((item.quantity / item.minStock) * 100, 200);
+    } else {
+      percentage = Math.min((item.quantity / item.minStock) * 100, 100);
+    }
+    
+    // Icon mapping
+    let icon = 'fa-circle-exclamation';
+    if (item.statusText === "OUT OF STOCK") icon = 'fa-triangle-exclamation';
+    if (item.statusText === "OVERSTOCK") icon = 'fa-boxes-stacked';
+    
+    alertDiv.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'}; color: white; flex-shrink: 0;">
+          <i class="fa-solid ${icon}"></i>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <div class="flex justify-between items-start mb-2">
+            <div style="flex: 1; min-width: 0;">
+              <div class="font-semibold text-sm text-gray-800" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${item.productName}</div>
+              <span style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-top: 0.25rem; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'}; color: white;">${item.statusText}</span>
             </div>
-            <div class="text-right text-xs">
-              <div class="font-bold ${item.statusColor}">${item.quantity} / ${item.minStock}</div>
+            <div class="text-right" style="margin-left: 0.5rem;">
+              <div class="font-bold text-lg ${item.statusColor}">${item.quantity}</div>
+              <div class="text-xs text-gray-600">/ ${item.minStock}</div>
             </div>
           </div>
-          <div class="mt-2 flex items-center gap-2">
-            <div class="flex-1 bg-gray-200 rounded-full h-2">
-              <div class="h-2 rounded-full transition-all ${item.barColor}" 
-                  style="width: ${percentage}%"></div>
+          <div class="flex items-center gap-2">
+            <div style="flex: 1; background: rgba(255, 255, 255, 0.7); border-radius: 9999px; height: 8px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);">
+              <div style="height: 100%; border-radius: 9999px; transition: width 0.5s ease; width: ${percentage}%; background: ${item.statusText === "OUT OF STOCK" ? '#dc2626' : item.statusText === "LOW STOCK" ? '#f59e0b' : '#3b82f6'};"></div>
             </div>
-            <span class="text-xs text-gray-600">${Math.round(percentage)}%</span>
+            <span class="text-xs font-semibold text-gray-700">${Math.round(percentage)}%</span>
           </div>
-        `;
-        
-        if (window.appState.userRole === 'admin') {
-          alertDiv.style.cursor = 'pointer';
-          alertDiv.onclick = () => window.location.href = 'inventory.html';
-          alertDiv.onmouseover = () => alertDiv.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
-          alertDiv.onmouseout = () => alertDiv.style.boxShadow = 'none';
-        }
-        
-        carousel.appendChild(alertDiv);
-
-        const dot = document.createElement('div');
-        dot.style.cssText = `width: 8px; height: 8px; border-radius: 50%; background: ${index === currentInventoryIndex ? '#da5c73' : '#d1d5db'}; cursor: pointer; transition: all 0.3s ease;`;
-        dot.onclick = () => goToInventorySlide(index);
-        inventoryNav.appendChild(dot);
-      });
-
-      inventoryAlerts.appendChild(carousel);
-
-      if (inventoryItems.length > 1) {
-        if (inventoryInterval) clearInterval(inventoryInterval);
-        inventoryInterval = setInterval(() => {
-          currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
-          goToInventorySlide(currentInventoryIndex);
-        }, 5000);
-      }
+        </div>
+      </div>
+    `;
+    
+    if (window.appState.userRole === 'admin') {
+      alertDiv.style.cursor = 'pointer';
+      alertDiv.onclick = () => window.location.href = 'inventory.html';
+      alertDiv.onmouseover = () => {
+        alertDiv.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+        alertDiv.style.transform = 'translateY(-2px)';
+      };
+      alertDiv.onmouseout = () => {
+        alertDiv.style.boxShadow = 'none';
+        alertDiv.style.transform = 'translateY(0)';
+      };
     }
+    
+    inventoryAlerts.appendChild(alertDiv);
 
-    function goToInventorySlide(index) {
-      currentInventoryIndex = index;
-      const alerts = document.querySelectorAll('#inventoryCarousel > div');
-      const dots = document.querySelectorAll('#inventoryNav > div');
-      
-      alerts.forEach((alert, i) => alert.style.opacity = i === index ? '1' : '0');
-      dots.forEach((dot, i) => dot.style.background = i === index ? '#da5c73' : '#d1d5db');
-      
-      if (inventoryInterval) {
-        clearInterval(inventoryInterval);
-        inventoryInterval = setInterval(() => {
-          currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
-          goToInventorySlide(currentInventoryIndex);
-        }, 5000);
+    // Create navigation dot
+    const dot = document.createElement('div');
+    dot.style.width = index === currentInventoryIndex ? '24px' : '10px';
+    dot.style.height = '10px';
+    dot.style.borderRadius = index === currentInventoryIndex ? '5px' : '50%';
+    dot.style.background = index === currentInventoryIndex ? '#da5c73' : '#d1d5db';
+    dot.style.cursor = 'pointer';
+    dot.style.transition = 'all 0.3s ease';
+    dot.onclick = () => goToInventorySlide(index);
+    dot.onmouseover = () => {
+      if (index !== currentInventoryIndex) {
+        dot.style.background = '#b97b8b';
+        dot.style.transform = 'scale(1.2)';
       }
-    }
+    };
+    dot.onmouseout = () => {
+      if (index !== currentInventoryIndex) {
+        dot.style.background = '#d1d5db';
+        dot.style.transform = 'scale(1)';
+      }
+    };
+    inventoryNav.appendChild(dot);
+  });
 
+  if (inventoryItems.length > 1) {
+    if (inventoryInterval) clearInterval(inventoryInterval);
+    inventoryInterval = setInterval(() => {
+      currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
+      goToInventorySlide(currentInventoryIndex);
+    }, 5000);
+  }
+}
+
+function goToInventorySlide(index) {
+  currentInventoryIndex = index;
+  const alerts = document.querySelectorAll('.inventory-alert-item');
+  const dots = document.querySelectorAll('#inventoryNav > div');
+  
+  alerts.forEach((alert, i) => {
+    alert.style.opacity = i === index ? '1' : '0';
+  });
+  
+  dots.forEach((dot, i) => {
+    dot.style.width = i === index ? '24px' : '10px';
+    dot.style.borderRadius = i === index ? '5px' : '50%';
+    dot.style.background = i === index ? '#da5c73' : '#d1d5db';
+  });
+  
+  if (inventoryInterval) {
+    clearInterval(inventoryInterval);
+    if (inventoryItems.length > 1) {
+      inventoryInterval = setInterval(() => {
+        currentInventoryIndex = (currentInventoryIndex + 1) % inventoryItems.length;
+        goToInventorySlide(currentInventoryIndex);
+      }, 5000);
+    }
+  }
+}
     window.goToInventorySlide = goToInventorySlide;
 
     function updateInventoryAlerts() {
@@ -1399,7 +1551,7 @@
         
         this.cards = this.grid.querySelectorAll('.magic-card');
         this.spotlight = null;
-        this.particleCount = 14;
+        this.particleCount = 10;
         this.isMobile = window.innerWidth <= 768;
         this.particlesCache = new WeakMap();
         

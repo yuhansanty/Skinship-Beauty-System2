@@ -1169,32 +1169,42 @@
       window.URL.revokeObjectURL(url);
     }
 
-    // Monitor inventory for sidebar bubble - OPTIMIZED single listener
-    function monitorInventory() {
-      if (inventoryListener) {
-        inventoryListener();
-      }
+// Helper function to determine status
+function determineStatus(qty, minStock) {
+  if (qty === 0) return 'out-of-stock';
+  if (qty <= minStock) return 'low-stock';
+  return 'in-stock';
+}
 
-      inventoryListener = db.collection('inventory')
-        .onSnapshot((snapshot) => {
-          let noStockCount = 0;
-          let lowStockCount = 0;
-          let overstockCount = 0;
-          
-          snapshot.forEach(doc => {
-            const item = doc.data();
-            const qty = item.qty || 0;
-            const minStock = item.minStock || 10;
-            const status = item.status;
-            
-            if (status === 'out-of-stock') {
-              noStockCount++;
-            } else if (status === 'low-stock') {
-              lowStockCount++;
-            } else if (qty > (minStock * 1.5) && qty > 0) {
-              overstockCount++;
-            }
-          });
+// Monitor inventory for sidebar bubble - OPTIMIZED single listener
+function monitorInventory() {
+  if (inventoryListener) {
+    inventoryListener();
+  }
+
+  inventoryListener = db.collection('inventory')
+    .onSnapshot((snapshot) => {
+      let noStockCount = 0;
+      let lowStockCount = 0;
+      let overstockCount = 0;
+      
+      snapshot.forEach(doc => {
+        const product = doc.data();
+        const qty = product.qty || 0;
+        const price = product.price || 0;
+        const minStock = product.minStock || 10;
+        
+        // Recalculate status based on current quantity
+        const status = determineStatus(qty, minStock);
+        
+        if (status === 'out-of-stock') {
+          noStockCount++;
+        } else if (status === 'low-stock') {
+          lowStockCount++;
+        } else if (qty > (minStock * 1.5) && qty > 0) {
+          overstockCount++;
+        }
+      });
           
           updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
         }, (error) => {
