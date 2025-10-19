@@ -19,7 +19,7 @@ let editMode = false;
 let categories = [];
 let currentUser = null;
 let inventoryListener = null;
-let notificationListener = null;
+let purchaseOrderListener = null;
 
 // Cache for user data and categories
 let userDataCache = null;
@@ -87,7 +87,6 @@ async function handleClockOut() {
     const today = new Date().toLocaleDateString();
     const logsRef = db.collection('staffLogs').doc(user.uid).collection('history');
     
-    // Use limit(1) to reduce reads
     const todayQuery = logsRef.where('date', '==', today).limit(1);
     const todaySnap = await todayQuery.get();
     
@@ -96,7 +95,6 @@ async function handleClockOut() {
       if (!activeLog.data().clockOut) {
         const batch = db.batch();
         
-        // Batch both updates together
         batch.update(logsRef.doc(activeLog.id), {
           clockOut: new Date().toLocaleString()
         });
@@ -138,7 +136,7 @@ async function confirmLogout() {
     
     // Detach listeners
     if (inventoryListener) inventoryListener();
-    if (notificationListener) notificationListener();
+    if (purchaseOrderListener) purchaseOrderListener();
     
     await auth.signOut();
     window.location.href = "index.html";
@@ -152,19 +150,9 @@ async function confirmLogout() {
   }
 }
 
-// Load categories from memory first, then Firebase if needed - OPTIMIZED
+// Load categories from inventory data - OPTIMIZED
 async function loadCategories() {
-  const now = Date.now();
-  
-  // Use cached categories if fresh
-  if (categoriesCache && (now - lastCategoriesFetch) < CACHE_DURATION) {
-    categories = categoriesCache;
-    updateCategorySelects();
-    return;
-  }
-
   try {
-    // Extract categories from already loaded inventory data
     const categorySet = new Set();
     const categoryOrder = [];
     
@@ -180,7 +168,6 @@ async function loadCategories() {
       name: cat
     }));
 
-    // If no categories exist, add default ones
     if (categories.length === 0) {
       const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
       categories = defaultCategories.map(cat => ({
@@ -189,9 +176,8 @@ async function loadCategories() {
       }));
     }
 
-    // Cache categories
     categoriesCache = categories;
-    lastCategoriesFetch = now;
+    lastCategoriesFetch = Date.now();
 
     updateCategorySelects();
   } catch (error) {
@@ -285,7 +271,7 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// Handle Add Category - OPTIMIZED
+// Handle Add Category
 async function handleAddCategory(event) {
   event.preventDefault();
   
@@ -323,10 +309,8 @@ async function handleAddCategory(event) {
     const docRef = await db.collection('inventory').add(placeholderItem);
     placeholderItem.firebaseId = docRef.id;
     
-    // Update local data immediately (listener will update too)
     inventoryData.push(placeholderItem);
     
-    // Add to categories and clear cache
     categories.push({
       id: categoryName,
       name: categoryName
@@ -365,7 +349,7 @@ function closeManageCategoriesModal() {
   document.getElementById('manageCategoriesModal').classList.remove('show');
 }
 
-// Load categories list for management - use in-memory data
+// Load categories list for management
 function loadManageCategoriesList() {
   const listContainer = document.getElementById('manageCategoriesList');
   
@@ -380,7 +364,6 @@ function loadManageCategoriesList() {
     const categoryItem = document.createElement('div');
     categoryItem.className = 'flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition';
     
-    // Count from in-memory data
     const itemCount = inventoryData.filter(i => i.category === cat.name).length;
     
     categoryItem.innerHTML = `
@@ -401,7 +384,7 @@ function loadManageCategoriesList() {
   });
 }
 
-// Handle Delete Category - OPTIMIZED with batch delete
+// Handle Delete Category
 async function handleDeleteCategory(categoryName, itemCount) {
   const itemsInCategory = inventoryData.filter(i => i.category === categoryName);
   
@@ -416,7 +399,6 @@ async function handleDeleteCategory(categoryName, itemCount) {
   }
   
   try {
-    // Use batched deletes (max 500 per batch)
     const batches = [];
     let currentBatch = db.batch();
     let operationCount = 0;
@@ -436,10 +418,8 @@ async function handleDeleteCategory(categoryName, itemCount) {
       batches.push(currentBatch);
     }
     
-    // Commit all batches
     await Promise.all(batches.map(batch => batch.commit()));
     
-    // Update local data
     inventoryData = inventoryData.filter(i => i.category !== categoryName);
     categories = categories.filter(c => c.name !== categoryName);
     categoriesCache = categories;
@@ -447,6 +427,7 @@ async function handleDeleteCategory(categoryName, itemCount) {
     updateStats();
     updateCategorySelects();
     loadManageCategoriesList();
+    updateSidebarBubbles();
     
     alert(`Category "${categoryName}" and its ${itemsInCategory.length} item(s) have been deleted successfully!`);
   } catch (error) {
@@ -470,12 +451,13 @@ document.getElementById('searchInput').addEventListener('input', function(e) {
   }, 300);
 });
 
-// Filter by status - work with DOM
+// Filter by status
 function filterByStatus(status) {
   const buttons = document.querySelectorAll('.filter-btn');
   buttons.forEach(btn => {
     if(btn.textContent.includes('All Items') || btn.textContent.includes('In Stock') || 
-       btn.textContent.includes('Low Stock') || btn.textContent.includes('Out of Stock')) {
+       btn.textContent.includes('Low Stock') || btn.textContent.includes('Out of Stock') ||
+       btn.textContent.includes('Overstock')) {
       btn.classList.remove('active');
     }
   });
@@ -485,6 +467,14 @@ function filterByStatus(status) {
   rows.forEach(row => {
     if(status === 'all') {
       row.style.display = '';
+    } else if(status === 'overstock') {
+      const qty = parseInt(row.getAttribute('data-qty')) || 0;
+      const minStock = parseInt(row.getAttribute('data-min-stock')) || 10;
+      const isOverstock = qty > (minStock * 1.5) && qty > 0;
+      row.style.display = isOverstock ? '' : 'none';
+    } else if(status === 'in-stock') {
+      const rowStatus = row.getAttribute('data-status');
+      row.style.display = rowStatus === 'in-stock' ? '' : 'none';
     } else {
       const rowStatus = row.getAttribute('data-status');
       row.style.display = rowStatus === status ? '' : 'none';
@@ -507,12 +497,7 @@ function filterByCategory() {
   });
 }
 
-// Add new item
-function addNewItem() {
-  openAddProductModal();
-}
-
-// Export to CSV - use in-memory data
+// Export to CSV
 function exportToCSV() {
   let csv = 'Item ID,Item Name,Category,Quantity,Unit Price,Total Value,Last Updated,Status,Last Edited By\n';
   
@@ -554,117 +539,89 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Notification System - SIDEBAR BUBBLE NOTIFICATIONS
-function loadNotifications() {
-  if (notificationListener) {
-    notificationListener();
+// Update sidebar bubbles based on inventory status - NO FIREBASE READS
+function updateSidebarBubbles() {
+  const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
+  const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
+  const overstockCount = inventoryData.filter(item => {
+    const minStockThreshold = item.minStock || 10;
+    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+  }).length;
+  
+  // Update inventory bubble (no stock - red, low stock - yellow, overstock - blue)
+  updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+}
+
+function updateInventoryBubble(noStock, lowStock, overstock) {
+  const button = document.querySelector('button[title="Inventory"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
+}
+
+// Monitor purchase orders for sidebar bubble - OPTIMIZED single listener
+function monitorPurchaseOrders() {
+  if (purchaseOrderListener) {
+    purchaseOrderListener();
   }
 
-  notificationListener = db.collection('notifications')
-    .orderBy('timestamp', 'desc')
+  purchaseOrderListener = db.collection('purchaseOrders')
+    .where('status', '==', 'pending')
+    .limit(100)
     .onSnapshot((snapshot) => {
-      const notifications = [];
-      
-      snapshot.forEach(doc => {
-        notifications.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-
-      // Update sidebar bubbles based on notification types
-      updateSidebarBubbles(notifications);
+      const newOrderCount = snapshot.size;
+      updatePurchaseOrderBubble(newOrderCount);
+    }, (error) => {
+      console.error('Error monitoring purchase orders:', error);
     });
 }
 
-// Mark notifications as read for current page
-async function markCurrentPageNotificationsRead() {
-  const currentPage = window.location.pathname;
-  let notificationType = null;
+function updatePurchaseOrderBubble(count) {
+  const button = document.querySelector('button[title="Purchase Order"]');
+  if (!button) return;
   
-  // Determine notification type based on current page
-  if (currentPage.includes('calendar.html')) {
-    notificationType = 'appointment';
-  } else if (currentPage.includes('purchase-order.html')) {
-    notificationType = 'purchase_order';
-  } else if (currentPage.includes('inventory.html')) {
-    notificationType = 'low_stock';
-  }
-  
-  // Mark notifications as read for this page
-  if (notificationType) {
-    try {
-      const snapshot = await db.collection('notifications')
-        .where('type', '==', notificationType)
-        .where('read', '==', false)
-        .get();
-      
-      if (!snapshot.empty) {
-        const batch = db.batch();
-        snapshot.forEach(doc => {
-          batch.update(doc.ref, { read: true });
-        });
-        await batch.commit();
-        console.log(`Marked ${notificationType} notifications as read`);
-      }
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  }
-}
-
-function updateSidebarBubbles(notifications) {
-  // Count unread notifications by type
-  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
-  
-  // Update calendar bubble (appointments)
-  updateBubble('calendarBubble', appointmentCount, '#dc2626'); // Red
-  
-  // Update purchase order bubble
-  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6'); // Purple
-  
-  // Update inventory bubble (low stock)
-  updateBubble('inventoryBubble', lowStockCount, '#f59e0b'); // Yellow/Orange
-}
-
-function updateBubble(bubbleId, count, color) {
-  let bubble = document.getElementById(bubbleId);
+  let bubble = button.querySelector('.sidebar-bubble');
   
   if (!bubble) {
-    // Create bubble if it doesn't exist
-    const button = getBubbleButton(bubbleId);
-    if (button) {
-      bubble = document.createElement('span');
-      bubble.id = bubbleId;
-      bubble.className = 'sidebar-bubble';
-      button.style.position = 'relative';
-      button.appendChild(bubble);
-    }
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
   }
   
-  if (bubble) {
-    if (count > 0) {
-      bubble.textContent = count > 99 ? '99+' : count;
-      bubble.style.backgroundColor = color;
-      bubble.style.display = 'flex';
-    } else {
-      bubble.style.display = 'none';
-    }
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
-function getBubbleButton(bubbleId) {
-  const buttonMap = {
-    'calendarBubble': document.querySelector('button[title="Reservations"]'),
-    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-    'inventoryBubble': document.querySelector('button[title="Inventory"]')
-  };
-  return buttonMap[bubbleId];
-}
-
-// Generate next Item ID - from in-memory data
+// Generate next Item ID
 function generateItemId() {
   const maxId = inventoryData.reduce((max, item) => {
     const num = parseInt(item.id.split('-')[1]);
@@ -699,20 +656,18 @@ function closeAddProductModal() {
   document.getElementById('addProductForm').reset();
 }
 
-// Generate sequential unique ID - OPTIMIZED with caching
+// Generate sequential unique ID
 let itemCounterCache = null;
 let lastCounterFetch = 0;
-const COUNTER_CACHE_DURATION = 60000; // 1 minute
+const COUNTER_CACHE_DURATION = 60000;
 
 async function generateUniqueItemId() {
   try {
     const now = Date.now();
     
-    // Use cached counter if recent
     if (itemCounterCache !== null && (now - lastCounterFetch) < COUNTER_CACHE_DURATION) {
       itemCounterCache++;
-      // Update in background
-      db.collection('metadata').doc('inventoryCounter').update({ last: itemCounterCache });
+      db.collection('metadata').doc('inventoryCounter').update({ last: itemCounterCache }).catch(() => {});
       return `INV-${String(itemCounterCache).padStart(3, '0')}`;
     }
     
@@ -730,7 +685,6 @@ async function generateUniqueItemId() {
       }
     });
 
-    // Update cache
     itemCounterCache = newNumber;
     lastCounterFetch = now;
 
@@ -741,76 +695,7 @@ async function generateUniqueItemId() {
   }
 }
 
-// Check for low stock and create/update notifications in Firebase
-async function checkLowStock(product) {
-  if (!product || !product.firebaseId) return;
-
-  try {
-    const lowStockThreshold = product.minStock || 5;
-    
-    // Check if product is low stock or out of stock
-    const isLowStock = product.qty > 0 && product.qty <= lowStockThreshold;
-    const isOutOfStock = product.qty === 0;
-
-    if (isLowStock || isOutOfStock) {
-      // Check if notification already exists for this product
-      const existingQuery = await db.collection('notifications')
-        .where('type', '==', 'low_stock')
-        .where('details.productId', '==', product.id)
-        .limit(1)
-        .get();
-
-      if (existingQuery.empty) {
-        // Create new low stock notification
-        const notificationData = {
-          type: 'low_stock',
-          message: isOutOfStock ? 'Out of Stock Alert' : 'Low Stock Alert',
-          details: {
-            productId: product.id,
-            productName: product.name,
-            category: product.category,
-            currentStock: product.qty,
-            minStock: lowStockThreshold,
-            firebaseId: product.firebaseId
-          },
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          read: false
-        };
-
-        await db.collection('notifications').add(notificationData);
-        console.log(`Low stock notification created for: ${product.name}`);
-      } else {
-        // Update existing notification with current quantity
-        const existingDoc = existingQuery.docs[0];
-        await db.collection('notifications').doc(existingDoc.id).update({
-          'details.currentStock': product.qty,
-          'timestamp': firebase.firestore.FieldValue.serverTimestamp(),
-          'read': false
-        });
-        console.log(`Low stock notification updated for: ${product.name}`);
-      }
-    } else {
-      // Product is back in stock - delete the low stock notification if it exists
-      const existingQuery = await db.collection('notifications')
-        .where('type', '==', 'low_stock')
-        .where('details.productId', '==', product.id)
-        .get();
-
-      if (!existingQuery.empty) {
-        const batch = db.batch();
-        existingQuery.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        await batch.commit();
-        console.log(`Low stock notification removed for: ${product.name}`);
-      }
-    }
-  } catch (error) {
-    console.error('Error checking low stock:', error);
-  }
-}
-
-// Handle Add Product Form Submission - WITH LOW STOCK CHECK
+// Handle Add Product Form Submission
 async function handleAddProduct(event) {
   event.preventDefault();
   
@@ -858,9 +743,6 @@ async function handleAddProduct(event) {
     const docRef = await db.collection('inventory').add(newProduct);
     newProduct.firebaseId = docRef.id;
     
-    // IMPORTANT: Check for low stock and create notification if needed
-    await checkLowStock(newProduct);
-    
     closeAddProductModal();
     alert(`Product "${name}" added successfully!`);
   } catch (error) {
@@ -892,7 +774,7 @@ function enableEditMode() {
   }
 }
 
-// When a row is clicked in edit mode - use in-memory data
+// When a row is clicked in edit mode
 function selectRowForEdit(event) {
   if (!editMode) return;
   
@@ -924,7 +806,7 @@ function closeEditProductModal() {
   if (editMode) enableEditMode();
 }
 
-// Save edited product - WITH LOW STOCK CHECK
+// Save edited product
 async function handleEditProduct(e) {
   e.preventDefault();
 
@@ -964,15 +846,6 @@ async function handleEditProduct(e) {
   try {
     if (id) {
       await db.collection('inventory').doc(id).update(updatedProduct);
-      
-      // IMPORTANT: Get the product data and check for low stock
-      const product = inventoryData.find(p => p.firebaseId === id);
-      if (product) {
-        // Merge updated data with existing product data
-        const mergedProduct = { ...product, ...updatedProduct };
-        await checkLowStock(mergedProduct);
-      }
-
       closeEditProductModal();
       alert('✅ Product updated successfully!');
     } else {
@@ -984,7 +857,7 @@ async function handleEditProduct(e) {
   }
 }
 
-// Show edit history modal - use in-memory data
+// Show edit history modal
 async function showEditHistory(firebaseId) {
   const product = inventoryData.find(p => p.firebaseId === firebaseId);
   if (!product) return;
@@ -1022,16 +895,34 @@ function closeEditHistoryModal() {
 function updateStats() {
   const totalItems = inventoryData.length;
   const totalValue = inventoryData.reduce((sum, item) => sum + item.total, 0);
+  const inStock = inventoryData.filter(item => item.status === 'in-stock').length;
   const lowStock = inventoryData.filter(item => item.status === 'low-stock').length;
   const outOfStock = inventoryData.filter(item => item.status === 'out-of-stock').length;
+  const overstock = inventoryData.filter(item => {
+    const minStockThreshold = item.minStock || 10;
+    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+  }).length;
   
   document.getElementById('totalItems').textContent = totalItems;
   document.getElementById('totalValue').textContent = `₱ ${totalValue.toLocaleString()}`;
+  
+  // Update in stock card if it exists
+  const inStockElement = document.getElementById('inStock');
+  if (inStockElement) {
+    inStockElement.textContent = inStock;
+  }
+  
   document.getElementById('lowStock').textContent = lowStock;
   document.getElementById('outOfStock').textContent = outOfStock;
+  
+  // Update overstock card if it exists
+  const overstockElement = document.getElementById('overstock');
+  if (overstockElement) {
+    overstockElement.textContent = overstock;
+  }
 }
 
-// Render table from in-memory data - optimized
+// Render table from in-memory data
 function renderInventoryTable() {
   const tbody = document.getElementById('inventoryTableBody');
   
@@ -1040,7 +931,6 @@ function renderInventoryTable() {
     return;
   }
   
-  // Use DocumentFragment for better performance
   const fragment = document.createDocumentFragment();
   
   inventoryData.forEach(product => {
@@ -1049,6 +939,8 @@ function renderInventoryTable() {
     row.setAttribute('data-status', product.status || 'in-stock');
     row.setAttribute('data-category', product.category || '');
     row.setAttribute('data-firebase-id', product.firebaseId);
+    row.setAttribute('data-qty', product.qty || 0);
+    row.setAttribute('data-min-stock', product.minStock || 10);
     
     let statusBadge = '';
     if (product.status === 'in-stock') {
@@ -1084,16 +976,13 @@ function renderInventoryTable() {
 // Load inventory from Firebase - OPTIMIZED with real-time listener
 function loadInventoryFromFirebase() {
   try {
-    // Use onSnapshot for real-time updates instead of repeated gets
     inventoryListener = db.collection('inventory')
       .onSnapshot((snapshot) => {
-        // Process changes efficiently
         snapshot.docChanges().forEach((change) => {
           const product = change.doc.data();
           product.firebaseId = change.doc.id;
           
           if (change.type === 'added') {
-            // Check if already exists to avoid duplicates
             const exists = inventoryData.find(p => p.firebaseId === product.firebaseId);
             if (!exists) {
               inventoryData.push(product);
@@ -1111,10 +1000,10 @@ function loadInventoryFromFirebase() {
           }
         });
         
-        // Update UI
         renderInventoryTable();
         updateStats();
-        loadCategories(); // Update categories from inventory data
+        updateSidebarBubbles();
+        loadCategories();
         
       }, (error) => {
         console.error('Error loading inventory:', error);
@@ -1129,7 +1018,7 @@ function loadInventoryFromFirebase() {
   }
 }
 
-// Delete product function - OPTIMIZED
+// Delete product function
 async function deleteProduct() {
   const id = document.getElementById('editFirebaseId').value;
   const productName = document.getElementById('editItemName').value;
@@ -1141,25 +1030,6 @@ async function deleteProduct() {
   try {
     if (id) {
       await db.collection('inventory').doc(id).delete();
-      
-      // Also delete any related low stock notifications
-      const product = inventoryData.find(p => p.firebaseId === id);
-      if (product) {
-        const notifSnapshot = await db.collection('notifications')
-          .where('type', '==', 'low_stock')
-          .where('details.productId', '==', product.id)
-          .get();
-        
-        const batch = db.batch();
-        notifSnapshot.forEach(doc => {
-          batch.delete(doc.ref);
-        });
-        
-        if (!notifSnapshot.empty) {
-          await batch.commit();
-        }
-      }
-      
       closeEditProductModal();
       alert('✅ Product deleted successfully!');
     } else {
@@ -1174,7 +1044,7 @@ async function deleteProduct() {
 // Cleanup function
 function cleanup() {
   if (inventoryListener) inventoryListener();
-  if (notificationListener) notificationListener();
+  if (purchaseOrderListener) purchaseOrderListener();
   userDataCache = null;
   categoriesCache = null;
   inventoryData = [];
@@ -1188,20 +1058,13 @@ window.addEventListener("beforeunload", async (e) => {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-  // Set loading state
   document.getElementById('userDisplayName').textContent = 'Loading...';
   document.getElementById('inventoryTableBody').innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">Loading inventory data...</td></tr>';
   
   loadCurrentUserName();
-  loadInventoryFromFirebase(); // This will also load categories
-  loadNotifications();
-  
-  // Mark current page notifications as read after a short delay
-  setTimeout(() => {
-    markCurrentPageNotificationsRead();
-  }, 1000);
+  loadInventoryFromFirebase();
+  monitorPurchaseOrders();
 
-  // Setup logout button handler
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
     logoutBtn.addEventListener('click', (e) => {
@@ -1210,6 +1073,5 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   
-  // Cleanup on page unload
   window.addEventListener('unload', cleanup);
 });

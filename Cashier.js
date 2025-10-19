@@ -5,9 +5,6 @@ import {
   doc, 
   getDoc, 
   collection, 
-  query, 
-  where, 
-  orderBy,
   getDocs, 
   onSnapshot,
   addDoc,
@@ -15,6 +12,8 @@ import {
   increment,
   serverTimestamp,
   setDoc,
+  query,
+  where,
   limit
 } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
@@ -39,7 +38,6 @@ let selectedPaymentMethod = 'cash';
 let currentUserData = null;
 let inventoryProducts = [];
 let servicesData = [];
-let notificationListener = null;
 let categories = [];
 let currentView = 'services';
 let cart = [];
@@ -47,7 +45,10 @@ let currentCategory = 'all';
 let productCategories = [];
 let currentUserId = null;
 let dataLoaded = false;
-let lastLowStockCheck = 0;
+
+// Listener references for cleanup
+let inventoryListener = null;
+let purchaseOrderListener = null;
 
 // ==================== AUTH & USER INFO ====================
 
@@ -66,7 +67,7 @@ onAuthStateChanged(auth, async (user) => {
       loadServicesFromFirebase(),
       loadInventoryProducts()
     ]);
-    await initializeNotificationSystem();
+    setupSidebarBubbles();
     dataLoaded = true;
   }
   
@@ -173,6 +174,8 @@ async function loadInventoryProducts() {
         price: product.price,
         category: product.category,
         qty: product.qty || 0,
+        minStock: product.minStock || 10,
+        status: product.status || 'in-stock',
         id: product.id,
         firebaseId: docSnap.id
       });
@@ -190,132 +193,142 @@ async function loadInventoryProducts() {
   }
 }
 
-// ==================== NOTIFICATION SYSTEM ====================
+// ==================== SIDEBAR BUBBLE SYSTEM ====================
 
-async function initializeNotificationSystem() {
-  try {
-    loadSidebarBubbles();
-    
-    // Check low stock only once on load
-    const now = Date.now();
-    if (now - lastLowStockCheck > 300000) { // 5 minutes
-      await checkLowStock();
-      lastLowStockCheck = now;
-    }
-  } catch (error) {
-    console.error('Error initializing notification system:', error);
+function setupSidebarBubbles() {
+  // Setup inventory listener for real-time updates
+  if (inventoryListener) {
+    inventoryListener();
   }
-}
 
-async function checkLowStock() {
-  const lowStockThreshold = 5;
-  const batch = [];
-  
-  for (const product of inventoryProducts) {
-    if (product.qty <= lowStockThreshold && product.qty > 0) {
-      const notifQuery = query(
-        collection(db, 'notifications'),
-        where('type', '==', 'low_stock'),
-        where('productId', '==', product.id),
-        where('read', '==', false),
-        limit(1)
-      );
-      
-      try {
-        const snapshot = await getDocs(notifQuery);
-        if (snapshot.empty) {
-          batch.push(
-            addDoc(collection(db, 'notifications'), {
-              type: 'low_stock',
-              read: false,
-              timestamp: serverTimestamp(),
-              productId: product.id,
-              productName: product.name,
-              currentStock: product.qty,
-              category: product.category
-            })
-          );
+  inventoryListener = onSnapshot(
+    collection(db, 'inventory'),
+    (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        const product = change.doc.data();
+        product.firebaseId = change.doc.id;
+        
+        if (change.type === 'added') {
+          const exists = inventoryProducts.find(p => p.firebaseId === product.firebaseId);
+          if (!exists) {
+            inventoryProducts.push({
+              name: product.name,
+              price: product.price,
+              category: product.category,
+              qty: product.qty || 0,
+              minStock: product.minStock || 10,
+              status: product.status || 'in-stock',
+              id: product.id,
+              firebaseId: product.firebaseId
+            });
+          }
+        } else if (change.type === 'modified') {
+          const index = inventoryProducts.findIndex(p => p.firebaseId === product.firebaseId);
+          if (index !== -1) {
+            inventoryProducts[index] = {
+              name: product.name,
+              price: product.price,
+              category: product.category,
+              qty: product.qty || 0,
+              minStock: product.minStock || 10,
+              status: product.status || 'in-stock',
+              id: product.id,
+              firebaseId: product.firebaseId
+            };
+          }
+        } else if (change.type === 'removed') {
+          const index = inventoryProducts.findIndex(p => p.firebaseId === product.firebaseId);
+          if (index !== -1) {
+            inventoryProducts.splice(index, 1);
+          }
         }
-      } catch (error) {
-        console.error('Error checking notification for product:', product.name, error);
-      }
-    }
-  }
-  
-  if (batch.length > 0) {
-    await Promise.all(batch);
-  }
-}
-
-function loadSidebarBubbles() {
-  if (notificationListener) {
-    notificationListener();
-  }
-
-  const notifQuery = query(
-    collection(db, 'notifications'),
-    orderBy('timestamp', 'desc'),
-    limit(100)
-  );
-  
-  notificationListener = onSnapshot(notifQuery, (snapshot) => {
-    const notifications = [];
-    
-    snapshot.forEach(docSnap => {
-      notifications.push({
-        id: docSnap.id,
-        ...docSnap.data()
       });
-    });
+      
+      updateInventoryBubble();
+    },
+    (error) => {
+      console.error('Inventory listener error:', error);
+    }
+  );
 
-    updateSidebarBubbles(notifications);
-  }, (error) => {
-    console.error('Notification listener error:', error);
-  });
+  // Setup purchase order listener
+  if (purchaseOrderListener) {
+    purchaseOrderListener();
+  }
+
+  purchaseOrderListener = onSnapshot(
+    query(collection(db, 'purchaseOrders'), where('status', '==', 'pending'), limit(100)),
+    (snapshot) => {
+      updatePurchaseOrderBubble(snapshot.size);
+    },
+    (error) => {
+      console.error('Purchase order listener error:', error);
+    }
+  );
 }
 
-function updateSidebarBubbles(notifications) {
-  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+function updateInventoryBubble() {
+  const noStockCount = inventoryProducts.filter(item => item.status === 'out-of-stock' || item.qty === 0).length;
+  const lowStockCount = inventoryProducts.filter(item => item.status === 'low-stock' && item.qty > 0).length;
+  const overstockCount = inventoryProducts.filter(item => {
+    const minStockThreshold = item.minStock || 10;
+    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+  }).length;
   
-  updateBubble('calendarBubble', appointmentCount, '#dc2626');
-  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-  updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-}
-
-function updateBubble(bubbleId, count, color) {
-  let bubble = document.getElementById(bubbleId);
+  const button = document.getElementById('inventoryBtn');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
   
   if (!bubble) {
-    const button = getBubbleButton(bubbleId);
-    if (button) {
-      bubble = document.createElement('span');
-      bubble.id = bubbleId;
-      bubble.className = 'sidebar-bubble';
-      button.style.position = 'relative';
-      button.appendChild(bubble);
-    }
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
   }
   
-  if (bubble) {
-    if (count > 0) {
-      bubble.textContent = count > 99 ? '99+' : count;
-      bubble.style.backgroundColor = color;
-      bubble.style.display = 'flex';
-    } else {
-      bubble.style.display = 'none';
-    }
+  // Priority: No Stock (Red) > Low Stock (Yellow) > Overstock (Blue)
+  if (noStockCount > 0) {
+    bubble.textContent = noStockCount > 99 ? '99+' : noStockCount;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.4)';
+    bubble.style.display = 'flex';
+  } else if (lowStockCount > 0) {
+    bubble.textContent = lowStockCount > 99 ? '99+' : lowStockCount;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.4)';
+    bubble.style.display = 'flex';
+  } else if (overstockCount > 0) {
+    bubble.textContent = overstockCount > 99 ? '99+' : overstockCount;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.4)';
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
-function getBubbleButton(bubbleId) {
-  const buttonMap = {
-    'calendarBubble': document.querySelector('button[title="Reservations"]'),
-    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-    'inventoryBubble': document.querySelector('button[title="Inventory"]')
-  };
-  return buttonMap[bubbleId];
+function updatePurchaseOrderBubble(count) {
+  const button = document.getElementById('purchaseOrderBtn');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.4)';
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
 }
 
 // ==================== UI FUNCTIONS ====================
@@ -446,7 +459,9 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    if (notificationListener) notificationListener();
+    // Cleanup listeners
+    if (inventoryListener) inventoryListener();
+    if (purchaseOrderListener) purchaseOrderListener();
     
     await signOut(auth);
     window.location.href = "index.html";
@@ -1048,6 +1063,7 @@ async function generateReceipt() {
   };
   
   try {
+    // Use batch write for inventory updates
     const inventoryUpdates = [];
     for (const item of cart) {
       if (item.isInventoryProduct && item.firebaseId) {
@@ -1058,6 +1074,7 @@ async function generateReceipt() {
           })
         );
         
+        // Update local inventory cache
         const productIndex = inventoryProducts.findIndex(p => p.firebaseId === item.firebaseId);
         if (productIndex !== -1) {
           inventoryProducts[productIndex].qty -= 1;
@@ -1065,6 +1082,7 @@ async function generateReceipt() {
       }
     }
     
+    // Parallel execution of inventory updates and receipt save
     await Promise.all([
       ...inventoryUpdates,
       addDoc(collection(db, "cashier_receipt"), receiptData)
@@ -1085,6 +1103,7 @@ async function generateReceipt() {
       alert(alertMessage);
       clearCart();
       
+      // Refresh product view if showing products
       if (currentView === 'products') {
         if (currentCategory === 'all') {
           renderServices(inventoryProducts);
@@ -1109,3 +1128,9 @@ async function generateReceipt() {
     }, 100);
   }
 }
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+  if (inventoryListener) inventoryListener();
+  if (purchaseOrderListener) purchaseOrderListener();
+});

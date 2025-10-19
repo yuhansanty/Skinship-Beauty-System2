@@ -15,7 +15,6 @@
       position: absolute;
       top: -5px;
       right: -5px;
-      background-color: #dc2626;
       color: white;
       border-radius: 50%;
       width: 20px;
@@ -556,7 +555,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, setDoc, serverTimestamp, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs, updateDoc, setDoc, serverTimestamp, onSnapshot, limit } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -570,112 +569,105 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    
     let currentUserId = null;
     let currentUserFullName = "";
-    let notificationListener = null;
+    let userDataCache = null;
+    let inventoryListener = null;
+    let purchaseOrderListener = null;
+    let inventoryData = [];
 
-    // Notification System - SIDEBAR BUBBLE NOTIFICATIONS
-    function loadNotifications() {
-      if (notificationListener) {
-        notificationListener();
-      }
-
-      const notificationsRef = collection(db, 'notifications');
-      const q = query(notificationsRef, orderBy('timestamp', 'desc'));
+    // Inventory & Purchase Order Notification System - NO EXTRA READS
+    function setupNotificationListeners() {
+      // Inventory Stock Notifications - Single listener
+      if (inventoryListener) inventoryListener();
       
-      notificationListener = onSnapshot(q, (snapshot) => {
-        const notifications = [];
-        
+      const inventoryRef = collection(db, 'inventory');
+      inventoryListener = onSnapshot(inventoryRef, (snapshot) => {
+        inventoryData = [];
         snapshot.forEach(doc => {
-          notifications.push({
-            id: doc.id,
-            ...doc.data()
-          });
+          inventoryData.push(doc.data());
         });
-
-        updateSidebarBubbles(notifications);
+        updateSidebarBubbles();
       }, (error) => {
-        console.error('Error loading notifications:', error);
+        console.error('Error loading inventory:', error);
+      });
+
+      // Purchase Order Notifications - Single filtered listener
+      if (purchaseOrderListener) purchaseOrderListener();
+      
+      const purchaseOrderRef = collection(db, 'purchaseOrders');
+      const pendingQuery = query(purchaseOrderRef, where('status', '==', 'pending'), limit(100));
+      
+      purchaseOrderListener = onSnapshot(pendingQuery, (snapshot) => {
+        updatePurchaseOrderBubble(snapshot.size);
+      }, (error) => {
+        console.error('Error loading purchase orders:', error);
       });
     }
 
-    async function markCurrentPageNotificationsRead() {
-      const currentPage = window.location.pathname;
-      let notificationType = null;
+    function updateSidebarBubbles() {
+      const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
+      const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
+      const overstockCount = inventoryData.filter(item => {
+        const minStockThreshold = item.minStock || 10;
+        return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+      }).length;
       
-      if (currentPage.includes('calendar.html')) {
-        notificationType = 'appointment';
-      } else if (currentPage.includes('purchase-order.html')) {
-        notificationType = 'purchase_order';
-      } else if (currentPage.includes('inventory.html')) {
-        notificationType = 'low_stock';
-      }
-      
-      if (notificationType) {
-        try {
-          const notificationsRef = collection(db, 'notifications');
-          const q = query(notificationsRef, where('type', '==', notificationType), where('read', '==', false));
-          const snapshot = await getDocs(q);
-          
-          if (!snapshot.empty) {
-            const updates = [];
-            snapshot.forEach(doc => {
-              updates.push(updateDoc(doc.ref, { read: true }));
-            });
-            await Promise.all(updates);
-          }
-        } catch (error) {
-          console.error('Error marking notifications as read:', error);
-        }
-      }
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
     }
 
-    function updateSidebarBubbles(notifications) {
-      const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-      const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-      const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+    function updateInventoryBubble(noStock, lowStock, overstock) {
+      const button = document.querySelector('button[title="Inventory"]');
+      if (!button) return;
       
-      updateBubble('calendarBubble', appointmentCount, '#dc2626');
-      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-      updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-    }
-
-    function updateBubble(bubbleId, count, color) {
-      let bubble = document.getElementById(bubbleId);
+      let bubble = button.querySelector('.sidebar-bubble');
       
       if (!bubble) {
-        const button = getBubbleButton(bubbleId);
-        if (button) {
-          bubble = document.createElement('span');
-          bubble.id = bubbleId;
-          bubble.className = 'sidebar-bubble';
-          button.style.position = 'relative';
-          button.appendChild(bubble);
-        }
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
+        button.appendChild(bubble);
       }
       
-      if (bubble) {
-        if (count > 0) {
-          bubble.textContent = count > 99 ? '99+' : count;
-          bubble.style.backgroundColor = color;
-          bubble.style.display = 'flex';
-        } else {
-          bubble.style.display = 'none';
-        }
+      if (noStock > 0) {
+        bubble.textContent = noStock > 99 ? '99+' : noStock;
+        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.display = 'flex';
+      } else if (lowStock > 0) {
+        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.display = 'flex';
+      } else if (overstock > 0) {
+        bubble.textContent = overstock > 99 ? '99+' : overstock;
+        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
       }
     }
 
-    function getBubbleButton(bubbleId) {
-      const buttonMap = {
-        'calendarBubble': document.querySelector('button[title="Reservations"]'),
-        'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-        'inventoryBubble': document.querySelector('button[title="Inventory"]')
-      };
-      return buttonMap[bubbleId];
+    function updatePurchaseOrderBubble(count) {
+      const button = document.querySelector('button[title="Purchase Order"]');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
+        button.appendChild(bubble);
+      }
+      
+      if (count > 0) {
+        bubble.textContent = count > 99 ? '99+' : count;
+        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
     }
-
-    window.loadNotifications = loadNotifications;
-    window.markCurrentPageNotificationsRead = markCurrentPageNotificationsRead;
 
     async function handleClockOut() {
       const user = auth.currentUser;
@@ -723,19 +715,17 @@
       try {
         await handleClockOut();
         
-        if (notificationListener) notificationListener();
+        userDataCache = null;
+        if (inventoryListener) inventoryListener();
+        if (purchaseOrderListener) purchaseOrderListener();
         
         await signOut(auth);
-        
         window.location.href = "index.html";
       } catch (error) {
         console.error("Logout error:", error);
-        
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        
         alert("An error occurred during logout. Please try again.");
-        
         await signOut(auth);
         window.location.href = "index.html";
       }
@@ -760,16 +750,38 @@
       if (user) {
         currentUserId = user.uid;
         try {
-          const userRef = doc(db, "users", user.uid);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            const data = userSnap.data();
-            currentUserFullName = data.username || data.fullName || user.email || "User";
+          // Check cache first
+          if (userDataCache && userDataCache.uid === user.uid) {
+            currentUserFullName = userDataCache.fullName;
+            document.getElementById("usernameDisplay").textContent = currentUserFullName;
+            document.getElementById("logoutUsername").textContent = currentUserFullName;
+          } else {
+            const userRef = doc(db, "users", user.uid);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const data = userSnap.data();
+              currentUserFullName = data.username || data.fullName || user.email || "User";
+            } else {
+              currentUserFullName = user.email || "User";
+            }
+            
+            userDataCache = {
+              uid: user.uid,
+              fullName: currentUserFullName,
+              email: user.email
+            };
+            
             document.getElementById("usernameDisplay").textContent = currentUserFullName;
             document.getElementById("logoutUsername").textContent = currentUserFullName;
           }
+          
+          // Setup notification listeners after user is authenticated
+          setupNotificationListeners();
         } catch (err) {
           console.error("Error fetching user document:", err);
+          currentUserFullName = user.email || "User";
+          document.getElementById("usernameDisplay").textContent = currentUserFullName;
+          document.getElementById("logoutUsername").textContent = currentUserFullName;
         }
       } else {
         window.location.href = 'index.html';
@@ -784,6 +796,8 @@
     }
 
     window.addEventListener("beforeunload", async (e) => {
+      if (inventoryListener) inventoryListener();
+      if (purchaseOrderListener) purchaseOrderListener();
       await handleClockOut();
     });
 
@@ -800,7 +814,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, query, where, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, addDoc, updateDoc, deleteDoc, Timestamp, onSnapshot } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfigCompat = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -818,17 +832,14 @@
     document.getElementById('phoneNumber').addEventListener('input', function(e) {
       let value = this.value.replace(/[^0-9+]/g, '');
       
-      // Handle +63 format
       if (value.startsWith('+63')) {
         value = '+63' + value.slice(3).replace(/[^0-9]/g, '');
         if (value.length > 13) value = value.slice(0, 13);
       } 
-      // Handle 09 format
       else if (value.startsWith('09')) {
         value = value.replace(/[^0-9]/g, '');
         if (value.length > 11) value = value.slice(0, 11);
       }
-      // Handle raw 9 (convert to +63)
       else if (value.startsWith('9') && !value.startsWith('09')) {
         value = '+63' + value.replace(/[^0-9]/g, '');
         if (value.length > 13) value = value.slice(0, 13);
@@ -846,47 +857,9 @@
     });
 
     function validatePhoneNumber(phone) {
-      // Accept both +639XXXXXXXXX (13 chars) and 09XXXXXXXXX (11 chars)
       return /^(\+639\d{9}|09\d{9})$/.test(phone);
     }
 
-    const categoryColors = {};
-    const defaultColors = [
-      { bg: '#dcfce7', text: '#166534' },
-      { bg: '#fef3c7', text: '#92400e' },
-      { bg: '#fecaca', text: '#991b1b' },
-      { bg: '#fce7f3', text: '#be185d' },
-      { bg: '#e9d5ff', text: '#7c2d12' },
-      { bg: '#e0e7ff', text: '#3730a3' },
-      { bg: '#ddd6fe', text: '#5b21b6' },
-      { bg: '#fed7aa', text: '#9a3412' },
-      { bg: '#fecdd3', text: '#9f1239' },
-      { bg: '#ccfbf1', text: '#134e4a' },
-      { bg: '#d1fae5', text: '#065f46' },
-      { bg: '#fbcfe8', text: '#831843' },
-      { bg: '#fef08a', text: '#713f12' },
-      { bg: '#bfdbfe', text: '#1e3a8a' },
-      { bg: '#fde68a', text: '#78350f' },
-      { bg: '#c7d2fe', text: '#3730a3' },
-      { bg: '#fbcfe8', text: '#9f1239' },
-      { bg: '#fed7aa', text: '#7c2d12' },
-      { bg: '#d1fae5', text: '#065f46' },
-      { bg: '#fce7f3', text: '#831843' }
-    ];
-    let colorIndex = 0;
-
-    function getCategoryColor(serviceName, services) {
-      const service = services.find(s => s.name === serviceName);
-      const category = service ? service.category : 'Other';
-      
-      if (!categoryColors[category]) {
-        categoryColors[category] = defaultColors[colorIndex % defaultColors.length];
-        colorIndex++;
-      }
-      return categoryColors[category];
-    }
-
-    // Debounce function for search optimization
     function debounce(func, wait) {
       let timeout;
       return function executedFunction(...args) {
@@ -911,6 +884,7 @@
         this.db = db;
         this.customersListener = null;
         this.servicesListener = null;
+        this.staffLoaded = false;
         this.monthNames = [
           "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
           "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
@@ -925,19 +899,11 @@
         this.setupCustomersListener();
         this.renderCalendar();
         this.setMinDateTime();
-        
-        if (typeof window.loadNotifications === 'function') {
-          window.loadNotifications();
-        }
-        
-        setTimeout(() => {
-          if (typeof window.markCurrentPageNotificationsRead === 'function') {
-            window.markCurrentPageNotificationsRead();
-          }
-        }, 1000);
       }
 
       async loadStaff() {
+        if (this.staffLoaded) return;
+        
         try {
           const usersRef = collection(this.db, "users");
           const snapshot = await getDocs(usersRef);
@@ -946,6 +912,7 @@
             ...doc.data()
           }));
           this.populateStaffDropdown();
+          this.staffLoaded = true;
         } catch (error) {
           console.error("Error fetching staff:", error);
         }
@@ -1192,7 +1159,6 @@
         if (!editing) {
           document.getElementById('appointmentForm').reset();
           document.getElementById('appointmentStatus').value = 'Pending';
-          // Make service required for new appointments
           document.getElementById('serviceType').setAttribute('required', 'required');
           if (this.selectedDate) {
             document.getElementById('appointmentDate').value = this.selectedDate;
@@ -1206,7 +1172,6 @@
         this.selectedDate = null;
         document.getElementById('appointmentForm').reset();
         
-        // Reset service to required state
         document.getElementById('serviceType').setAttribute('required', 'required');
         
         document.getElementById('customerName').readOnly = false;
@@ -1263,7 +1228,6 @@
           hasError = true;
         }
 
-        // Only require service when NOT editing
         if (!this.editingId && !service) {
           document.getElementById('serviceType').classList.add('error');
           document.getElementById('serviceError').classList.add('show');
@@ -1298,11 +1262,9 @@
           archived: false
         };
 
-        // Only update service if one is selected
         if (service) {
           customerData.service = service;
         } else if (this.editingId) {
-          // When editing, keep the existing service if none selected
           const existingCustomer = this.customers.find(c => c.id === this.editingId);
           if (existingCustomer && existingCustomer.service) {
             customerData.service = existingCustomer.service;
@@ -1351,10 +1313,7 @@
         if (!customer) return;
 
         this.editingId = id;
-
         this.openModal(true);
-
-        // Make service not required when editing
         document.getElementById('serviceType').removeAttribute('required');
 
         document.getElementById('customerName').value = customer.name || '';
@@ -1375,31 +1334,22 @@
           document.getElementById('appointmentTime').value = time;
         }
 
-        // Set the service dropdown value
         const serviceSelect = document.getElementById('serviceType');
         const savedService = customer.service;
         
-        // Wait longer for dropdown to be fully populated
         await new Promise(resolve => setTimeout(resolve, 300));
         
         if (savedService) {
           let foundMatch = false;
           
-          // Debug: Print all option values
-          for (let i = 0; i < serviceSelect.options.length; i++) {
-          }
-          
-          // Try exact match first (case-insensitive)
           for (let i = 0; i < serviceSelect.options.length; i++) {
             if (serviceSelect.options[i].value.toLowerCase().trim() === savedService.toLowerCase().trim()) {
               serviceSelect.selectedIndex = i;
               foundMatch = true;
-              console.log('Found exact match at index:', i);
               break;
             }
           }
           
-          // If not found, check if service name is part of the option value
           if (!foundMatch) {
             for (let i = 0; i < serviceSelect.options.length; i++) {
               const optionValue = serviceSelect.options[i].value.toLowerCase().trim();
@@ -1411,7 +1361,6 @@
             }
           }
           
-          // If not found, check if option value is part of service name
           if (!foundMatch) {
             for (let i = 0; i < serviceSelect.options.length; i++) {
               const optionValue = serviceSelect.options[i].value.toLowerCase().trim();
@@ -1423,13 +1372,10 @@
             }
           }
           
-          // If still not found, keep it blank (which is now allowed when editing)
           if (!foundMatch) {
             serviceSelect.selectedIndex = 0;
-            console.warn('Service not found in dropdown:', savedService);
           }
         } else {
-          console.log('No service value in customer data');
           serviceSelect.selectedIndex = 0;
         }
 

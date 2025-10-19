@@ -8,15 +8,15 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     /* Sidebar Bubble Notification Styles */
-    .sidebar-bubble {
-      position: absolute;
-      top: -5px;
-      right: -5px;
-      background-color: #dc2626;
-      color: white;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
+.sidebar-bubble {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #dc2626;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -519,17 +519,6 @@
       margin: 0 10px;
     }
 
-    .category-header {
-      background: #f3f4f6;
-      color: #666;
-      font-weight: 600;
-      font-size: 12px;
-      padding: 8px 16px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      pointer-events: none;
-    }
-
     @media (max-width: 480px) {
       .sidebar-bubble {
         width: 16px;
@@ -566,7 +555,7 @@
     <button class="sidebar-btn" title="Reports" onclick="window.location.href='sales.html'">
       <i class="fa-solid fa-chart-line"></i>
     </button>
-    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'">
+    <button class="sidebar-btn" title="Inventory" onclick="window.location.href='inventory.html'" id="inventoryBtn">
       <i class="fa-solid fa-box-open"></i>
     </button>
     <button class="sidebar-btn" title="Registration" onclick="window.location.href='Registration.html'">
@@ -578,7 +567,7 @@
     <button class="sidebar-btn" title="Invoice" onclick="window.location.href='invoice.html'">
       <i class="fa-solid fa-file-invoice"></i>
     </button>
-    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'">
+    <button class="sidebar-btn" title="Purchase Order" onclick="window.location.href='purchase-order.html'" id="purchaseOrderBtn">
       <i class="fa-solid fa-receipt"></i>
     </button>
   </aside>
@@ -783,8 +772,7 @@
       deleteDoc,
       serverTimestamp,
       setDoc,
-      onSnapshot,
-      orderBy
+      onSnapshot
     } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -801,15 +789,16 @@
     const db = getFirestore(app);
     let currentUserId = null;
     let currentUserFullName = "";
-    let notificationListener = null;
     let customersListener = null;
+    let inventoryListener = null;
+    let purchaseOrderListener = null;
 
     // ==================== OPTIMIZED DATA LOADING ====================
     
     // Cache for services data
     let servicesCache = {
-      byId: new Map(),        // serviceId -> service data
-      byCategory: new Map()   // category -> [service data]
+      byId: new Map(),
+      byCategory: new Map()
     };
 
     // Load all data once on initialization
@@ -817,7 +806,7 @@
       try {
         console.log("Loading initial data...");
         
-        // Single read: Get all services first (needed for mapping)
+        // Single read: Get all services
         const servicesSnapshot = await getDocs(collection(db, "services"));
         servicesCache.byId.clear();
         servicesCache.byCategory.clear();
@@ -826,10 +815,8 @@
           const serviceData = { id: doc.id, ...doc.data() };
           const category = serviceData.category || 'Uncategorized';
           
-          // Store by ID
           servicesCache.byId.set(doc.id, serviceData);
           
-          // Store by category
           if (!servicesCache.byCategory.has(category)) {
             servicesCache.byCategory.set(category, []);
           }
@@ -837,9 +824,8 @@
         });
         
         console.log("Loaded services:", servicesCache.byId.size);
-        console.log("Categories:", Array.from(servicesCache.byCategory.keys()));
         
-        // Single read: Get all appointments (changed from customers to appointments)
+        // Single read: Get all appointments
         const appointmentsSnapshot = await getDocs(collection(db, "appointments"));
         allCustomers = appointmentsSnapshot.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -881,11 +867,9 @@
       customersListener = onSnapshot(
         collection(db, "appointments"),
         (snapshot) => {
-          // Only process if there are actual changes
           if (snapshot.docChanges().length > 0) {
             console.log("Appointments data changed, updating...");
             
-            // Update only the changed documents
             snapshot.docChanges().forEach((change) => {
               const customerData = { id: change.doc.id, ...change.doc.data() };
               
@@ -903,7 +887,6 @@
               }
             });
             
-            // Filter out archived and re-sort
             allCustomers = allCustomers
               .filter(c => c.archived !== true)
               .sort((a, b) => {
@@ -927,77 +910,106 @@
       return service ? service.name : serviceId;
     }
 
-    // Get service category from cache
-    function getServiceCategoryById(serviceId) {
-      const service = servicesCache.byId.get(serviceId);
-      return service ? (service.category || 'Uncategorized') : '';
-    }
-
-    // Notification System - SIDEBAR BUBBLE NOTIFICATIONS
-    function loadNotifications() {
-      if (notificationListener) {
-        notificationListener();
+    // ==================== SIDEBAR BUBBLE NOTIFICATIONS ====================
+    
+    // Monitor inventory for sidebar bubble
+    function monitorInventoryStatus() {
+      if (inventoryListener) {
+        inventoryListener();
       }
 
-      const notificationsRef = collection(db, 'notifications');
-      const q = query(notificationsRef, orderBy('timestamp', 'desc'));
-      
-      notificationListener = onSnapshot(q, (snapshot) => {
-        const notifications = [];
-        
-        snapshot.forEach(doc => {
-          notifications.push({
-            id: doc.id,
-            ...doc.data()
+      inventoryListener = onSnapshot(
+        collection(db, 'inventory'),
+        (snapshot) => {
+          const inventoryData = [];
+          snapshot.forEach(doc => {
+            inventoryData.push({ id: doc.id, ...doc.data() });
           });
-        });
 
-        updateSidebarBubbles(notifications);
-      });
+          const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
+          const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
+          const overstockCount = inventoryData.filter(item => {
+            const minStockThreshold = item.minStock || 10;
+            return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+          }).length;
+          
+          updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+        },
+        (error) => {
+          console.error('Error monitoring inventory:', error);
+        }
+      );
     }
 
-    function updateSidebarBubbles(notifications) {
-      const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-      const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-      const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
+    function updateInventoryBubble(noStock, lowStock, overstock) {
+      const button = document.getElementById('inventoryBtn');
+      if (!button) return;
       
-      updateBubble('calendarBubble', appointmentCount, '#dc2626');
-      updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-      updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-    }
-
-    function updateBubble(bubbleId, count, color) {
-      let bubble = document.getElementById(bubbleId);
+      let bubble = button.querySelector('.sidebar-bubble');
       
       if (!bubble) {
-        const button = getBubbleButton(bubbleId);
-        if (button) {
-          bubble = document.createElement('span');
-          bubble.id = bubbleId;
-          bubble.className = 'sidebar-bubble';
-          button.style.position = 'relative';
-          button.appendChild(bubble);
-        }
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
+        button.appendChild(bubble);
       }
       
-      if (bubble) {
-        if (count > 0) {
-          bubble.textContent = count > 99 ? '99+' : count;
-          bubble.style.backgroundColor = color;
-          bubble.style.display = 'flex';
-        } else {
-          bubble.style.display = 'none';
-        }
+      if (noStock > 0) {
+        bubble.textContent = noStock > 99 ? '99+' : noStock;
+        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.display = 'flex';
+      } else if (lowStock > 0) {
+        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.display = 'flex';
+      } else if (overstock > 0) {
+        bubble.textContent = overstock > 99 ? '99+' : overstock;
+        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
       }
     }
 
-    function getBubbleButton(bubbleId) {
-      const buttonMap = {
-        'calendarBubble': document.querySelector('button[title="Reservation"]'),
-        'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-        'inventoryBubble': document.querySelector('button[title="Inventory"]')
-      };
-      return buttonMap[bubbleId];
+    // Monitor purchase orders for sidebar bubble
+    function monitorPurchaseOrders() {
+      if (purchaseOrderListener) {
+        purchaseOrderListener();
+      }
+
+      purchaseOrderListener = onSnapshot(
+        query(collection(db, 'purchaseOrders'), where('status', '==', 'pending')),
+        (snapshot) => {
+          const newOrderCount = snapshot.size;
+          console.log('Purchase orders pending:', newOrderCount);
+          updatePurchaseOrderBubble(newOrderCount);
+        },
+        (error) => {
+          console.error('Error monitoring purchase orders:', error);
+        }
+      );
+    }
+
+    function updatePurchaseOrderBubble(count) {
+      const button = document.getElementById('purchaseOrderBtn');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
+        button.appendChild(bubble);
+      }
+      
+      if (count > 0) {
+        bubble.textContent = count > 99 ? '99+' : count;
+        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
     }
 
     // Clock out function
@@ -1050,13 +1062,9 @@
       try {
         await handleClockOut();
         
-        if (notificationListener) notificationListener();
         if (customersListener) customersListener();
-        
-        localStorage.removeItem('currentUserEmail');
-        localStorage.removeItem('currentUserRole');
-        localStorage.removeItem('currentUsername');
-        localStorage.removeItem('currentUserFullName');
+        if (inventoryListener) inventoryListener();
+        if (purchaseOrderListener) purchaseOrderListener();
         
         await signOut(auth);
         window.location.href = "index.html";
@@ -1102,8 +1110,9 @@
           // Load all data once
           await loadInitialData();
           
-          // Initialize notifications
-          loadNotifications();
+          // Initialize bubble notifications
+          monitorInventoryStatus();
+          monitorPurchaseOrders();
           
         } catch (err) {
           console.error("Error fetching user document:", err);
@@ -1201,21 +1210,15 @@
       emailInput.classList.add('bg-gray-100', 'cursor-not-allowed');
       phoneInput.classList.add('bg-gray-100', 'cursor-not-allowed');
 
-      // Load service and populate dropdown - just display what's in the database
       await populateServiceSelect();
       
-      // Set the service value directly from customer data (show as text, not editable)
       const serviceSelect = document.getElementById('serviceSelect');
       if (customer.service) {
-        // Find if it's an ID or a text value
         const serviceExists = window.servicesCache.byId.has(customer.service);
         
         if (serviceExists) {
-          // It's a valid service ID
           serviceSelect.value = customer.service;
         } else {
-          // It's a text value (like "HydraFacial + BBGlow + Collagen PDT - ₱1899")
-          // Add it as a custom option and select it
           const customOption = document.createElement('option');
           customOption.value = customer.service;
           customOption.textContent = customer.service;
@@ -1227,7 +1230,6 @@
       document.getElementById('statusSelect').value = customer.status || 'Pending';
       document.getElementById('employeeSelect').value = customer.staff || '';
 
-      // Parse and set the date/time from customer data
       if (customer.date && customer.time) {
         try {
           const dateTimeStr = `${customer.date} ${customer.time}`;
@@ -1247,7 +1249,6 @@
         }
       }
       
-      // Set minimum to current date/time for edit mode too
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       document.getElementById('appointmentDate').min = now.toISOString().slice(0, 16);
@@ -1272,7 +1273,6 @@
       emailInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
       phoneInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
       
-      // Set minimum datetime to current time
       const now = new Date();
       now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
       document.getElementById('appointmentDate').value = now.toISOString().slice(0, 16);
@@ -1281,7 +1281,6 @@
       clearForm();
       clearErrors();
       
-      // Load services for add mode
       await populateServiceSelect();
     }
 
@@ -1303,7 +1302,6 @@
       });
     }
 
-    // Populate service dropdown (filter - shows only CATEGORIES)
     function populateServiceDropdown() {
       serviceDropdown.innerHTML = '';
       
@@ -1313,7 +1311,6 @@
       allOption.onclick = (event) => selectService('All Services', event);
       serviceDropdown.appendChild(allOption);
       
-      // Get unique categories from cache
       const categories = Array.from(window.servicesCache.byCategory.keys()).sort();
       
       categories.forEach(category => {
@@ -1325,20 +1322,16 @@
       });
     }
 
-    // Populate service select (modal - shows all services GROUPED BY CATEGORY)
     function populateServiceSelect() {
       const serviceSelect = document.getElementById('serviceSelect');
       serviceSelect.innerHTML = '<option value="">Select a service</option>';
       
-      // Get categories sorted
       const categories = Array.from(window.servicesCache.byCategory.keys()).sort();
       
       categories.forEach(category => {
-        // Add category header
         const optgroup = document.createElement('optgroup');
         optgroup.label = category;
         
-        // Add services under this category
         const services = window.servicesCache.byCategory.get(category);
         services.forEach(service => {
           const option = document.createElement('option');
@@ -1402,7 +1395,6 @@
       customerTableBody.innerHTML = '';
       const searchTerm = searchInput.value.toLowerCase();
 
-      // Filter customers based on service CATEGORY and search
       const filtered = allCustomers.filter(c => {
         let matchesService = activeService === "All Services";
         
@@ -1442,7 +1434,6 @@
       paginatedCustomers.forEach(c => {
         const tr = document.createElement('tr');
         
-        // Get service name from cache
         let displayService = c.service;
         if (c.service) {
           const service = window.servicesCache.byId.get(c.service);
@@ -1509,8 +1500,7 @@
       const selectedDate = new Date(dateString);
       const now = new Date();
       
-      // Always require future dates or current time (for both add and edit)
-      return selectedDate >= now || Math.abs(selectedDate - now) < 60000; // Within 1 minute tolerance
+      return selectedDate >= now || Math.abs(selectedDate - now) < 60000;
     }
 
     function showError(inputId, errorId) {

@@ -22,12 +22,29 @@ let suppliers = [];
 let currentUser = null;
 let currentProductMode = 'existing';
 let selectedProduct = null;
-let notificationListener = null;
+let purchaseOrderListener = null;
+let inventoryListener = null;
+
+// Cache for user data, suppliers, and categories
+let userDataCache = null;
+let suppliersCache = null;
+let categoriesCache = null;
+let itemCounterCache = null;
+let lastCounterFetch = 0;
+const COUNTER_CACHE_DURATION = 60000; // 1 minute
 
 // Load current user
 auth.onAuthStateChanged(async (user) => {
   if (user) {
     try {
+      // Check cache first
+      if (userDataCache && userDataCache.uid === user.uid) {
+        currentUser = userDataCache;
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        return;
+      }
+
       const userDoc = await db.collection('users').doc(user.uid).get();
       if (userDoc.exists) {
         const userData = userDoc.data();
@@ -36,19 +53,29 @@ auth.onAuthStateChanged(async (user) => {
           fullName: userData.fullName || userData.email || 'User',
           email: userData.email || user.email
         };
-        document.getElementById('userDisplayName').textContent = currentUser.fullName;
-        document.getElementById('logoutUsername').textContent = currentUser.fullName;
       } else {
         currentUser = {
           uid: user.uid,
           fullName: user.email || 'User',
           email: user.email
         };
-        document.getElementById('userDisplayName').textContent = currentUser.fullName;
-        document.getElementById('logoutUsername').textContent = currentUser.fullName;
       }
+      
+      // Cache user data
+      userDataCache = currentUser;
+      
+      document.getElementById('userDisplayName').textContent = currentUser.fullName;
+      document.getElementById('logoutUsername').textContent = currentUser.fullName;
     } catch (error) {
       console.error('Error loading user:', error);
+      currentUser = {
+        uid: user.uid,
+        fullName: user.email || 'User',
+        email: user.email
+      };
+      userDataCache = currentUser;
+      document.getElementById('userDisplayName').textContent = currentUser.fullName;
+      document.getElementById('logoutUsername').textContent = currentUser.fullName;
     }
   } else {
     window.location.href = 'index.html';
@@ -106,7 +133,15 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    if (notificationListener) notificationListener();
+    // Clear caches
+    userDataCache = null;
+    suppliersCache = null;
+    categoriesCache = null;
+    itemCounterCache = null;
+    
+    // Detach listeners
+    if (purchaseOrderListener) purchaseOrderListener();
+    if (inventoryListener) inventoryListener();
     
     await auth.signOut();
     window.location.href = "index.html";
@@ -120,120 +155,98 @@ async function confirmLogout() {
   }
 }
 
-// Notification System - SIDEBAR BUBBLE NOTIFICATIONS
-function loadNotifications() {
-  if (notificationListener) {
-    notificationListener();
-  }
-
-  notificationListener = db.collection('notifications')
-    .orderBy('timestamp', 'desc')
-    .onSnapshot((snapshot) => {
-      const notifications = [];
-      
-      snapshot.forEach(doc => {
-        notifications.push({
-          id: doc.id,
-          ...doc.data()
-        });
-      });
-
-      updateSidebarBubbles(notifications);
-    });
+// Update sidebar bubbles based on inventory and purchase orders
+function updateSidebarBubbles() {
+  // Inventory bubble
+  const noStockCount = inventoryItems.filter(item => item.status === 'out-of-stock').length;
+  const lowStockCount = inventoryItems.filter(item => item.status === 'low-stock').length;
+  const overstockCount = inventoryItems.filter(item => {
+    const minStockThreshold = item.minStock || 10;
+    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+  }).length;
+  
+  updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+  
+  // Purchase Order bubble
+  const pendingPOCount = purchaseOrders.filter(po => po.status === 'pending').length;
+  updatePurchaseOrderBubble(pendingPOCount);
 }
 
-// Mark notifications as read for current page
-async function markCurrentPageNotificationsRead() {
-  const currentPage = window.location.pathname;
-  let notificationType = null;
+function updateInventoryBubble(noStock, lowStock, overstock) {
+  const button = document.querySelector('button[title="Inventory"]');
+  if (!button) return;
   
-  if (currentPage.includes('calendar.html')) {
-    notificationType = 'appointment';
-  } else if (currentPage.includes('purchase-order.html')) {
-    notificationType = 'purchase_order';
-  } else if (currentPage.includes('inventory.html')) {
-    notificationType = 'low_stock';
-  }
-  
-  if (notificationType) {
-    try {
-      const snapshot = await db.collection('notifications')
-        .where('type', '==', notificationType)
-        .where('read', '==', false)
-        .get();
-      
-      if (!snapshot.empty) {
-        const batch = db.batch();
-        snapshot.forEach(doc => {
-          batch.update(doc.ref, { read: true });
-        });
-        await batch.commit();
-        console.log(`Marked ${notificationType} notifications as read`);
-      }
-    } catch (error) {
-      console.error('Error marking notifications as read:', error);
-    }
-  }
-}
-
-function updateSidebarBubbles(notifications) {
-  const appointmentCount = notifications.filter(n => !n.read && n.type === 'appointment').length;
-  const purchaseOrderCount = notifications.filter(n => !n.read && n.type === 'purchase_order').length;
-  const lowStockCount = notifications.filter(n => !n.read && n.type === 'low_stock').length;
-  
-  updateBubble('calendarBubble', appointmentCount, '#dc2626');
-  updateBubble('purchaseOrderBubble', purchaseOrderCount, '#8b5cf6');
-  updateBubble('inventoryBubble', lowStockCount, '#f59e0b');
-}
-
-function updateBubble(bubbleId, count, color) {
-  let bubble = document.getElementById(bubbleId);
+  let bubble = button.querySelector('.sidebar-bubble');
   
   if (!bubble) {
-    const button = getBubbleButton(bubbleId);
-    if (button) {
-      bubble = document.createElement('span');
-      bubble.id = bubbleId;
-      bubble.className = 'sidebar-bubble';
-      button.style.position = 'relative';
-      button.appendChild(bubble);
-    }
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
   }
   
-  if (bubble) {
-    if (count > 0) {
-      bubble.textContent = count > 99 ? '99+' : count;
-      bubble.style.backgroundColor = color;
-      bubble.style.display = 'flex';
-    } else {
-      bubble.style.display = 'none';
-    }
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
   }
 }
 
-function getBubbleButton(bubbleId) {
-  const buttonMap = {
-    'calendarBubble': document.querySelector('button[title="Reservations"]'),
-    'purchaseOrderBubble': document.querySelector('button[title="Purchase Order"]'),
-    'inventoryBubble': document.querySelector('button[title="Inventory"]')
-  };
-  return buttonMap[bubbleId];
+function updatePurchaseOrderBubble(count) {
+  const button = document.querySelector('button[title="Purchase Order"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
 }
 
-// Load suppliers from Firebase
+// Load suppliers from cache or Firebase
 async function loadSuppliersFromFirebase() {
   try {
+    // Check cache first
+    if (suppliersCache) {
+      suppliers = suppliersCache;
+      return;
+    }
+
     const doc = await db.collection('metadata').doc('suppliers').get();
     if (doc.exists && doc.data().list) {
       suppliers = doc.data().list;
     } else {
-      // Initialize with default suppliers if none exist
       suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
       await db.collection('metadata').doc('suppliers').set({ list: suppliers });
     }
+    
+    // Cache suppliers
+    suppliersCache = suppliers;
   } catch (error) {
     console.error('Error loading suppliers:', error);
     suppliers = ['Beauty Supplies Inc.', 'Cosmetic World', 'Hair Care Solutions', 'Nail Art Supplies', 'Skincare Essentials'];
+    suppliersCache = suppliers;
   }
 }
 
@@ -241,6 +254,7 @@ async function loadSuppliersFromFirebase() {
 async function saveSuppliersToFirebase() {
   try {
     await db.collection('metadata').doc('suppliers').set({ list: suppliers });
+    suppliersCache = suppliers;
   } catch (error) {
     console.error('Error saving suppliers:', error);
   }
@@ -249,17 +263,9 @@ async function saveSuppliersToFirebase() {
 // Initialize the page
 document.addEventListener('DOMContentLoaded', async function() {
   await loadSuppliersFromFirebase();
-  await loadInventoryItemsAndCategories();
-  await loadPurchaseOrders();
-  updateStats();
-  renderTable();
-  generatePONumber();
+  loadInventoryItemsAndCategories();
+  loadPurchaseOrders();
   updateSupplierDropdown();
-  loadNotifications();
-  
-  setTimeout(() => {
-    markCurrentPageNotificationsRead();
-  }, 1000);
   
   // Set minimum date to today
   const today = new Date().toISOString().split('T')[0];
@@ -273,38 +279,43 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
 });
 
-// Load inventory items and categories
-async function loadInventoryItemsAndCategories() {
+// Load inventory items and categories with real-time listener
+function loadInventoryItemsAndCategories() {
   try {
-    const snapshot = await db.collection('inventory').get();
-    
-    inventoryItems = [];
-    const categorySet = new Set();
-    categoryCounts = {};
-    
-    snapshot.forEach(doc => {
-      const item = doc.data();
-      item.firebaseId = doc.id;
-      inventoryItems.push(item);
-      
-      if (item.category) {
-        categorySet.add(item.category);
-        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
-      }
-    });
-    
-    if (categorySet.size === 0) {
-      const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
-      categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
-    } else {
-      categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
-    }
-    
-    populateProductDropdown();
-    updateCategorySelects();
-    
+    inventoryListener = db.collection('inventory')
+      .onSnapshot((snapshot) => {
+        inventoryItems = [];
+        const categorySet = new Set();
+        categoryCounts = {};
+        
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          item.firebaseId = doc.id;
+          inventoryItems.push(item);
+          
+          if (item.category) {
+            categorySet.add(item.category);
+            categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+          }
+        });
+        
+        if (categorySet.size === 0) {
+          const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
+          categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+        } else {
+          categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
+        }
+        
+        categoriesCache = categories;
+        
+        populateProductDropdown();
+        updateCategorySelects();
+        updateSidebarBubbles();
+      }, (error) => {
+        console.error('Error loading inventory:', error);
+      });
   } catch (error) {
-    console.error('Error loading inventory:', error);
+    console.error('Error setting up inventory listener:', error);
   }
 }
 
@@ -404,22 +415,14 @@ async function handleAddCategory(event) {
       isPlaceholder: true
     };
 
-    const docRef = await db.collection('inventory').add(placeholderItem);
-    placeholderItem.firebaseId = docRef.id;
+    await db.collection('inventory').add(placeholderItem);
     
-    inventoryItems.push(placeholderItem);
-    categories.push({
-      id: categoryName,
-      name: categoryName
-    });
-    categoryCounts[categoryName] = 1;
-    
-    updateCategorySelects();
-    populateProductDropdown();
     closeAddCategoryModal();
     
     const categorySelect = document.getElementById('newProductCategory');
-    categorySelect.value = categoryName;
+    setTimeout(() => {
+      categorySelect.value = categoryName;
+    }, 500);
     
     alert(`Category "${categoryName}" added successfully!`);
     
@@ -493,14 +496,14 @@ async function handleDeleteCategory(categoryName, itemCount) {
   }
   
   try {
-    const snapshot = await db.collection('inventory').where('category', '==', categoryName).get();
+    const itemsToDelete = inventoryItems.filter(i => i.category === categoryName);
     
     const batches = [];
     let batch = db.batch();
     let operationCount = 0;
     
-    snapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
+    itemsToDelete.forEach(item => {
+      batch.delete(db.collection('inventory').doc(item.firebaseId));
       operationCount++;
       
       if (operationCount === 500) {
@@ -516,14 +519,7 @@ async function handleDeleteCategory(categoryName, itemCount) {
     
     await Promise.all(batches);
     
-    categories = categories.filter(c => c.name !== categoryName);
-    inventoryItems = inventoryItems.filter(i => i.category !== categoryName);
-    delete categoryCounts[categoryName];
-    
-    updateCategorySelects();
-    populateProductDropdown();
-    await loadManageCategoriesList();
-    updateStats();
+    closeManageCategoriesModal();
     
     alert(`Category "${categoryName}" and its ${itemCount} item(s) have been deleted successfully!`);
   } catch (error) {
@@ -613,7 +609,6 @@ async function handleAddSupplier(event) {
   suppliers.push(supplierName);
   suppliers.sort();
   
-  // Save to Firebase
   await saveSuppliersToFirebase();
   
   updateSupplierDropdown();
@@ -697,7 +692,6 @@ async function handleDeleteSupplier(supplierName, usageCount) {
   
   suppliers = suppliers.filter(s => s !== supplierName);
   
-  // Save to Firebase
   await saveSuppliersToFirebase();
   
   updateSupplierDropdown();
@@ -786,9 +780,17 @@ function switchProductMode(mode) {
   calculateTotal();
 }
 
-// Generate new product ID
+// Generate new product ID with caching
 async function generateNewProductId() {
   try {
+    const now = Date.now();
+    
+    if (itemCounterCache !== null && (now - lastCounterFetch) < COUNTER_CACHE_DURATION) {
+      const newId = `INV-${String(itemCounterCache + 1).padStart(3, '0')}`;
+      document.getElementById('newProductId').value = newId;
+      return;
+    }
+    
     const counterRef = db.collection('metadata').doc('inventoryCounter');
     const docSnap = await counterRef.get();
     
@@ -796,6 +798,9 @@ async function generateNewProductId() {
     if (docSnap.exists) {
       newNumber = (docSnap.data().last || 0) + 1;
     }
+    
+    itemCounterCache = newNumber - 1;
+    lastCounterFetch = now;
     
     const newId = `INV-${String(newNumber).padStart(3, '0')}`;
     document.getElementById('newProductId').value = newId;
@@ -820,6 +825,9 @@ async function generateUniqueItemId() {
     }
   });
 
+  itemCounterCache = newNumber;
+  lastCounterFetch = Date.now();
+
   return `INV-${String(newNumber).padStart(3, '0')}`;
 }
 
@@ -838,19 +846,29 @@ function calculateTotal() {
   document.getElementById('totalValue').value = `₱ ${total.toFixed(2)}`;
 }
 
-// Load purchase orders from Firebase
-async function loadPurchaseOrders() {
+// Load purchase orders with real-time listener
+function loadPurchaseOrders() {
   try {
-    const snapshot = await db.collection('purchaseOrders').orderBy('date', 'desc').get();
-    purchaseOrders = [];
-    
-    snapshot.forEach(doc => {
-      const po = doc.data();
-      po.firebaseId = doc.id;
-      purchaseOrders.push(po);
-    });
+    purchaseOrderListener = db.collection('purchaseOrders')
+      .orderBy('date', 'desc')
+      .onSnapshot((snapshot) => {
+        purchaseOrders = [];
+        
+        snapshot.forEach(doc => {
+          const po = doc.data();
+          po.firebaseId = doc.id;
+          purchaseOrders.push(po);
+        });
+        
+        updateStats();
+        renderTable();
+        generatePONumber();
+        updateSidebarBubbles();
+      }, (error) => {
+        console.error('Error loading purchase orders:', error);
+      });
   } catch (error) {
-    console.error('Error loading purchase orders:', error);
+    console.error('Error setting up purchase order listener:', error);
   }
 }
 
@@ -876,7 +894,6 @@ function openNewPOModal() {
   document.getElementById('poForm').reset();
   generatePONumber();
   
-  // Set minimum date to today
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('poDate').value = today;
   document.getElementById('poDate').min = today;
@@ -986,37 +1003,14 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
 
   try {
     if (editingIndex === -1) {
-      const docRef = await db.collection('purchaseOrders').add(formData);
-      formData.firebaseId = docRef.id;
-      purchaseOrders.unshift(formData); // Add to beginning of array
-      
-      // Create notification
-      await db.collection('notifications').add({
-        type: 'purchase_order',
-        title: 'New Purchase Order Created',
-        message: `PO ${formData.id} has been created for ${formData.productName}`,
-        details: {
-          poNumber: formData.id,
-          productName: formData.productName,
-          quantity: formData.quantity,
-          supplier: formData.supplier,
-          totalValue: formData.totalValue,
-          createdBy: formData.createdBy
-        },
-        read: false,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      
+      await db.collection('purchaseOrders').add(formData);
       alert('Purchase order created successfully!');
     } else {
       const po = purchaseOrders[editingIndex];
       await db.collection('purchaseOrders').doc(po.firebaseId).update(formData);
-      purchaseOrders[editingIndex] = { ...po, ...formData };
       alert('Purchase order updated successfully!');
     }
 
-    updateStats();
-    renderTable();
     closePOModal();
   } catch (error) {
     console.error('Error saving purchase order:', error);
@@ -1096,7 +1090,6 @@ function editPO(index) {
   document.getElementById('poNumber').value = po.id;
   document.getElementById('poDate').value = po.date;
   
-  // Set minimum date to today for editing
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('poDate').min = today;
   
@@ -1151,18 +1144,14 @@ async function receiveOrder(index) {
   }
 
   try {
-    const inventorySnapshot = await db.collection('inventory')
-      .where('id', '==', po.productId)
-      .get();
+    const existingProduct = inventoryItems.find(item => item.id === po.productId);
 
-    if (!inventorySnapshot.empty) {
-      const doc = inventorySnapshot.docs[0];
-      const existingProduct = doc.data();
+    if (existingProduct) {
       const newQty = existingProduct.qty + po.quantity;
       const newTotal = newQty * existingProduct.price;
       const newStatus = determineStatus(newQty, existingProduct.minStock || 10);
 
-      await db.collection('inventory').doc(doc.id).update({
+      await db.collection('inventory').doc(existingProduct.firebaseId).update({
         qty: newQty,
         total: newTotal,
         status: newStatus,
@@ -1170,17 +1159,6 @@ async function receiveOrder(index) {
         lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
         supplier: po.supplier
       });
-
-      const localItemIndex = inventoryItems.findIndex(item => item.firebaseId === doc.id);
-      if (localItemIndex !== -1) {
-        inventoryItems[localItemIndex].qty = newQty;
-        inventoryItems[localItemIndex].total = newTotal;
-        inventoryItems[localItemIndex].status = newStatus;
-        inventoryItems[localItemIndex].date = getCurrentDate();
-        inventoryItems[localItemIndex].lastEditedBy = currentUser ? currentUser.fullName : 'Unknown';
-        inventoryItems[localItemIndex].supplier = po.supplier;
-        populateProductDropdown();
-      }
 
       alert(`✅ Inventory updated!\n\n${po.productName} (${po.productId})\nPrevious Quantity: ${existingProduct.qty}\nAdded: ${po.quantity}\nNew Quantity: ${newQty}\n\nCategory: ${po.category}\nUnit Price: ₱ ${(po.unitPrice || 0).toFixed(2)}`);
     } else {
@@ -1200,6 +1178,9 @@ async function receiveOrder(index) {
           }
         });
 
+        itemCounterCache = parseInt(po.productId.split('-')[1]);
+        lastCounterFetch = Date.now();
+
         const newProduct = {
           id: po.productId,
           name: po.productName,
@@ -1217,20 +1198,7 @@ async function receiveOrder(index) {
           lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
         };
 
-        const docRef = await db.collection('inventory').add(newProduct);
-        newProduct.firebaseId = docRef.id;
-
-        inventoryItems.push(newProduct);
-        
-        if (!categoryCounts[po.category]) {
-          categories.push({ id: po.category, name: po.category });
-          categoryCounts[po.category] = 1;
-          updateCategorySelects();
-        } else {
-          categoryCounts[po.category]++;
-        }
-        
-        populateProductDropdown();
+        await db.collection('inventory').add(newProduct);
 
         alert(`✅ New product added to inventory!\n\n${po.productName} (${po.productId})\nCategory: ${po.category}\nQuantity: ${po.quantity}\nUnit Price: ₱ ${po.unitPrice.toFixed(2)}\nTotal Value: ₱ ${(po.quantity * po.unitPrice).toFixed(2)}`);
       } else {
@@ -1245,16 +1213,6 @@ async function receiveOrder(index) {
       receivedBy: currentUser ? currentUser.fullName : 'Unknown'
     });
 
-    purchaseOrders[index].status = 'received';
-    purchaseOrders[index].receivedDate = getCurrentDate();
-    purchaseOrders[index].receivedBy = currentUser ? currentUser.fullName : 'Unknown';
-
-    // Move received order to the top
-    const receivedPO = purchaseOrders.splice(index, 1)[0];
-    purchaseOrders.unshift(receivedPO);
-
-    updateStats();
-    renderTable();
   } catch (error) {
     console.error('Error processing order:', error);
     alert('Error processing the order. Please try again.');
@@ -1270,10 +1228,7 @@ async function deletePO(index) {
   try {
     const po = purchaseOrders[index];
     await db.collection('purchaseOrders').doc(po.firebaseId).delete();
-    purchaseOrders.splice(index, 1);
     
-    updateStats();
-    renderTable();
     alert('Purchase order deleted successfully!');
   } catch (error) {
     console.error('Error deleting purchase order:', error);
@@ -1423,7 +1378,22 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
+// Cleanup function
+function cleanup() {
+  if (purchaseOrderListener) purchaseOrderListener();
+  if (inventoryListener) inventoryListener();
+  userDataCache = null;
+  suppliersCache = null;
+  categoriesCache = null;
+  itemCounterCache = null;
+  purchaseOrders = [];
+  inventoryItems = [];
+  categories = [];
+}
+
 // Handle page unload
 window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
+
+window.addEventListener('unload', cleanup);

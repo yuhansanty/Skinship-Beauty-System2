@@ -7,9 +7,27 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s }
+    .sidebar-btn { width:50px;height:50px;border-radius:50%;border:none;background:transparent;color:#da5c73;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.3s;position:relative }
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
     .sidebar-btn.active { background:#da5c73;color:white }
+    
+    .sidebar-bubble {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: #dc2626;
+      color: white;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: bold;
+      border: 2px solid #f7d4d0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
     
     .tab-btn {
       padding: 1rem 2rem;
@@ -98,7 +116,6 @@
       box-shadow: none;
     }
 
-    /* Complete Update Button with Red Cancel Sliding Effect */
     #completeUpdateBtn {
       position: relative;
       overflow: hidden;
@@ -110,7 +127,7 @@
       position: absolute;
       left: 0;
       top: 0;
-      width: 12.5%; /* 1/8 of the button */
+      width: 12.5%;
       height: 100%;
       background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
       z-index: 1;
@@ -424,13 +441,11 @@
       const rect = button.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
       const buttonWidth = rect.width;
-      const redZoneWidth = buttonWidth * 0.125; // 12.5% / 1/8 of button
+      const redZoneWidth = buttonWidth * 0.125;
       
-      // If clicked in the red zone (left 1/8)
       if (clickX <= redZoneWidth) {
         cancelEmailUpdate();
       } else {
-        // Clicked in green zone - complete the update
         completeEmailUpdate();
       }
     }
@@ -443,9 +458,8 @@
           const rect = completeBtn.getBoundingClientRect();
           const mouseX = event.clientX - rect.left;
           const buttonWidth = rect.width;
-          const redZoneWidth = buttonWidth * 0.125; // 12.5% / 1/8 of button
+          const redZoneWidth = buttonWidth * 0.125;
           
-          // Only add hovering-red class if mouse is in the red zone
           if (mouseX <= redZoneWidth) {
             completeBtn.classList.add('hovering-red');
           } else {
@@ -461,7 +475,6 @@
 
     // Cancel email update function
     function cancelEmailUpdate() {
-      // Create a custom confirmation dialog
       const dialogDiv = document.createElement('div');
       dialogDiv.style.cssText = `
         position: fixed;
@@ -549,11 +562,12 @@
       document.body.appendChild(dialogDiv);
     }
   </script>
+
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, verifyBeforeUpdateEmail, onAuthStateChanged, reload } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword, verifyBeforeUpdateEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -570,7 +584,10 @@
 
     const COOLDOWN_TIME = 160;
     let resetCooldownTimer = null;
+    let inventoryListener = null;
+    let purchaseOrderListener = null;
 
+    // Auth check - single read
     onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
         window.location.href = "index.html";
@@ -590,11 +607,118 @@
           window.location.href = "dashboard.html";
           return;
         }
+        
+        // After auth check, start monitoring
+        monitorInventory();
+        monitorPurchaseOrders();
       } catch (err) {
         console.error("Auth check failed:", err.message);
       }
     });
 
+    // Monitor inventory for sidebar bubbles - single listener
+    function monitorInventory() {
+      if (inventoryListener) {
+        inventoryListener();
+      }
+
+      inventoryListener = onSnapshot(
+        collection(db, 'inventory'),
+        (snapshot) => {
+          const inventoryData = [];
+          snapshot.forEach((doc) => {
+            inventoryData.push(doc.data());
+          });
+          
+          updateInventorySidebarBubbles(inventoryData);
+        },
+        (error) => {
+          console.error('Error monitoring inventory:', error);
+        }
+      );
+    }
+
+    // Update inventory sidebar bubbles
+    function updateInventorySidebarBubbles(inventoryData) {
+      const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
+      const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
+      const overstockCount = inventoryData.filter(item => {
+        const minStockThreshold = item.minStock || 10;
+        return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
+      }).length;
+      
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+    }
+
+    function updateInventoryBubble(noStock, lowStock, overstock) {
+      const button = document.querySelector('button[title="Inventory"]');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.appendChild(bubble);
+      }
+      
+      if (noStock > 0) {
+        bubble.textContent = noStock > 99 ? '99+' : noStock;
+        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.display = 'flex';
+      } else if (lowStock > 0) {
+        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.display = 'flex';
+      } else if (overstock > 0) {
+        bubble.textContent = overstock > 99 ? '99+' : overstock;
+        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
+    }
+
+    // Monitor purchase orders for sidebar bubble - single listener
+    function monitorPurchaseOrders() {
+      if (purchaseOrderListener) {
+        purchaseOrderListener();
+      }
+
+      purchaseOrderListener = onSnapshot(
+        query(collection(db, 'purchaseOrders'), where('status', '==', 'pending')),
+        (snapshot) => {
+          const newOrderCount = snapshot.size;
+          updatePurchaseOrderBubble(newOrderCount);
+        },
+        (error) => {
+          console.error('Error monitoring purchase orders:', error);
+        }
+      );
+    }
+
+    function updatePurchaseOrderBubble(count) {
+      const button = document.querySelector('button[title="Purchase Order"]');
+      if (!button) return;
+      
+      let bubble = button.querySelector('.sidebar-bubble');
+      
+      if (!bubble) {
+        bubble = document.createElement('span');
+        bubble.className = 'sidebar-bubble';
+        button.appendChild(bubble);
+      }
+      
+      if (count > 0) {
+        bubble.textContent = count > 99 ? '99+' : count;
+        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.display = 'flex';
+      } else {
+        bubble.style.display = 'none';
+      }
+    }
+
+    // Password reset cooldown
     function checkResetCooldown() {
       const cooldownEnd = parseInt(localStorage.getItem('passwordResetCooldown') || '0');
       const now = Date.now();
@@ -639,6 +763,7 @@
 
     checkResetCooldown();
 
+    // Create Account Form
     document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const fullName = document.getElementById("fullName").value.trim();
@@ -661,6 +786,7 @@
       }
 
       try {
+        // Check for duplicates
         const usernameQuery = query(collection(db, "users"), where("username", "==", username));
         const usernameSnapshot = await getDocs(usernameQuery);
         if (!usernameSnapshot.empty) {
@@ -725,6 +851,7 @@
       }
     });
 
+    // Change Password Form
     document.getElementById("changePassForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("resetEmail").value.trim();
@@ -764,6 +891,7 @@
       }
     });
 
+    // Update Email Form
     document.getElementById("retrieveForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = document.getElementById("retrieveUsername").value.trim();
@@ -802,6 +930,7 @@
       }
     });
 
+    // Complete Email Update
     window.completeEmailUpdate = async function() {
       try {
         const pendingUpdate = JSON.parse(sessionStorage.getItem('pendingEmailUpdate') || 'null');
@@ -811,7 +940,6 @@
           return;
         }
 
-        // Create a custom password input dialog
         const passwordInput = document.createElement('input');
         passwordInput.type = 'password';
         passwordInput.placeholder = 'Enter your password';
@@ -942,13 +1070,19 @@
       }
     };
 
+    // Check for pending email update on load
     window.addEventListener('load', () => {
       if (sessionStorage.getItem('pendingEmailUpdate')) {
         document.getElementById('completeUpdateBtn').style.display = 'block';
       }
     });
+
+    // Cleanup listeners on page unload
+    window.addEventListener('beforeunload', () => {
+      if (inventoryListener) inventoryListener();
+      if (purchaseOrderListener) purchaseOrderListener();
+    });
   </script>
-  <script type="module" src="role-check.js"></script>
 
 </body>
 </html>
