@@ -15,6 +15,8 @@ const auth = firebase.auth();
 
 // Global variables
 let inventoryData = [];
+let currentCategoryFilter = 'all';
+let currentStatusFilter = 'all';
 let editMode = false;
 let categories = [];
 let currentUser = null;
@@ -76,6 +78,60 @@ async function loadCurrentUserName() {
       window.location.href = 'index.html';
     }
   });
+}
+
+// Load categories from Firebase
+async function loadCategoriesFromFirebase() {
+  try {
+    // Check cache first
+    if (categoriesCache) {
+      categories = categoriesCache;
+      return;
+    }
+
+    const doc = await db.collection('metadata').doc('inventoryCategories').get();
+    if (doc.exists && doc.data().list) {
+      categories = doc.data().list.map(name => ({ id: name, name: name }));
+    } else {
+      // If no categories exist, extract from inventory items
+      const categorySet = new Set();
+      inventoryData.forEach(item => {
+        if (item.category) {
+          categorySet.add(item.category);
+        }
+      });
+      
+      if (categorySet.size === 0) {
+        const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
+        categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+      } else {
+        categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
+      }
+      
+      // Save to Firebase for future use
+      const categoryNames = categories.map(c => c.name);
+      await db.collection('metadata').doc('inventoryCategories').set({ list: categoryNames });
+    }
+    
+    // Cache categories
+    categoriesCache = categories;
+  } catch (error) {
+    console.error('Error loading categories:', error);
+    const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
+    categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+    categoriesCache = categories;
+  }
+}
+
+// Save categories to Firebase
+async function saveCategoriesToFirebase() {
+  try {
+    const categoryNames = categories.map(c => c.name);
+    await db.collection('metadata').doc('inventoryCategories').set({ list: categoryNames });
+    categoriesCache = categories;
+  } catch (error) {
+    console.error('Error saving categories:', error);
+  }
 }
 
 // Clock out function - OPTIMIZED with batch write
@@ -150,31 +206,29 @@ async function confirmLogout() {
   }
 }
 
-// Load categories from inventory data - OPTIMIZED
+
 async function loadCategories() {
   try {
-    const categorySet = new Set();
-    const categoryOrder = [];
+    // Load categories from Firebase first
+    await loadCategoriesFromFirebase();
     
+    // Merge with categories from inventory items
+    const categorySet = new Set();
     inventoryData.forEach(product => {
-      if (product.category && !categorySet.has(product.category)) {
-        categoryOrder.push(product.category);
+      if (product.category) {
         categorySet.add(product.category);
       }
     });
 
-    categories = categoryOrder.map(cat => ({
-      id: cat,
-      name: cat
-    }));
+    // Add any new categories from inventory that aren't in the saved list
+    categorySet.forEach(cat => {
+      if (!categories.find(c => c.name === cat)) {
+        categories.push({ id: cat, name: cat });
+      }
+    });
 
-    if (categories.length === 0) {
-      const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
-      categories = defaultCategories.map(cat => ({
-        id: cat,
-        name: cat
-      }));
-    }
+    // Sort categories alphabetically
+    categories.sort((a, b) => a.name.localeCompare(b.name));
 
     categoriesCache = categories;
     lastCategoriesFetch = Date.now();
@@ -288,35 +342,19 @@ async function handleAddCategory(event) {
   }
   
   try {
-    const placeholderItem = {
-      id: await generateUniqueItemId(),
-      name: `${categoryName} - Sample Item`,
-      category: categoryName,
-      qty: 0,
-      price: 0,
-      total: 0,
-      date: getCurrentDate(),
-      status: 'out-of-stock',
-      minStock: 10,
-      supplier: '',
-      description: 'Placeholder item for category',
-      createdBy: currentUser ? currentUser.fullName : 'Unknown',
-      createdDate: getCurrentDate(),
-      lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
-      isPlaceholder: true
-    };
-
-    const docRef = await db.collection('inventory').add(placeholderItem);
-    placeholderItem.firebaseId = docRef.id;
-    
-    inventoryData.push(placeholderItem);
-    
+    // Add to categories array
     categories.push({
       id: categoryName,
       name: categoryName
     });
-    categoriesCache = categories;
     
+    // Sort categories alphabetically
+    categories.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Save to Firebase
+    await saveCategoriesToFirebase();
+    
+    // Update the dropdown
     updateCategorySelects();
     closeAddCategoryModal();
     
@@ -331,7 +369,7 @@ async function handleAddCategory(event) {
       editSelect.value = categoryName;
     }
     
-    alert(`Category "${categoryName}" added successfully!`);
+    alert(`Category "${categoryName}" added successfully!\n\nYou can now add products to this category.`);
     
   } catch (error) {
     console.error('Error adding category:', error);
@@ -420,9 +458,12 @@ async function handleDeleteCategory(categoryName, itemCount) {
     
     await Promise.all(batches.map(batch => batch.commit()));
     
+    // Remove from local data
     inventoryData = inventoryData.filter(i => i.category !== categoryName);
     categories = categories.filter(c => c.name !== categoryName);
-    categoriesCache = categories;
+    
+    // Save updated categories to Firebase
+    await saveCategoriesToFirebase();
     
     updateStats();
     updateCategorySelects();
@@ -451,7 +492,7 @@ document.getElementById('searchInput').addEventListener('input', function(e) {
   }, 300);
 });
 
-// Filter by status
+
 function filterByStatus(status) {
   const buttons = document.querySelectorAll('.filter-btn');
   buttons.forEach(btn => {
@@ -463,38 +504,140 @@ function filterByStatus(status) {
   });
   event.target.classList.add('active');
   
+  // Store current status filter
+  currentStatusFilter = status;
+  
   const rows = document.querySelectorAll('#inventoryTableBody tr');
-  rows.forEach(row => {
-    if(status === 'all') {
-      row.style.display = '';
-    } else if(status === 'overstock') {
-      const qty = parseInt(row.getAttribute('data-qty')) || 0;
-      const minStock = parseInt(row.getAttribute('data-min-stock')) || 10;
-      const isOverstock = qty > (minStock * 1.5) && qty > 0;
-      row.style.display = isOverstock ? '' : 'none';
-    } else if(status === 'in-stock') {
-      const rowStatus = row.getAttribute('data-status');
-      row.style.display = rowStatus === 'in-stock' ? '' : 'none';
-    } else {
-      const rowStatus = row.getAttribute('data-status');
-      row.style.display = rowStatus === status ? '' : 'none';
-    }
-  });
-}
-
-// Filter by category
-function filterByCategory() {
-  const category = document.getElementById('categoryFilter').value;
-  const rows = document.querySelectorAll('#inventoryTableBody tr');
+  let visibleCount = 0;
   
   rows.forEach(row => {
-    if(category === 'all') {
-      row.style.display = '';
+    const rowStatus = row.getAttribute('data-status');
+    const rowCategory = row.getAttribute('data-category');
+    const qty = parseInt(row.getAttribute('data-qty')) || 0;
+    const minStock = parseInt(row.getAttribute('data-min-stock')) || 10;
+    const isOverstock = qty > (minStock * 1.5) && qty > 0;
+    
+    let statusMatch = false;
+    let categoryMatch = false;
+    
+    // Check status filter
+    if(status === 'all') {
+      statusMatch = true;
+    } else if(status === 'overstock') {
+      statusMatch = isOverstock;
+    } else if(status === 'in-stock') {
+      statusMatch = rowStatus === 'in-stock';
     } else {
-      const rowCategory = row.getAttribute('data-category');
-      row.style.display = rowCategory === category ? '' : 'none';
+      statusMatch = rowStatus === status;
     }
+    
+    // Check category filter
+    if(currentCategoryFilter === 'all') {
+      categoryMatch = true;
+    } else {
+      categoryMatch = rowCategory === currentCategoryFilter;
+    }
+    
+    // Show row only if both filters match
+    const shouldShow = statusMatch && categoryMatch;
+    row.style.display = shouldShow ? '' : 'none';
+    if (shouldShow) visibleCount++;
   });
+  
+  // Show "no products" message if no visible products
+  const tbody = document.getElementById('inventoryTableBody');
+  const existingMessage = tbody.querySelector('.no-products-message');
+  
+  if (visibleCount === 0 && inventoryData.length > 0) {
+    if (existingMessage) existingMessage.remove();
+    
+    const statusText = status === 'overstock' ? 'Overstock' : 
+                       status === 'in-stock' ? 'In Stock' :
+                       status === 'low-stock' ? 'Low Stock' :
+                       status === 'out-of-stock' ? 'Out of Stock' : '';
+    
+    const messageRow = document.createElement('tr');
+    messageRow.className = 'no-products-message';
+    messageRow.innerHTML = `
+      <td colspan="8" class="text-center py-8">
+        <i class="fa-solid fa-filter-circle-xmark text-4xl text-gray-400 mb-3 block"></i>
+        <strong class="text-gray-600">No products with "${statusText}" status</strong>
+        <br>
+        <span class="text-sm text-gray-500">Try selecting a different filter</span>
+      </td>
+    `;
+    tbody.appendChild(messageRow);
+  } else if (existingMessage) {
+    existingMessage.remove();
+  }
+}
+
+function filterByCategory() {
+  const category = document.getElementById('categoryFilter').value;
+  
+  // Store current category filter
+  currentCategoryFilter = category;
+  
+  const rows = document.querySelectorAll('#inventoryTableBody tr');
+  let visibleCount = 0;
+  
+  rows.forEach(row => {
+    const rowCategory = row.getAttribute('data-category');
+    const rowStatus = row.getAttribute('data-status');
+    const qty = parseInt(row.getAttribute('data-qty')) || 0;
+    const minStock = parseInt(row.getAttribute('data-min-stock')) || 10;
+    const isOverstock = qty > (minStock * 1.5) && qty > 0;
+    
+    let categoryMatch = false;
+    let statusMatch = false;
+    
+    // Check category filter
+    if(category === 'all') {
+      categoryMatch = true;
+    } else {
+      categoryMatch = rowCategory === category;
+    }
+    
+    // Check status filter
+    if(currentStatusFilter === 'all') {
+      statusMatch = true;
+    } else if(currentStatusFilter === 'overstock') {
+      statusMatch = isOverstock;
+    } else if(currentStatusFilter === 'in-stock') {
+      statusMatch = rowStatus === 'in-stock';
+    } else {
+      statusMatch = rowStatus === currentStatusFilter;
+    }
+    
+    // Show row only if both filters match
+    const shouldShow = categoryMatch && statusMatch;
+    row.style.display = shouldShow ? '' : 'none';
+    if (shouldShow) visibleCount++;
+  });
+  
+  // Show "no products" message if category has no products
+  const tbody = document.getElementById('inventoryTableBody');
+  const existingMessage = tbody.querySelector('.no-products-message');
+  
+  if (visibleCount === 0 && category !== 'all' && inventoryData.length > 0) {
+    // Remove existing message if any
+    if (existingMessage) existingMessage.remove();
+    
+    // Add "no products in category" message
+    const messageRow = document.createElement('tr');
+    messageRow.className = 'no-products-message';
+    messageRow.innerHTML = `
+      <td colspan="8" class="text-center py-8">
+        <i class="fa-solid fa-box-open text-4xl text-gray-400 mb-3 block"></i>
+        <strong class="text-gray-600">No products found in "${category}" category</strong>
+        <br>
+        <span class="text-sm text-gray-500">Begin Purchasing an order to add products to this category</span>
+      </td>
+    `;
+    tbody.appendChild(messageRow);
+  } else if (existingMessage) {
+    existingMessage.remove();
+  }
 }
 
 // Export to CSV
@@ -640,6 +783,7 @@ function getCurrentDate() {
 // Determine status based on quantity
 function determineStatus(qty, minStock) {
   if (qty === 0) return 'out-of-stock';
+  if (qty > (minStock * 1.5)) return 'overstock';
   if (qty <= minStock) return 'low-stock';
   return 'in-stock';
 }
@@ -945,7 +1089,9 @@ function renderInventoryTable() {
     row.setAttribute('data-min-stock', product.minStock || 10);
     
     let statusBadge = '';
-    if (product.status === 'in-stock') {
+    if (product.status === 'overstock') {
+      statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-600">Overstock</span>';
+    } else if (product.status === 'in-stock') {
       statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-600">In Stock</span>';
     } else if (product.status === 'low-stock') {
       statusBadge = '<span class="px-3 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-600">Low Stock</span>';
@@ -973,6 +1119,33 @@ function renderInventoryTable() {
   
   tbody.innerHTML = '';
   tbody.appendChild(fragment);
+  
+  // Reapply current filters after rendering
+  if (currentCategoryFilter !== 'all' || currentStatusFilter !== 'all') {
+    const rows = document.querySelectorAll('#inventoryTableBody tr');
+    rows.forEach(row => {
+      const rowCategory = row.getAttribute('data-category');
+      const rowStatus = row.getAttribute('data-status');
+      const qty = parseInt(row.getAttribute('data-qty')) || 0;
+      const minStock = parseInt(row.getAttribute('data-min-stock')) || 10;
+      const isOverstock = qty > (minStock * 1.5) && qty > 0;
+      
+      let categoryMatch = currentCategoryFilter === 'all' || rowCategory === currentCategoryFilter;
+      
+      let statusMatch = false;
+      if(currentStatusFilter === 'all') {
+        statusMatch = true;
+      } else if(currentStatusFilter === 'overstock') {
+        statusMatch = isOverstock;
+      } else if(currentStatusFilter === 'in-stock') {
+        statusMatch = rowStatus === 'in-stock';
+      } else {
+        statusMatch = rowStatus === currentStatusFilter;
+      }
+      
+      row.style.display = (categoryMatch && statusMatch) ? '' : 'none';
+    });
+  }
 }
 
 // Load inventory from Firebase - OPTIMIZED with real-time listener
@@ -1090,11 +1263,12 @@ window.addEventListener("beforeunload", async (e) => {
 });
 
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   document.getElementById('userDisplayName').textContent = 'Loading...';
   document.getElementById('inventoryTableBody').innerHTML = '<tr><td colspan="8" class="text-center py-8 text-gray-500">Loading inventory data...</td></tr>';
   
   loadCurrentUserName();
+  await loadCategoriesFromFirebase(); // Load categories first
   loadInventoryFromFirebase();
   monitorPurchaseOrders();
 

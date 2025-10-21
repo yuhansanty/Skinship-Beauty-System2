@@ -182,15 +182,6 @@ async function loadCategories() {
       name: cat
     }));
 
-    // If no categories exist, add default ones
-    if (categories.length === 0) {
-      const defaultCategories = ['Hair Services', 'Nail Services', 'Facial Services', 'Lash Services', 'Massage'];
-      categories = defaultCategories.map(cat => ({
-        id: cat,
-        name: cat
-      }));
-    }
-
     // Cache categories
     categoriesCache = categories;
     lastCategoriesFetch = now;
@@ -304,24 +295,6 @@ async function handleAddCategory(event) {
   }
   
   try {
-    const placeholderService = {
-      id: await generateUniqueServiceId(),
-      name: `${categoryName} - Sample Service`,
-      category: categoryName,
-      price: 0,
-      date: getCurrentDate(),
-      createdBy: currentUser ? currentUser.fullName : 'Unknown',
-      createdDate: getCurrentDate(),
-      lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
-      isPlaceholder: true
-    };
-
-    const docRef = await db.collection('services').add(placeholderService);
-    placeholderService.firebaseId = docRef.id;
-    
-    // Update local data immediately (listener will update too)
-    servicesData.push(placeholderService);
-    
     // Add to categories and clear cache
     categories.push({
       id: categoryName,
@@ -451,33 +424,31 @@ async function handleDeleteCategory(categoryName, serviceCount) {
   }
 }
 
-// Search functionality - debounced
 let searchTimeout;
 document.getElementById('searchInput').addEventListener('input', function(e) {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     const searchTerm = e.target.value.toLowerCase();
+    const categoryFilter = document.getElementById('categoryFilter');
+    const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
+    
     const rows = document.querySelectorAll('#servicesTableBody tr');
     
     rows.forEach(row => {
       const text = row.textContent.toLowerCase();
-      row.style.display = text.includes(searchTerm) ? '' : 'none';
+      const rowCategory = row.getAttribute('data-category');
+      
+      const matchesSearch = text.includes(searchTerm);
+      const matchesCategory = selectedCategory === 'all' || rowCategory === selectedCategory;
+      
+      row.style.display = (matchesSearch && matchesCategory) ? '' : 'none';
     });
   }, 300);
 });
 
-// Filter by category
 function filterByCategory(category) {
-  const rows = document.querySelectorAll('#servicesTableBody tr');
-  
-  rows.forEach(row => {
-    if(category === 'all') {
-      row.style.display = '';
-    } else {
-      const rowCategory = row.getAttribute('data-category');
-      row.style.display = rowCategory === category ? '' : 'none';
-    }
-  });
+  // Simply re-render the table with the filter applied
+  renderServicesTable();
 }
 
 // Export to CSV - use in-memory data
@@ -939,19 +910,40 @@ function closeLastUpdatedModal() {
   document.getElementById('lastUpdatedModal').classList.remove('show');
 }
 
-// Render table from in-memory data - optimized
 function renderServicesTable() {
   const tbody = document.getElementById('servicesTableBody');
+  const categoryFilter = document.getElementById('categoryFilter');
+  const selectedCategory = categoryFilter ? categoryFilter.value : 'all';
   
   if (servicesData.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">No services found. Click "Add Service" to get started.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500"><i class="fa-solid fa-inbox text-4xl mb-3 block"></i><strong>No services available</strong><br><span class="text-sm">Click "Add Service" to create your first service</span></td></tr>';
     return;
   }
+  
+  // Filter services based on selected category
+  let filteredServices = servicesData;
+  if (selectedCategory !== 'all') {
+    filteredServices = servicesData.filter(service => service.category === selectedCategory);
+  }
+  
+  // Check if filtered results are empty
+  if (filteredServices.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500"><i class="fa-solid fa-filter-circle-xmark text-4xl mb-3 block"></i><strong>No services found in this category</strong><br><span class="text-sm">Try selecting "All Categories" or add a new service</span></td></tr>';
+    return;
+  }
+  
+  // Sort services by date (newest first) - comparing timestamps
+  const sortedServices = [...filteredServices].sort((a, b) => {
+    // Parse dates for comparison
+    const dateA = new Date(a.date || 0);
+    const dateB = new Date(b.date || 0);
+    return dateB - dateA; // Descending order (newest first)
+  });
   
   // Use DocumentFragment for better performance
   const fragment = document.createDocumentFragment();
   
-  servicesData.forEach(service => {
+  sortedServices.forEach(service => {
     const row = document.createElement('tr');
     row.className = 'border-b hover:bg-gray-50 transition';
     row.setAttribute('data-category', service.category || '');
@@ -1022,7 +1014,7 @@ function loadServicesFromFirebase() {
   }
 }
 
-// Delete service function - OPTIMIZED
+// Delete service function
 async function handleDeleteService() {
   const id = document.getElementById('editFirebaseId').value;
   const serviceName = document.getElementById('editServiceName').value;
@@ -1034,6 +1026,12 @@ async function handleDeleteService() {
   try {
     if (id) {
       await db.collection('services').doc(id).delete();
+      
+      // Reset category filter to "All Categories"
+      const categoryFilter = document.getElementById('categoryFilter');
+      if (categoryFilter) {
+        categoryFilter.value = 'all';
+      }
       
       closeEditServiceModal();
       alert('Service deleted successfully!');

@@ -35,7 +35,6 @@
       color: white;
     }
     
-    /* Show only staff buttons by default */
     .sidebar-btn[title="Dashboard"],
     .sidebar-btn[title="Reports"],
     .sidebar-btn[title="Cashier"],
@@ -43,12 +42,10 @@
       display: flex;
     }
     
-    /* Admin role shows all buttons */
     html.admin-loaded .sidebar-btn {
       display: flex !important;
     }
     
-    /* Staff role shows only specific buttons */
     html.staff-loaded .sidebar-btn {
       display: none !important;
     }
@@ -391,6 +388,7 @@
         <button class="filter-btn" onclick="filterByPeriod('today', this)">Today</button>
         <button class="filter-btn" onclick="filterByPeriod('week', this)">This Week</button>
         <button class="filter-btn" onclick="filterByPeriod('month', this)">This Month</button>
+        <button class="filter-btn" onclick="filterByPeriod('year', this)">Annually</button>
         <input type="date" id="startDate" class="filter-btn">
         <input type="date" id="endDate" class="filter-btn">
         <button class="filter-btn" onclick="filterByDateRange()">
@@ -507,7 +505,6 @@
     let purchaseOrderListener = null;
     let userDataCache = null;
 
-    // Clock out function - OPTIMIZED
     async function handleClockOut() {
       const user = auth.currentUser;
       if (!user) return;
@@ -540,7 +537,6 @@
       }
     }
 
-    // Logout modal functions
     window.showLogoutModal = function() {
       document.getElementById('logoutModal').classList.add('show');
     }
@@ -557,7 +553,6 @@
       try {
         await handleClockOut();
         
-        // Clear cache and detach listeners
         userDataCache = null;
         if (inventoryListener) inventoryListener();
         if (purchaseOrderListener) purchaseOrderListener();
@@ -587,13 +582,11 @@
       }
     });
 
-    // Auth state observer - OPTIMIZED with caching
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUserId = user.uid;
         
         try {
-          // Check cache first
           if (userDataCache && userDataCache.uid === user.uid) {
             currentUserFullName = userDataCache.fullName;
             currentUserRole = userDataCache.role;
@@ -608,7 +601,6 @@
               currentUserFullName = data.username || data.fullName || user.email || "User";
               currentUserRole = data.role || 'staff';
               
-              // Cache user data
               userDataCache = {
                 uid: user.uid,
                 fullName: currentUserFullName,
@@ -625,7 +617,6 @@
           console.error("Error fetching user document:", err);
         }
         
-        // Load data after auth
         loadSalesData();
         monitorInventory();
         monitorPurchaseOrders();
@@ -634,7 +625,6 @@
       }
     });
 
-    // Role-based visibility
     function applyRoleBasedVisibility(role) {
       if (role === 'admin') {
         document.documentElement.classList.add('admin-loaded');
@@ -656,7 +646,6 @@
       await handleClockOut();
     });
 
-    // Monitor inventory for sidebar bubble - OPTIMIZED
     function monitorInventory() {
       if (inventoryListener) {
         inventoryListener();
@@ -704,25 +693,23 @@
         button.appendChild(bubble);
       }
       
-      // Priority: No stock (red) > Low stock (yellow) > Overstock (blue)
       if (noStock > 0) {
         bubble.textContent = noStock > 99 ? '99+' : noStock;
-        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.backgroundColor = '#dc2626';
         bubble.style.display = 'flex';
       } else if (lowStock > 0) {
         bubble.textContent = lowStock > 99 ? '99+' : lowStock;
-        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.backgroundColor = '#f59e0b';
         bubble.style.display = 'flex';
       } else if (overstock > 0) {
         bubble.textContent = overstock > 99 ? '99+' : overstock;
-        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.backgroundColor = '#3b82f6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Monitor purchase orders for sidebar bubble - OPTIMIZED
     function monitorPurchaseOrders() {
       if (purchaseOrderListener) {
         purchaseOrderListener();
@@ -754,18 +741,35 @@
       
       if (count > 0) {
         bubble.textContent = count > 99 ? '99+' : count;
-        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.backgroundColor = '#8b5cf6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Sales data management
     let allSalesData = [];
     let filteredSalesData = [];
 
-    // Load sales data from Firebase - OPTIMIZED (one-time load)
+    function groupItemsWithQuantity(items) {
+      const itemMap = {};
+      items.forEach(item => {
+        const qty = item.quantity || 1;
+        if (itemMap[item.name]) {
+          itemMap[item.name].totalQty += qty;
+          itemMap[item.name].totalPrice += item.price * qty;
+        } else {
+          itemMap[item.name] = {
+            name: item.name,
+            totalQty: qty,
+            price: item.price,
+            totalPrice: item.price * qty
+          };
+        }
+      });
+      return Object.values(itemMap);
+    }
+
     async function loadSalesData() {
       try {
         const salesQuery = query(collection(db, "cashier_receipt"), orderBy("timestamp", "desc"));
@@ -810,14 +814,12 @@
       }
     }
 
-    // Generate PDF for specific receipt
     async function downloadReceiptPDF(receiptData) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
       
       let y = 20;
       
-      // Header
       doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
       doc.text('Skinship Beauty', 105, y, { align: 'center' });
@@ -840,7 +842,6 @@
       doc.text(`Receipt No: ${receiptData.receiptNumber}`, 105, y, { align: 'center' });
       y += 10;
       
-      // Customer info
       doc.setFontSize(10);
       doc.setFont(undefined, 'normal');
       doc.text(`SOLD TO: ${receiptData.customerName}`, 20, y);
@@ -864,7 +865,6 @@
       doc.text(`CASHIER: ${receiptData.cashierName}`, 150, y);
       y += 8;
       
-      // Table header
       doc.setFont(undefined, 'bold');
       doc.line(20, y, 190, y);
       y += 6;
@@ -876,23 +876,24 @@
       doc.line(20, y, 190, y);
       y += 6;
       
-      // Items
       doc.setFont(undefined, 'normal');
       doc.setFontSize(9);
-      receiptData.items.forEach(item => {
+      
+      const groupedItems = groupItemsWithQuantity(receiptData.items);
+      
+      groupedItems.forEach(item => {
         if (y > 250) {
           doc.addPage();
           y = 20;
         }
-        doc.text('1', 25, y);
+        doc.text(String(item.totalQty), 25, y);
         const lines = doc.splitTextToSize(item.name, 90);
         doc.text(lines, 50, y);
         doc.text(`PHP ${item.price.toFixed(2)}`, 150, y);
-        doc.text(`PHP ${item.price.toFixed(2)}`, 175, y);
+        doc.text(`PHP ${item.totalPrice.toFixed(2)}`, 175, y);
         y += Math.max(6, lines.length * 5);
       });
       
-      // Total section
       y += 4;
       doc.line(20, y, 190, y);
       y += 6;
@@ -925,7 +926,6 @@
         y += 4;
       }
       
-      // Signature line
       doc.line(140, y, 190, y);
       y += 5;
       doc.setFontSize(9);
@@ -937,7 +937,6 @@
 
     window.downloadReceiptPDF = downloadReceiptPDF;
 
-    // Render table
     function renderTable() {
       const tbody = document.getElementById('salesTableBody');
       
@@ -954,32 +953,35 @@
       }
       
       tbody.innerHTML = filteredSalesData.map(row => {
-        const totalQty = row.items.length;
+        const groupedItems = groupItemsWithQuantity(row.items);
+        const totalQty = groupedItems.reduce((sum, item) => sum + item.totalQty, 0);
         
         let itemsList;
-        if (row.items.length === 1) {
+        if (groupedItems.length === 1) {
+          const item = groupedItems[0];
           itemsList = `
             <div class="flex items-center gap-2">
-              <span class="font-medium">${row.items[0].name}</span>
-              <span class="text-xs text-gray-500">(₱${row.items[0].price})</span>
+              <span class="font-medium">• ${item.name} ${item.totalQty > 1 ? `(x${item.totalQty})` : ''}</span>
+              <span class="text-xs text-gray-500">(₱${item.price.toFixed(2)}${item.totalQty > 1 ? ' each' : ''})</span>
             </div>
           `;
         } else {
-          const firstItem = row.items[0].name;
-          const remaining = row.items.length - 1;
+          const firstItem = groupedItems[0];
+          const remaining = groupedItems.length - 1;
+          
           itemsList = `
             <div class="space-y-2">
               <div class="flex items-center gap-2">
-                <span class="font-medium">${firstItem}</span>
+                <span class="font-medium">• ${firstItem.name} ${firstItem.totalQty > 1 ? `(x${firstItem.totalQty})` : ''}</span>
                 <span class="px-2 py-0.5 bg-[#da5c73] text-white text-xs rounded-full font-semibold">+${remaining} more</span>
               </div>
               <details class="text-sm">
                 <summary class="cursor-pointer text-[#da5c73] hover:underline">View all items</summary>
                 <div class="mt-2 pl-4 space-y-1 border-l-2 border-pink-200">
-                  ${row.items.map(item => `
+                  ${groupedItems.map(item => `
                     <div class="flex justify-between items-center text-xs">
-                      <span class="text-gray-700">• ${item.name}</span>
-                      <span class="text-gray-500 font-medium">₱${item.price}</span>
+                      <span class="text-gray-700">• ${item.name} ${item.totalQty > 1 ? `(x${item.totalQty})` : ''}</span>
+                      <span class="text-gray-500 font-medium">₱${item.price.toFixed(2)}${item.totalQty > 1 ? ` each, ₱${item.totalPrice.toFixed(2)} total` : ''}</span>
                     </div>
                   `).join('')}
                 </div>
@@ -988,7 +990,6 @@
           `;
         }
         
-        // Escape JSON for onclick attribute
         const escapedData = JSON.stringify(row).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         
         return `
@@ -1016,7 +1017,6 @@
       }).join('');
     }
 
-    // Update statistics
     function updateStats() {
       const total = filteredSalesData.reduce((sum, receipt) => sum + receipt.subtotal, 0);
       const uniqueReceipts = filteredSalesData.length;
@@ -1025,7 +1025,8 @@
       const serviceCounts = {};
       filteredSalesData.forEach(receipt => {
         receipt.items.forEach(item => {
-          serviceCounts[item.name] = (serviceCounts[item.name] || 0) + 1;
+          const qty = item.quantity || 1;
+          serviceCounts[item.name] = (serviceCounts[item.name] || 0) + qty;
         });
       });
       const topService = Object.keys(serviceCounts).length > 0 
@@ -1038,7 +1039,6 @@
       document.getElementById('avgSale').textContent = `₱ ${avgSale.toLocaleString('en-PH', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     }
 
-    // Search functionality - debounced
     let searchTimeout;
     document.getElementById('searchInput').addEventListener('input', function(e) {
       clearTimeout(searchTimeout);
@@ -1062,11 +1062,11 @@
       }, 300);
     });
 
-    // Filter by period
     window.filterByPeriod = function(period, button) {
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
-           btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
+           btn.textContent.includes('This Week') || btn.textContent.includes('This Month') ||
+           btn.textContent.includes('Annually')) {
           btn.classList.remove('active');
         }
       });
@@ -1092,6 +1092,11 @@
           startDate.setMonth(now.getMonth() - 1);
           startDate.setHours(0, 0, 0, 0);
           break;
+        case 'year':
+          startDate = new Date(now);
+          startDate.setFullYear(now.getFullYear() - 1);
+          startDate.setHours(0, 0, 0, 0);
+          break;
         default:
           filteredSalesData = [...allSalesData];
           renderTable();
@@ -1107,7 +1112,6 @@
       updateStats();
     }
 
-    // Filter by date range
     window.filterByDateRange = function() {
       const startDateInput = document.getElementById('startDate').value;
       const endDateInput = document.getElementById('endDate').value;
@@ -1130,7 +1134,8 @@
       
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
-           btn.textContent.includes('This Week') || btn.textContent.includes('This Month')) {
+           btn.textContent.includes('This Week') || btn.textContent.includes('This Month') ||
+           btn.textContent.includes('Annually')) {
           btn.classList.remove('active');
         }
       });
@@ -1143,7 +1148,6 @@
       updateStats();
     }
 
-    // Export to CSV
     window.exportToCSV = function() {
       if (filteredSalesData.length === 0) {
         alert('No data to export');
@@ -1153,20 +1157,32 @@
       let csv = 'Receipt No.,Customer Name,Service/Item,Quantity,Price,Date\n';
       
       filteredSalesData.forEach(row => {
-        const itemsText = row.items.map(item => item.name).join('; ');
-        csv += `${row.receiptNumber},"${row.customerName}","${itemsText}",${row.items.length},${row.subtotal},"${row.date}"\n`;
+        const groupedItems = groupItemsWithQuantity(row.items);
+        const itemsText = groupedItems.map(item => 
+          item.totalQty > 1 ? `${item.name} (x${item.totalQty})` : item.name
+        ).join('; ');
+        
+        const totalQty = groupedItems.reduce((sum, item) => sum + item.totalQty, 0);
+        const dateStr = `'${row.date}`;
+        
+        csv += `${row.receiptNumber},"${row.customerName}","${itemsText}",${totalQty},${row.subtotal.toFixed(2)},${dateStr}\n`;
       });
       
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `sales_report_${new Date().toISOString().split('T')[0]}.csv`;
+      
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      
+      a.download = `sales_report_${year}-${month}-${day}.csv`;
       a.click();
       window.URL.revokeObjectURL(url);
     }
 
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
       const userMenu = document.getElementById('userMenu');
       const userMenuButton = document.getElementById('userMenuButton');
@@ -1176,7 +1192,6 @@
       }
     });
 
-    // Cleanup function
     function cleanup() {
       if (inventoryListener) inventoryListener();
       if (purchaseOrderListener) purchaseOrderListener();

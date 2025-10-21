@@ -263,6 +263,7 @@ async function saveSuppliersToFirebase() {
 // Initialize the page
 document.addEventListener('DOMContentLoaded', async function() {
   await loadSuppliersFromFirebase();
+  await loadCategoriesFromFirebase(); 
   loadInventoryItemsAndCategories();
   loadPurchaseOrders();
   updateSupplierDropdown();
@@ -277,13 +278,44 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
   
   document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
+  
+  // Add event listeners for stock level indicator
+  const quantityInput = document.getElementById('quantity');
+  const minStockInput = document.getElementById('newProductMinStock');
+  
+  if (quantityInput) {
+    // Mark as interacted when user types
+    quantityInput.addEventListener('input', function() {
+      this.dataset.hasInteracted = 'true';
+      updateStockLevelIndicator();
+      calculateTotal();
+    });
+    
+    // Also mark as interacted when user focuses on the field
+    quantityInput.addEventListener('focus', function() {
+      if (this.value) {
+        this.dataset.hasInteracted = 'true';
+        updateStockLevelIndicator();
+      }
+    });
+  }
+  
+  if (minStockInput) {
+    minStockInput.addEventListener('input', function() {
+      // Only update if quantity has been interacted with
+      const quantityInput = document.getElementById('quantity');
+      if (quantityInput && quantityInput.dataset.hasInteracted === 'true') {
+        updateStockLevelIndicator();
+      }
+    });
+  }
 });
 
 // Load inventory items and categories with real-time listener
 function loadInventoryItemsAndCategories() {
   try {
     inventoryListener = db.collection('inventory')
-      .onSnapshot((snapshot) => {
+      .onSnapshot(async (snapshot) => {
         inventoryItems = [];
         const categorySet = new Set();
         categoryCounts = {};
@@ -308,12 +340,18 @@ function loadInventoryItemsAndCategories() {
           }
         });
         
-        if (categorySet.size === 0) {
-          const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
-          categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
-        } else {
-          categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
-        }
+        // Load categories from Firebase (includes manually added ones)
+        await loadCategoriesFromFirebase();
+        
+        // Merge with categories from inventory items
+        categorySet.forEach(cat => {
+          if (!categories.find(c => c.name === cat)) {
+            categories.push({ id: cat, name: cat });
+          }
+        });
+        
+        // Sort categories alphabetically
+        categories.sort((a, b) => a.name.localeCompare(b.name));
         
         categoriesCache = categories;
         
@@ -389,7 +427,6 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// Handle Add Category
 async function handleAddCategory(event) {
   event.preventDefault();
   
@@ -406,38 +443,88 @@ async function handleAddCategory(event) {
   }
   
   try {
-    const placeholderItem = {
-      id: await generateUniqueItemId(),
-      name: `${categoryName} - Sample Item`,
-      category: categoryName,
-      qty: 0,
-      price: 0,
-      total: 0,
-      date: getCurrentDate(),
-      status: 'out-of-stock',
-      minStock: 10,
-      supplier: '',
-      description: 'Placeholder item for category',
-      createdBy: currentUser ? currentUser.fullName : 'Unknown',
-      createdDate: getCurrentDate(),
-      lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
-      isPlaceholder: true
-    };
-
-    await db.collection('inventory').add(placeholderItem);
+    // Add to categories array
+    categories.push({
+      id: categoryName,
+      name: categoryName
+    });
+    
+    // Sort categories alphabetically
+    categories.sort((a, b) => a.name.localeCompare(b.name));
+    
+    // Save to Firebase
+    await saveCategoriesToFirebase();
+    
+    // Update the dropdown
+    updateCategorySelects();
     
     closeAddCategoryModal();
     
+    // Set the newly added category as selected
     const categorySelect = document.getElementById('newProductCategory');
     setTimeout(() => {
       categorySelect.value = categoryName;
-    }, 500);
+    }, 100);
     
-    alert(`Category "${categoryName}" added successfully!`);
+    alert(`Category "${categoryName}" added successfully!\n\nYou can now use it when creating a new product in your purchase order.`);
     
   } catch (error) {
     console.error('Error adding category:', error);
-    alert('Error adding category. Please try again.');
+    alert('Error adding category: ' + error.message + '. Please try again.');
+  }
+}
+
+// Load categories from Firebase
+async function loadCategoriesFromFirebase() {
+  try {
+    // Check cache first
+    if (categoriesCache) {
+      categories = categoriesCache;
+      return;
+    }
+
+    const doc = await db.collection('metadata').doc('inventoryCategories').get();
+    if (doc.exists && doc.data().list) {
+      categories = doc.data().list.map(name => ({ id: name, name: name }));
+    } else {
+      // If no categories exist, extract from inventory items
+      const categorySet = new Set();
+      inventoryItems.forEach(item => {
+        if (item.category) {
+          categorySet.add(item.category);
+        }
+      });
+      
+      if (categorySet.size === 0) {
+        const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
+        categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+      } else {
+        categories = Array.from(categorySet).map(cat => ({ id: cat, name: cat }));
+      }
+      
+      // Save to Firebase for future use
+      const categoryNames = categories.map(c => c.name);
+      await db.collection('metadata').doc('inventoryCategories').set({ list: categoryNames });
+    }
+    
+    // Cache categories
+    categoriesCache = categories;
+  } catch (error) {
+    console.error('Error loading categories:', error);
+    const defaultCategories = ['Hair Products', 'Nail Products', 'Skincare', 'Lash Products', 'Tools'];
+    categories = defaultCategories.map(cat => ({ id: cat, name: cat }));
+    categoriesCache = categories;
+  }
+}
+
+// Save categories to Firebase
+async function saveCategoriesToFirebase() {
+  try {
+    const categoryNames = categories.map(c => c.name);
+    await db.collection('metadata').doc('inventoryCategories').set({ list: categoryNames });
+    categoriesCache = categories;
+  } catch (error) {
+    console.error('Error saving categories:', error);
   }
 }
 
@@ -492,7 +579,6 @@ async function loadManageCategoriesList() {
   });
 }
 
-// Handle Delete Category
 async function handleDeleteCategory(categoryName, itemCount) {
   if (itemCount === 0) {
     if (!confirm(`Are you sure you want to delete the category "${categoryName}"?`)) {
@@ -527,6 +613,12 @@ async function handleDeleteCategory(categoryName, itemCount) {
     }
     
     await Promise.all(batches);
+    
+    // Remove from categories array
+    categories = categories.filter(c => c.name !== categoryName);
+    
+    // Save updated categories to Firebase
+    await saveCategoriesToFirebase();
     
     closeManageCategoriesModal();
     
@@ -772,6 +864,9 @@ function switchProductMode(mode) {
     document.getElementById('newProductName').required = false;
     document.getElementById('newProductCategory').required = false;
     document.getElementById('newProductPrice').required = false;
+    
+    // Hide indicator when switching to existing product
+    hideStockLevelIndicator();
   } else {
     existingBtn.classList.remove('active');
     newBtn.classList.add('active');
@@ -784,6 +879,9 @@ function switchProductMode(mode) {
     document.getElementById('newProductPrice').required = true;
     
     generateNewProductId();
+    
+    // Don't show indicator yet - wait for user interaction
+    hideStockLevelIndicator();
   }
   
   calculateTotal();
@@ -842,7 +940,11 @@ async function generateUniqueItemId() {
 
 // Calculate total value
 function calculateTotal() {
-  const qty = parseInt(document.getElementById('quantity').value) || 0;
+  const qty = parseInt(document.getElementById('quantity').value);
+  
+  // Allow 0 or empty, but show 0.00 as total
+  const quantity = isNaN(qty) || qty < 0 ? 0 : qty;
+  
   let unitPrice = 0;
   
   if (currentProductMode === 'existing' && selectedProduct) {
@@ -851,7 +953,7 @@ function calculateTotal() {
     unitPrice = parseFloat(document.getElementById('newProductPrice').value) || 0;
   }
   
-  const total = qty * unitPrice;
+  const total = quantity * unitPrice;
   document.getElementById('totalValue').value = `₱ ${total.toFixed(2)}`;
 }
 
@@ -910,6 +1012,9 @@ function openNewPOModal() {
   selectedProduct = null;
   document.getElementById('productDetails').style.display = 'none';
   
+  // Reset interaction flag and hide indicator
+  hideStockLevelIndicator();
+  
   document.getElementById('poModal').style.display = 'block';
 }
 
@@ -918,9 +1023,94 @@ function closePOModal() {
   document.getElementById('poModal').style.display = 'none';
 }
 
+// Real-time stock level indicator
+function updateStockLevelIndicator() {
+  const quantityInput = document.getElementById('quantity');
+  const quantity = parseInt(quantityInput.value) || 0;
+  const minStock = parseInt(document.getElementById('newProductMinStock').value) || 10;
+  
+  // Find the label for quantity input
+  const quantityInputDiv = quantityInput.parentElement;
+  const quantityLabel = quantityInputDiv.querySelector('label');
+  
+  if (!quantityLabel) return;
+  
+  // Get or create the inline indicator span
+  let indicator = document.getElementById('stockLevelIndicator');
+  
+  if (!indicator) {
+    indicator = document.createElement('span');
+    indicator.id = 'stockLevelIndicator';
+    quantityLabel.appendChild(indicator);
+  }
+  
+  // Only show for new products AND if user has interacted with quantity field
+  const hasInteracted = quantityInput.dataset.hasInteracted === 'true';
+  
+  if (currentProductMode !== 'new' || !hasInteracted) {
+    indicator.style.display = 'none';
+    return;
+  }
+  
+  // Determine status and message
+  if (quantity === 0) {
+    indicator.className = 'ml-2 text-xs font-semibold text-red-600';
+    indicator.textContent = '⚠️ Out of Stock - 0 inventory';
+    indicator.style.display = 'inline';
+  } else if (quantity <= minStock) {
+    indicator.className = 'ml-2 text-xs font-semibold text-yellow-600';
+    indicator.textContent = `⚠️ Low Stock (min: ${minStock})`;
+    indicator.style.display = 'inline';
+  } else if (quantity > (minStock * 2)) {
+    const overstockThreshold = Math.ceil(minStock * 1.5);
+    indicator.className = 'ml-2 text-xs font-semibold text-blue-600';
+    indicator.textContent = `ℹ️ High Qty (threshold: ${overstockThreshold})`;
+    indicator.style.display = 'inline';
+  } else {
+    indicator.className = 'ml-2 text-xs font-semibold text-green-600';
+    indicator.textContent = '✓ Optimal';
+    indicator.style.display = 'inline';
+  }
+}
+
+// Hide the indicator (called when switching modes or opening modal)
+function hideStockLevelIndicator() {
+  const indicator = document.getElementById('stockLevelIndicator');
+  if (indicator) {
+    indicator.style.display = 'none';
+  }
+  
+  // Reset interaction flag
+  const quantityInput = document.getElementById('quantity');
+  if (quantityInput) {
+    quantityInput.dataset.hasInteracted = 'false';
+  }
+}
+
+// Add event listeners for real-time updates
+document.addEventListener('DOMContentLoaded', function() {
+  const quantityInput = document.getElementById('quantity');
+  const minStockInput = document.getElementById('newProductMinStock');
+  
+  if (quantityInput) {
+    quantityInput.addEventListener('input', updateStockLevelIndicator);
+  }
+  
+  if (minStockInput) {
+    minStockInput.addEventListener('input', updateStockLevelIndicator);
+  }
+});
+
 // Handle form submission
 document.getElementById('poForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+  
+  // Mark quantity as interacted when submitting (so warnings show)
+  const quantityInput = document.getElementById('quantity');
+  if (quantityInput && currentProductMode === 'new') {
+    quantityInput.dataset.hasInteracted = 'true';
+    updateStockLevelIndicator();
+  }
   
   let productData = {};
   
@@ -944,7 +1134,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     const description = document.getElementById('newProductDescription').value.trim();
     const productId = document.getElementById('newProductId').value;
     
-    if (!name || !category || !price || category === '__ADD_NEW__') {
+    if (!name || !category || !price || category === '__ADD_NEW__' || category === '__MANAGE__') {
       alert('Please fill in all required fields for the new product.');
       return;
     }
@@ -995,8 +1185,55 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     };
   }
   
-  const quantity = parseInt(document.getElementById('quantity').value);
+  // Get quantity and allow 0
+  const quantityValue = document.getElementById('quantity').value;
+  
+  // Check if quantity field is empty
+  if (quantityValue === '' || quantityValue === null) {
+    alert('Please enter an order quantity (you can enter 0 for product templates).');
+    return;
+  }
+  
+  const quantity = parseInt(quantityValue);
+  
+  // Validate quantity is a number and not negative
+  if (isNaN(quantity) || quantity < 0) {
+    alert('Please enter a valid quantity (0 or greater).');
+    return;
+  }
+  
   const totalValue = quantity * productData.unitPrice;
+  
+  // Check stock levels and warn user for NEW products only
+  if (currentProductMode === 'new') {
+    const minStock = parseInt(document.getElementById('newProductMinStock').value);
+    
+    // Check if quantity will result in no stock (0)
+    if (quantity === 0) {
+      const confirmNoStock = confirm(`⚠️ Zero Stock Warning!\n\nYou are creating a new product with ZERO initial quantity.\n\nThis means:\n• The product will be added to inventory with 0 stock\n• Status will be "Out of Stock"\n• You'll need to create another purchase order to add stock later\n\nRecommendation: Consider adding an initial quantity now.\n\nDo you want to continue with 0 quantity?`);
+      
+      if (!confirmNoStock) {
+        return;
+      }
+    }
+    // Check if quantity will result in low stock
+    else if (quantity <= minStock) {
+      const confirmLowStock = confirm(`⚠️ Low Stock Warning!\n\nYour order quantity (${quantity} units) is at or below the minimum stock level (${minStock} units).\n\nThis means:\n• The product will immediately show as "Low Stock"\n• You may need to reorder soon\n• Recommended quantity: ${Math.ceil(minStock * 2)} units or more\n\nDo you want to continue with this quantity?`);
+      
+      if (!confirmLowStock) {
+        return;
+      }
+    }
+    // Check if quantity will result in overstock
+    else if (quantity > (minStock * 2)) {
+      const overstockThreshold = Math.ceil(minStock * 1.5);
+      const confirmOverstock = confirm(`ℹ️ High Quantity Notice\n\nYour order quantity (${quantity} units) is significantly above the minimum stock level (${minStock} units).\n\nThis will result in:\n• "Overstock" status (threshold: ${overstockThreshold} units)\n• Higher inventory holding costs\n• Potential storage space issues\n\nCurrent order: ${quantity} units\nOptimal range: ${minStock + 1} - ${overstockThreshold} units\n\nDo you want to continue with this quantity?`);
+      
+      if (!confirmOverstock) {
+        return;
+      }
+    }
+  }
   
   const formData = {
     id: document.getElementById('poNumber').value,
@@ -1013,11 +1250,17 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
   try {
     if (editingIndex === -1) {
       await db.collection('purchaseOrders').add(formData);
-      alert('Purchase order created successfully!');
+      
+      // Show appropriate success message based on quantity
+      if (currentProductMode === 'new' && quantity === 0) {
+        alert(`✅ Purchase Order Created!\n\nProduct: ${productData.productName}\nQuantity: 0 units (Product template created)\n\nNote: This product will be added to inventory with "Out of Stock" status. Create another purchase order to add stock.`);
+      } else {
+        alert('✅ Purchase order created successfully!');
+      }
     } else {
       const po = purchaseOrders[editingIndex];
       await db.collection('purchaseOrders').doc(po.firebaseId).update(formData);
-      alert('Purchase order updated successfully!');
+      alert('✅ Purchase order updated successfully!');
     }
 
     closePOModal();
