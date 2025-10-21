@@ -234,6 +234,23 @@
       animation: iconPulse 2s ease-in-out infinite;
     }
 
+    /* Cancellation modal should appear above other modals */
+#cancellationModal {
+  z-index: 10000 !important;
+}
+
+#cancellationModal .modal-content {
+  z-index: 10001 !important;
+}
+
+.modal {
+  display: none;
+}
+
+.modal.show {
+  display: flex !important;
+}
+
     @keyframes iconPulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
@@ -562,6 +579,30 @@
       </form>
     </div>
   </div>
+
+          <!-- Cancellation Reason Modal -->
+<div class="modal" id="cancellationModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 10000; align-items: center; justify-content: center;">
+  <div class="modal-content" style="background: white; border-radius: 20px; width: 90%; max-width: 500px; padding: 30px; position: relative; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); z-index: 10001;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+      <h2 style="color: #da5c73; font-size: 24px; font-weight: bold; flex: 1;">Cancellation Reason</h2>
+      <button onclick="closeCancellationModal()" style="background: none; border: none; color: #666; cursor: pointer; font-size: 24px;">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="color: #333; font-size: 14px; font-weight: 500;">Reason for Cancellation (Optional)</label>
+        <textarea id="cancellationReason" rows="4" placeholder="Provide a reason for the customer..." style="padding: 10px 15px; border: 1px solid #d1d5db; border-radius: 6px; background: white; color: #333; font-size: 14px;"></textarea>
+      </div>
+    </div>
+    
+    <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+      <button onclick="closeCancellationModal()" style="padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; background: #9ca3af; color: white;">Back</button>
+      <button onclick="confirmCancellation()" style="padding: 10px 24px; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; background: #ef4444; color: white;">Confirm Cancellation</button>
+    </div>
+  </div>
+</div>
 
   <!-- Logout Confirmation Modal -->
   <div class="modal-overlay" id="logoutModal">
@@ -1005,6 +1046,116 @@ function setupSessionMonitoring(userId) {
       }
     }
 
+    async function sendCancellationEmail(customerData) {
+  if (!customerData.email) {
+    console.log('No email provided, skipping cancellation email notification');
+    return;
+  }
+
+  try {
+    const serviceName = Array.isArray(customerData.services) 
+      ? customerData.services.map(s => s.name || s).join(', ')
+      : customerData.service;
+    
+    const templateParams = {
+      to_email: customerData.email,
+      customer_name: customerData.name,
+      service: serviceName,
+      appointment_date: customerData.date,
+      appointment_time: customerData.time,
+      staff: customerData.staff,
+      cancellation_reason: customerData.cancellation_reason || 'No reason provided',
+      cancellation_date: new Date().toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+
+    await emailjs.send(
+      'service_ehjfcod',
+      'template_cqcchlm',  // Your cancellation template ID
+      templateParams
+    );
+    
+    console.log('Cancellation email sent successfully to:', customerData.email);
+  } catch (error) {
+    console.error('Error sending cancellation email:', error);
+  }
+}
+
+window.sendCancellationEmail = sendCancellationEmail;
+
+let pendingCancellation = null;
+window.pendingAppointmentUpdate = null;
+
+function showCancellationReasonModal(appointmentData) {
+  pendingCancellation = appointmentData;
+  document.getElementById('cancellationReason').value = '';
+  const modal = document.getElementById('cancellationModal');
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+}
+
+function closeCancellationModal() {
+  const modal = document.getElementById('cancellationModal');
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+  pendingCancellation = null;
+  
+  if (window.pendingAppointmentUpdate) {
+    window.pendingAppointmentUpdate = null;
+  }
+}
+
+async function confirmCancellation() {
+  const reason = document.getElementById('cancellationReason').value.trim();
+  
+  if (pendingCancellation) {
+    pendingCancellation.cancellation_reason = reason || 'No reason provided';
+    await window.sendCancellationEmail(pendingCancellation);
+    pendingCancellation = null;
+  }
+  
+  if (window.pendingAppointmentUpdate) {
+    const { appointmentId, customerData } = window.pendingAppointmentUpdate;
+    
+    try {
+      customerData.cancellation_reason = reason || 'No reason provided';
+      
+      await updateDoc(doc(db, "appointments", appointmentId), customerData);
+      
+      if (customerData.email) {
+        customerData.service = Array.isArray(customerData.services)
+          ? customerData.services.map(s => s.name).join(', ')
+          : customerData.service;
+        customerData.cancellation_reason = reason || 'No reason provided';
+        await window.sendCancellationEmail(customerData);
+      }
+      
+      alert(customerData.email 
+        ? 'Appointment cancelled successfully! Cancellation email sent.' 
+        : 'Appointment status updated to Cancelled!');
+      
+      window.pendingAppointmentUpdate = null;
+      closeCancellationModal();
+      calendar.closeModal();
+      
+    } catch (error) {
+      console.error("Error updating appointment with cancellation:", error);
+      alert('Failed to update appointment. Please try again.');
+      window.pendingAppointmentUpdate = null;
+      closeCancellationModal();
+    }
+  }
+}
+
+window.showCancellationReasonModal = showCancellationReasonModal;
+window.closeCancellationModal = closeCancellationModal;
+window.confirmCancellation = confirmCancellation;
+
     class Calendar {
       constructor(db) {
         this.currentDate = new Date();
@@ -1427,7 +1578,7 @@ async saveAppointment(e) {
   
   const date = document.getElementById('appointmentDate').value;
   const time = document.getElementById('appointmentTime').value;
-  const selectedServices = this.getSelectedServices(); // NEW: Get multiple services
+  const selectedServices = this.getSelectedServices();
   const employee = document.getElementById('employeeSelect').value;
   const phone = document.getElementById('phoneNumber').value;
   const email = document.getElementById('customerEmail').value;
@@ -1443,21 +1594,18 @@ async saveAppointment(e) {
 
   let hasError = false;
 
-  // Validate phone
   if (phone && !validatePhoneNumber(phone)) {
     document.getElementById('phoneNumber').classList.add('error');
     document.getElementById('phoneError').classList.add('show');
     hasError = true;
   }
 
-  // Validate email
   if (email && !validateEmail(email)) {
     document.getElementById('customerEmail').classList.add('error');
     document.getElementById('emailError').classList.add('show');
     hasError = true;
   }
 
-  // Validate date/time
   if (!this.validateFutureDateTime(date, time)) {
     document.getElementById('appointmentDate').classList.add('error');
     document.getElementById('appointmentTime').classList.add('error');
@@ -1466,13 +1614,11 @@ async saveAppointment(e) {
     hasError = true;
   }
 
-  // NEW: Validate services
   if (selectedServices.length === 0) {
     document.getElementById('serviceError').classList.add('show');
     hasError = true;
   }
 
-  // Validate employee
   if (!employee) {
     document.getElementById('employeeSelect').classList.add('error');
     document.getElementById('employeeError').classList.add('show');
@@ -1498,8 +1644,8 @@ async saveAppointment(e) {
     status: status,
     appointment: dateTime.toLocaleString(),
     archived: false,
-    services: selectedServices, // NEW: Store multiple services
-    service: selectedServices[0]?.name || '' // Keep for backward compatibility
+    services: selectedServices,
+    service: selectedServices[0]?.name || ''
   };
 
   if (!this.editingId) {
@@ -1508,13 +1654,40 @@ async saveAppointment(e) {
 
   try {
     if (this.editingId) {
+      // Check if status changed to Cancelled
+      const originalAppointment = this.customers.find(c => c.id === this.editingId);
+      const statusChanged = originalAppointment && originalAppointment.status !== status;
+      const wasCancelled = statusChanged && status === 'Cancelled';
+      
+      if (wasCancelled) {
+        // Store appointment data for cancellation
+        window.pendingAppointmentUpdate = {
+          appointmentId: this.editingId,
+          customerData: customerData
+        };
+        
+        // Show cancellation reason modal
+        showCancellationReasonModal({
+          ...customerData,
+          service: selectedServices.map(s => s.name).join(', ')
+        });
+        return; // Don't save yet, wait for cancellation confirmation
+      }
+      
+      // Normal update (not cancellation)
       await updateDoc(doc(this.db, "appointments", this.editingId), customerData);
-      alert('Appointment updated successfully!');
+      
+      if (email && statusChanged) {
+        customerData.service = selectedServices.map(s => s.name).join(', ');
+        await sendAppointmentEmail(customerData);
+        alert('Appointment updated successfully! Email notification sent.');
+      } else {
+        alert('Appointment updated successfully!');
+      }
     } else {
       await addDoc(collection(this.db, "appointments"), customerData);
       
       if (email) {
-        // Update email data to include all services
         customerData.service = selectedServices.map(s => s.name).join(', ');
         const emailSent = await sendAppointmentEmail(customerData);
         if (emailSent) {
