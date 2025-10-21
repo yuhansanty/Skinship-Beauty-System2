@@ -619,6 +619,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    let sessionMonitor = null;
     
     let currentUserId = null;
     let currentUserFullName = "";
@@ -626,6 +627,46 @@
     let inventoryListener = null;
     let purchaseOrderListener = null;
     let inventoryData = [];
+
+    // Session monitoring function
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = doc(db, "users", userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    signOut(auth);
+    return;
+  }
+  
+  sessionMonitor = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      console.warn('User document no longer exists');
+      signOut(auth);
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      signOut(auth).then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
     // Initialize EmailJS
     (function(){
@@ -780,6 +821,7 @@
         userDataCache = null;
         if (inventoryListener) inventoryListener();
         if (purchaseOrderListener) purchaseOrderListener();
+        if (sessionMonitor) sessionMonitor();
         
         await signOut(auth);
         window.location.href = "index.html";
@@ -827,6 +869,7 @@
           document.getElementById("usernameDisplay").textContent = currentUserFullName;
           document.getElementById("logoutUsername").textContent = currentUserFullName;
           setupNotificationListeners();
+          setupSessionMonitoring(user.uid);
         } catch (err) {
           console.error("Error fetching user document:", err);
           currentUserFullName = user.email || "User";
@@ -843,6 +886,7 @@
     window.addEventListener("beforeunload", async () => {
       if (inventoryListener) inventoryListener();
       if (purchaseOrderListener) purchaseOrderListener();
+      if (sessionMonitor) sessionMonitor(); 
       await handleClockOut();
     });
 
@@ -1620,6 +1664,7 @@ async editAppointment(id) {
       cleanup() {
         if (this.customersListener) this.customersListener();
         if (this.servicesListener) this.servicesListener();
+        if (sessionMonitor) sessionMonitor();
       }
     }
 

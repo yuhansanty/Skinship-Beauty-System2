@@ -901,7 +901,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     emailjs.init("JcMrqAedryjLalsIq");
 
@@ -917,6 +917,10 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+
+    function generateSessionId() {
+  return Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
+}
 
     const loginForm = document.getElementById("loginForm");
     const loginSection = document.getElementById("loginSection");
@@ -1192,22 +1196,33 @@
           return;
         }
 
-        if (is2FAValid(user.uid)) {
-          saveCredentials(email, password, remember);
-          const userData = userDoc.data();
-localStorage.setItem('currentUserRole', role);
-window.currentUserData = {
-  email: email,
-  role: role,
-  username: userData.username || "",
-  fullName: userData.fullName || userData.fullname || ""
-};
-          showSuccess("✅ Login successful! Redirecting...");
-          setTimeout(() => {
-            window.location.href = "dashboard.html";
-          }, 1000);
-          return;
-        }
+if (is2FAValid(user.uid)) {
+  // Generate new session ID and invalidate old sessions
+  const newSessionId = generateSessionId();
+  await setDoc(doc(db, "users", user.uid), {
+    currentSessionId: newSessionId,
+    lastLogin: Date.now()
+  }, { merge: true });
+  
+  // Store session ID locally
+  sessionStorage.setItem('sessionId', newSessionId);
+  sessionStorage.setItem('userId', user.uid);
+  
+  saveCredentials(email, password, remember);
+  const userData = userDoc.data();
+  localStorage.setItem('currentUserRole', role);
+  window.currentUserData = {
+    email: email,
+    role: role,
+    username: userData.username || "",
+    fullName: userData.fullName || userData.fullname || ""
+  };
+  showSuccess("✅ Login successful! Redirecting...");
+  setTimeout(() => {
+    window.location.href = "dashboard.html";
+  }, 1000);
+  return;
+}
 
         currentUser = user;
         userEmail = email;
@@ -1279,28 +1294,39 @@ window.currentUserData = {
           return;
         }
 
-        if (enteredCode === codeData.code) {
-          showSuccess("✅ Verification successful! Redirecting...");
-          
-          mark2FAValidated(currentUser.uid);
-          
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          const role = (userDoc.data().role || "").toLowerCase();
-          
-          saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
-          const userData = userDoc.data();
-localStorage.setItem('currentUserRole', role);
-window.currentUserData = {
-  email: email,
-  role: role,
-  username: userData.username || "",
-  fullName: userData.fullName || userData.fullname || ""
-};
-          
-          setTimeout(() => {
-            window.location.href = "dashboard.html";
-          }, 1500);
-        } else {
+if (enteredCode === codeData.code) {
+  showSuccess("✅ Verification successful! Redirecting...");
+  
+  mark2FAValidated(currentUser.uid);
+  
+  // Generate new session ID and invalidate old sessions
+  const newSessionId = generateSessionId();
+  await setDoc(doc(db, "users", currentUser.uid), {
+    currentSessionId: newSessionId,
+    lastLogin: Date.now()
+  }, { merge: true });
+  
+  // Store session ID locally
+  sessionStorage.setItem('sessionId', newSessionId);
+  sessionStorage.setItem('userId', currentUser.uid);
+  
+  const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+  const role = (userDoc.data().role || "").toLowerCase();
+  
+  saveCredentials(userEmail, passwordInput.value, rememberCheckbox.checked);
+  const userData = userDoc.data();
+  localStorage.setItem('currentUserRole', role);
+  window.currentUserData = {
+    email: userEmail,
+    role: role,
+    username: userData.username || "",
+    fullName: userData.fullName || userData.fullname || ""
+  };
+  
+  setTimeout(() => {
+    window.location.href = "dashboard.html";
+  }, 1500);
+} else {
           showError("❌ Invalid verification code. Please try again.");
           verifyBtn.disabled = false;
           verifyBtn.textContent = "VERIFY CODE";

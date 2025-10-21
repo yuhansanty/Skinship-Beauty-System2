@@ -798,6 +798,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
+    let sessionMonitor = null;
     
     window.appState = {
       userRole: null,
@@ -811,6 +812,46 @@
     let inventoryListener = null;
     let staffListener = null;
     let purchaseOrderListener = null;
+
+    // Session monitoring function
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = doc(db, "users", userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    signOut(auth);
+    return;
+  }
+  
+  sessionMonitor = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      console.warn('User document no longer exists');
+      signOut(auth);
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      signOut(auth).then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
     const dataCache = {
       customers: [],
@@ -977,7 +1018,8 @@ function monitorInventory() {
         if (inventoryListener) inventoryListener();
         if (staffListener) staffListener();
         if (purchaseOrderListener) purchaseOrderListener();
-        
+        if (sessionMonitor) sessionMonitor();
+
         await signOut(auth);
         window.location.href = "index.html";
       } catch (error) {
@@ -1517,6 +1559,17 @@ function goToInventorySlide(index) {
         try {
           const userRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userRef);
+
+          await updateDoc(userRef, { 
+              availability: true,
+              lastUpdated: serverTimestamp()
+            });
+
+            // ADD THIS - Start session monitoring
+            setupSessionMonitoring(user.uid);
+
+            loadDashboardData();
+
           if (userSnap.exists()) {
             const data = userSnap.data();
             const userRole = data.role || "staff";

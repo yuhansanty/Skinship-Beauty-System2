@@ -586,35 +586,80 @@
     let resetCooldownTimer = null;
     let inventoryListener = null;
     let purchaseOrderListener = null;
+    let sessionMonitor = null;
 
-    // Auth check - single read
-    onAuthStateChanged(auth, async (currentUser) => {
-      if (!currentUser) {
-        window.location.href = "index.html";
-        return;
-      }
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = doc(db, "users", userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    auth.signOut();
+    window.location.href = 'index.html';
+    return;
+  }
+  
+  sessionMonitor = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      console.warn('User document no longer exists');
+      auth.signOut();
+      window.location.href = 'index.html';
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      auth.signOut().then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
-      try {
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) {
-          window.location.href = "index.html";
-          return;
-        }
-        const currentRole = userSnap.data().role;
-        if (currentRole !== "admin") {
-          alert("Access denied: Staff cannot access Registration page.");
-          window.location.href = "dashboard.html";
-          return;
-        }
-        
-        // After auth check, start monitoring
-        monitorInventory();
-        monitorPurchaseOrders();
-      } catch (err) {
-        console.error("Auth check failed:", err.message);
-      }
-    });
+// Auth check - single read
+onAuthStateChanged(auth, async (currentUser) => {
+  if (!currentUser) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) {
+      window.location.href = "index.html";
+      return;
+    }
+    const currentRole = userSnap.data().role;
+    if (currentRole !== "admin") {
+      alert("Access denied: Staff cannot access Registration page.");
+      window.location.href = "dashboard.html";
+      return;
+    }
+    
+    // Setup session monitoring AFTER auth check
+    setupSessionMonitoring(currentUser.uid);
+    
+    // After auth check, start monitoring
+    monitorInventory();
+    monitorPurchaseOrders();
+  } catch (err) {
+    console.error("Auth check failed:", err.message);
+  }
+});
 
 // Helper function to determine status
 function determineStatus(qty, minStock) {
@@ -847,17 +892,22 @@ function monitorInventory() {
 
         await sendEmailVerification(newUser);
 
-        await setDoc(doc(db, "users", newUser.uid), {
-          fullName,
-          username,
-          mobile,
-          gender,
-          email,
-          role,
-          availability: false,
-          emailVerified: false,
-          createdAt: new Date().toISOString()
-        });
+// Generate initial session ID for new user
+const initialSessionId = `session_${newUser.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+await setDoc(doc(db, "users", newUser.uid), {
+  fullName,
+  username,
+  mobile,
+  gender,
+  email,
+  role,
+  availability: false,
+  emailVerified: false,
+  createdAt: new Date().toISOString(),
+  currentSessionId: initialSessionId,
+  lastLogin: null
+});
 
         await tempAuth.signOut();
 
@@ -879,10 +929,31 @@ function monitorInventory() {
         return;
       }
       
-      try {
-        await sendPasswordResetEmail(auth, email);
-        showMessage("resetSuccess", "✅ Password reset email sent! Check your inbox.", "success");
-        document.getElementById("changePassForm").reset();
+try {
+  await sendPasswordResetEmail(auth, email);
+  
+  // Invalidate sessions when password reset is sent
+  try {
+    const emailQuery = query(collection(db, "users"), where("email", "==", email));
+    const emailSnapshot = await getDocs(emailQuery);
+    
+    if (!emailSnapshot.empty) {
+      const userDoc = emailSnapshot.docs[0];
+      const newSessionId = `session_${userDoc.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      await updateDoc(doc(db, "users", userDoc.id), {
+        currentSessionId: newSessionId,
+        passwordResetSentAt: new Date().toISOString()
+      });
+      
+      console.log('Session invalidated for password reset');
+    }
+  } catch (invalidateErr) {
+    console.error('Error invalidating session:', invalidateErr);
+  }
+  
+  showMessage("resetSuccess", "✅ Password reset email sent! Check your inbox. All active sessions will be logged out.", "success");
+  document.getElementById("changePassForm").reset();
         
         const cooldownEnd = Date.now() + (COOLDOWN_TIME * 1000);
         localStorage.setItem('passwordResetCooldown', cooldownEnd.toString());
@@ -1051,10 +1122,18 @@ function monitorInventory() {
           document.body.removeChild(dialogDiv);
 
           try {
-            await signInWithEmailAndPassword(auth, pendingUpdate.newEmail, password);
-            await updateDoc(doc(db, "users", pendingUpdate.userId), { email: pendingUpdate.newEmail });
-            
-            showMessage("retrieveSuccess", "✅ Email updated successfully in database!", "success");
+await signInWithEmailAndPassword(auth, pendingUpdate.newEmail, password);
+
+// Generate new session ID to invalidate all existing sessions
+const newSessionId = `session_${pendingUpdate.userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+await updateDoc(doc(db, "users", pendingUpdate.userId), { 
+  email: pendingUpdate.newEmail,
+  currentSessionId: newSessionId,
+  emailUpdatedAt: new Date().toISOString()
+});
+
+showMessage("retrieveSuccess", "✅ Email updated successfully! All other sessions have been logged out.", "success");
             sessionStorage.removeItem('pendingEmailUpdate');
             document.getElementById('completeUpdateBtn').style.display = 'none';
           } catch (authErr) {
@@ -1095,11 +1174,13 @@ function monitorInventory() {
       }
     });
 
-    // Cleanup listeners on page unload
-    window.addEventListener('beforeunload', () => {
-      if (inventoryListener) inventoryListener();
-      if (purchaseOrderListener) purchaseOrderListener();
-    });
+// Cleanup listeners on page unload
+window.addEventListener('beforeunload', () => {
+  if (inventoryListener) inventoryListener();
+  if (purchaseOrderListener) purchaseOrderListener();
+  if (sessionMonitor) sessionMonitor();
+});
+
   </script>
 
 </body>

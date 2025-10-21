@@ -48,6 +48,7 @@ let currentStaffName = null;
 let staffListener = null;
 let inventoryListener = null;
 let purchaseOrderListener = null;
+let sessionMonitor = null;
 
 // Cache
 let userDataCache = null;
@@ -70,7 +71,45 @@ function applyRoleBasedVisibility(role) {
   }
 }
 
-// ==================== APPLY ROLE ON PAGE LOAD ====================
+// Session monitoring function
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = doc(db, "users", userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    signOut(auth);
+    return;
+  }
+  
+  sessionMonitor = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      console.warn('User document no longer exists');
+      signOut(auth);
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      signOut(auth).then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
 // Check localStorage for role and apply immediately to prevent flash
 (function() {
@@ -652,16 +691,15 @@ onAuthStateChanged(auth, async (user) => {
       availability: true,
       lastUpdated: serverTimestamp()
     });
-
-    // Initial load of all staff data
-    await loadAllStaffData();
     
-    // Setup real-time listener for updates
+    await loadAllStaffData();
+
+    setupSessionMonitoring(user.uid);
     setupStaffListener();
 
-    // Setup inventory and purchase order monitoring
     monitorInventory();
     monitorPurchaseOrders();
+
     
   } catch (error) {
     console.error("Error in onAuthStateChanged:", error);
@@ -689,6 +727,7 @@ window.confirmLogout = async function() {
     if (staffListener) staffListener();
     if (inventoryListener) inventoryListener();
     if (purchaseOrderListener) purchaseOrderListener();
+    if (sessionMonitor) sessionMonitor();
     
     // Clear caches
     userDataCache = null;
@@ -728,6 +767,10 @@ window.showLogoutModal = function() {
 }
 
 window.addEventListener("beforeunload", async (e) => {
+  if (staffListener) staffListener();
+  if (inventoryListener) inventoryListener();
+  if (purchaseOrderListener) purchaseOrderListener();
+  if (sessionMonitor) sessionMonitor();
   await handleClockOut();
 });
 

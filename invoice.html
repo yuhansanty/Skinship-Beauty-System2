@@ -614,6 +614,7 @@
     let invoicesListener = null;
     let purchaseOrdersListener = null;
     let inventoryListener = null;
+    let sessionMonitor = null;
     let processedPOs = new Set();
 
     // Cache user data to reduce reads
@@ -676,6 +677,7 @@
         if (invoicesListener) invoicesListener();
         if (purchaseOrdersListener) purchaseOrdersListener();
         if (inventoryListener) inventoryListener();
+        if (sessionMonitor) sessionMonitor();
         
         await auth.signOut();
         window.location.href = "index.html";
@@ -689,54 +691,105 @@
       }
     }
 
-    // Load current user - optimized with caching
-    async function loadCurrentUser() {
-      auth.onAuthStateChanged(async (user) => {
-        if (user) {
-          try {
-            if (userDataCache && userDataCache.uid === user.uid) {
-              currentUser = userDataCache;
-              document.getElementById('userDisplayName').textContent = currentUser.fullName;
-              document.getElementById('logoutUsername').textContent = currentUser.fullName;
-              return;
-            }
-            
-            const userDoc = await db.collection('users').doc(user.uid).get();
-            if (userDoc.exists) {
-              const userData = userDoc.data();
-              currentUser = {
-                uid: user.uid,
-                fullName: userData.fullName || userData.email || 'User',
-                email: userData.email || user.email
-              };
-            } else {
-              currentUser = {
-                uid: user.uid,
-                fullName: user.email || 'User',
-                email: user.email
-              };
-            }
-            
-            userDataCache = currentUser;
-            
-            document.getElementById('userDisplayName').textContent = currentUser.fullName;
-            document.getElementById('logoutUsername').textContent = currentUser.fullName;
-          } catch (error) {
-            console.error('Error loading user data:', error);
-            currentUser = {
-              uid: user.uid,
-              fullName: user.email || 'User',
-              email: user.email
-            };
-            userDataCache = currentUser;
-            document.getElementById('userDisplayName').textContent = currentUser.fullName;
-            document.getElementById('logoutUsername').textContent = currentUser.fullName;
-          }
-        } else {
-          window.location.href = 'index.html';
+// Load current user - optimized with caching
+async function loadCurrentUser() {
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      try {
+        if (userDataCache && userDataCache.uid === user.uid) {
+          currentUser = userDataCache;
+          document.getElementById('userDisplayName').textContent = currentUser.fullName;
+          document.getElementById('logoutUsername').textContent = currentUser.fullName;
+          
+          // Setup session monitoring - ADD THIS
+          setupSessionMonitoring(user.uid);
+          return;
         }
+        
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (userDoc.exists) {
+          const userData = userDoc.data();
+          currentUser = {
+            uid: user.uid,
+            fullName: userData.fullName || userData.email || 'User',
+            email: userData.email || user.email
+          };
+        } else {
+          currentUser = {
+            uid: user.uid,
+            fullName: user.email || 'User',
+            email: user.email
+          };
+        }
+        
+        userDataCache = currentUser;
+        
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        
+        // Setup session monitoring - ADD THIS
+        setupSessionMonitoring(user.uid);
+        
+      } catch (error) {
+        console.error('Error loading user data:', error);
+        currentUser = {
+          uid: user.uid,
+          fullName: user.email || 'User',
+          email: user.email
+        };
+        userDataCache = currentUser;
+        document.getElementById('userDisplayName').textContent = currentUser.fullName;
+        document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        
+        // Setup session monitoring even on error - ADD THIS
+        setupSessionMonitoring(user.uid);
+      }
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+}
+
+    // ==================== SESSION MONITORING ====================
+
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = db.collection('users').doc(userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    auth.signOut();
+    return;
+  }
+  
+  sessionMonitor = userRef.onSnapshot((snapshot) => {
+    if (!snapshot.exists) {
+      console.warn('User document no longer exists');
+      auth.signOut();
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      auth.signOut().then(() => {
+        window.location.href = 'index.html';
       });
     }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
     // Listen to Purchase Orders and auto-create/update invoices - OPTIMIZED
     function listenToPurchaseOrders() {
@@ -1280,16 +1333,18 @@ function monitorInventory() {
       }
     });
 
-    // Handle page unload
-    window.addEventListener("beforeunload", async (e) => {
-      await handleClockOut();
-    });
+// Handle page unload
+window.addEventListener("beforeunload", async (e) => {
+  if (sessionMonitor) sessionMonitor();
+  await handleClockOut();
+});
 
     // Cleanup function
     function cleanup() {
       if (invoicesListener) invoicesListener();
       if (purchaseOrdersListener) purchaseOrdersListener();
       if (inventoryListener) inventoryListener();
+      if (sessionMonitor) sessionMonitor();
       userDataCache = null;
       processedPOs.clear();
     }
