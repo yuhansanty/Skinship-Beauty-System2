@@ -70,6 +70,69 @@
       margin-bottom: 20px;
     }
 
+    /* Multi-select service styles */
+#serviceSelectContainer {
+  position: relative;
+}
+
+#selectedServicesDisplay {
+  min-height: 20px;
+}
+
+.service-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #da5c73;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.service-tag-remove {
+  cursor: pointer;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.service-tag-remove:hover {
+  transform: scale(1.2);
+}
+
+.service-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-option:hover {
+  background-color: #f3f4f6;
+}
+
+.service-option.selected {
+  background-color: #fef3c7;
+}
+
+.service-option input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.service-category-header {
+  font-weight: 600;
+  color: #1f2937;
+  background-color: #e5e7eb;
+  padding: 8px 12px;
+  font-size: 13px;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
     .dropdown-button {
       background: #da5c73;
       color: white;
@@ -611,7 +674,7 @@
             <i class="fa-solid fa-edit mr-2"></i>Edit Selected
           </button>
           <button id="bulkStatusBtn" class="bg-[#8b5cf6] text-white px-6 py-2 rounded-full hover:bg-[#7c3aed] transition-colors opacity-50 cursor-not-allowed" disabled onclick="openBulkStatusModal()">
-            <i class="fa-solid fa-list-check mr-2"></i>Update Status
+            <i class="fa-solid fa-list-check mr-2"></i>Multiple Update Status
           </button>
           <button class="bg-[#da5c73] text-white px-6 py-2 rounded-full hover:bg-[#b97b8b] transition-colors" onclick="openAddModal()">
             <i class="fa-solid fa-plus mr-2"></i>Add Customer
@@ -674,13 +737,20 @@
           <span class="error-message" id="emailError">Please enter a valid email address</span>
         </div>
         
-        <div class="form-row">
-          <label class="form-label">Service *</label>
-          <select class="form-input" id="serviceSelect" required>
-            <option value="">Select a service</option>
-          </select>
-          <span class="error-message" id="serviceError">Please select a service</span>
-        </div>
+<div class="form-row">
+  <label class="form-label">Services *</label>
+  <div class="relative">
+    <div id="serviceSelectContainer" class="form-input cursor-pointer" style="min-height: 42px; padding: 10px 15px;">
+      <div id="selectedServicesDisplay" class="flex flex-wrap gap-2">
+        <span class="text-gray-400 text-sm">Select services...</span>
+      </div>
+    </div>
+    <div id="serviceDropdownMulti" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-64 overflow-y-auto">
+      <!-- Services will be populated here -->
+    </div>
+  </div>
+  <span class="error-message" id="serviceError">Please select at least one service</span>
+</div>
 
         <div class="form-row">
           <label class="form-label">Status *</label>
@@ -693,7 +763,7 @@
         </div>
         
         <div class="form-row">
-          <label class="form-label">Contact Number (Optional - 09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)</label>
+          <label class="form-label">Contact Number (Optional)</label>
           <input type="tel" class="form-input" id="contactNumber" placeholder="09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX" maxlength="13">
           <span class="error-message" id="phoneError">Mobile number must be valid (09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)</span>
         </div>
@@ -1399,40 +1469,46 @@
         phoneInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
       }
 
-      await populateServiceSelect();
+await populateServiceSelect();
+
+// Wait for dropdown to populate
+await new Promise(resolve => setTimeout(resolve, 100));
+
+clearServiceSelection();
+
+// Handle multiple services selection
+if (Array.isArray(customer.services) && customer.services.length > 0) {
+  customer.services.forEach(service => {
+    // Try to find by service name since contact form uses name as ID
+    const serviceName = service.name || service.id;
+    
+    // Look through all service options to find a match
+    const allOptions = document.querySelectorAll('.service-option');
+    allOptions.forEach(option => {
+      const optionName = option.dataset.serviceName;
       
-      const serviceSelect = document.getElementById('serviceSelect');
-      
-      if (customer.service) {
-        console.log('Customer service value:', customer.service);
-        
-        let serviceName = customer.service;
-        
-        const serviceData = window.servicesCache.byId.get(customer.service);
-        if (serviceData) {
-          serviceName = serviceData.name;
-          console.log('Found service name by ID:', serviceName);
-        } else {
-          for (const [docId, svcData] of window.servicesCache.byId) {
-            if (svcData.id === customer.service) {
-              serviceName = svcData.name;
-              console.log('Found service name by id field:', serviceName);
-              break;
-            }
-          }
-        }
-        
-        serviceSelect.value = serviceName;
-        console.log('Set service select to:', serviceName);
-        
-        if (!serviceSelect.value && serviceName) {
-          const customOption = document.createElement('option');
-          customOption.value = serviceName;
-          customOption.textContent = serviceName;
-          customOption.selected = true;
-          serviceSelect.insertBefore(customOption, serviceSelect.firstChild);
+      // Check if the names match (case-insensitive)
+      if (optionName && serviceName && 
+          optionName.toLowerCase().trim() === serviceName.toLowerCase().trim()) {
+        const checkbox = option.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+          checkbox.checked = true;
         }
       }
+    });
+  });
+} else if (customer.service) {
+  // Handle old single service format
+  const allOptions = document.querySelectorAll('.service-option');
+  allOptions.forEach(option => {
+    if (option.dataset.serviceName.toLowerCase().trim() === customer.service.toLowerCase().trim()) {
+      const checkbox = option.querySelector('input[type="checkbox"]');
+      if (checkbox) checkbox.checked = true;
+    }
+  });
+}
+
+updateSelectedServices();
 
       document.getElementById('statusSelect').value = customer.status || 'Pending';
       document.getElementById('employeeSelect').value = customer.staff || '';
@@ -1491,23 +1567,25 @@
       await populateServiceSelect();
     }
 
-    function clearForm() {
-      document.getElementById('customerName').value = '';
-      document.getElementById('customerEmail').value = '';
-      document.getElementById('serviceSelect').value = '';
-      document.getElementById('statusSelect').value = 'Pending';
-      document.getElementById('contactNumber').value = '';
-      document.getElementById('employeeSelect').value = '';
-    }
+function clearForm() {
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerEmail').value = '';
+  clearServiceSelection();
+  document.getElementById('statusSelect').value = 'Pending';
+  document.getElementById('contactNumber').value = '';
+  document.getElementById('employeeSelect').value = '';
+}
 
-    function clearErrors() {
-      ['customerName', 'customerEmail', 'contactNumber', 'appointmentDate', 'serviceSelect', 'employeeSelect'].forEach(id => {
-        document.getElementById(id).classList.remove('error');
-      });
-      ['nameError', 'emailError', 'serviceError', 'phoneError', 'employeeError', 'dateError'].forEach(id => {
-        document.getElementById(id).classList.remove('show');
-      });
-    }
+function clearErrors() {
+  ['customerName', 'customerEmail', 'contactNumber', 'appointmentDate', 'serviceSelectContainer', 'employeeSelect'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.classList.remove('error');
+  });
+  ['nameError', 'emailError', 'serviceError', 'phoneError', 'employeeError', 'dateError'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.classList.remove('show');
+  });
+}
 
     function populateServiceDropdown() {
       serviceDropdown.innerHTML = '';
@@ -1529,29 +1607,137 @@
       });
     }
 
-    function populateServiceSelect() {
-      const serviceSelect = document.getElementById('serviceSelect');
-      serviceSelect.innerHTML = '<option value="">Select a service</option>';
-      
-      const categories = Array.from(window.servicesCache.byCategory.keys()).sort();
-      
-      categories.forEach(category => {
-        const optgroup = document.createElement('optgroup');
-        optgroup.label = category;
-        
-        const services = window.servicesCache.byCategory.get(category);
-        services.forEach(service => {
-          const option = document.createElement('option');
-          option.value = service.name;
-          option.textContent = service.name;
-          option.setAttribute('data-service-id', service.id);
-          option.setAttribute('data-doc-id', service.id);
-          optgroup.appendChild(option);
-        });
-        
-        serviceSelect.appendChild(optgroup);
-      });
+function populateServiceSelect() {
+  const serviceDropdownMulti = document.getElementById('serviceDropdownMulti');
+  if (!serviceDropdownMulti) return;
+  
+  serviceDropdownMulti.innerHTML = '';
+  
+  const groupedServices = {};
+  window.servicesCache.byId.forEach(service => {
+    const category = service.category || 'Other';
+    if (!groupedServices[category]) {
+      groupedServices[category] = [];
     }
+    groupedServices[category].push(service);
+  });
+  
+  Object.keys(groupedServices).sort().forEach(category => {
+    const categoryHeader = document.createElement('div');
+    categoryHeader.className = 'service-category-header';
+    categoryHeader.textContent = category;
+    serviceDropdownMulti.appendChild(categoryHeader);
+    
+    groupedServices[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(service => {
+      const option = document.createElement('div');
+      option.className = 'service-option';
+      option.dataset.serviceId = service.id;
+      option.dataset.serviceName = service.name;
+      option.dataset.servicePrice = service.price;
+      
+      option.innerHTML = `
+        <input type="checkbox" id="service-${service.id}" data-service-id="${service.id}">
+        <label for="service-${service.id}" class="cursor-pointer flex-1">
+          ${service.name} - ₱${service.price.toLocaleString()}
+        </label>
+      `;
+      
+      option.addEventListener('click', (e) => {
+        if (e.target.tagName !== 'INPUT') {
+          const checkbox = option.querySelector('input[type="checkbox"]');
+          checkbox.checked = !checkbox.checked;
+        }
+        updateSelectedServices();
+      });
+      
+      serviceDropdownMulti.appendChild(option);
+    });
+  });
+}
+
+function updateSelectedServices() {
+  const checkboxes = document.querySelectorAll('#serviceDropdownMulti input[type="checkbox"]:checked');
+  const selectedServices = Array.from(checkboxes).map(cb => {
+    const option = cb.closest('.service-option');
+    return {
+      id: option.dataset.serviceId,
+      name: option.dataset.serviceName,
+      price: option.dataset.servicePrice
+    };
+  });
+  
+  displaySelectedServices(selectedServices);
+  
+  // Update selected state in dropdown
+  document.querySelectorAll('.service-option').forEach(option => {
+    const checkbox = option.querySelector('input[type="checkbox"]');
+    if (checkbox.checked) {
+      option.classList.add('selected');
+    } else {
+      option.classList.remove('selected');
+    }
+  });
+}
+
+function displaySelectedServices(services) {
+  const display = document.getElementById('selectedServicesDisplay');
+  
+  if (services.length === 0) {
+    display.innerHTML = '<span class="text-gray-400 text-sm">Select services...</span>';
+    return;
+  }
+  
+  display.innerHTML = services.map(service => `
+    <span class="service-tag">
+      ${service.name}
+      <span class="service-tag-remove" onclick="removeService('${service.id}', event)">×</span>
+    </span>
+  `).join('');
+}
+
+function removeService(serviceId, event) {
+  event.stopPropagation();
+  const checkbox = document.querySelector(`input[data-service-id="${serviceId}"]`);
+  if (checkbox) {
+    checkbox.checked = false;
+    updateSelectedServices();
+  }
+}
+
+function getSelectedServices() {
+  const checkboxes = document.querySelectorAll('#serviceDropdownMulti input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => {
+    const option = cb.closest('.service-option');
+    return {
+      id: option.dataset.serviceId,
+      name: option.dataset.serviceName,
+      price: parseFloat(option.dataset.servicePrice)
+    };
+  });
+}
+
+function clearServiceSelection() {
+  document.querySelectorAll('#serviceDropdownMulti input[type="checkbox"]').forEach(cb => {
+    cb.checked = false;
+  });
+  updateSelectedServices();
+}
+
+document.getElementById('serviceSelectContainer')?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const dropdown = document.getElementById('serviceDropdownMulti');
+  dropdown.classList.toggle('hidden');
+});
+
+document.addEventListener('click', (e) => {
+  const container = document.getElementById('serviceSelectContainer');
+  const dropdown = document.getElementById('serviceDropdownMulti');
+  if (container && dropdown && 
+      !container.contains(e.target) && 
+      !dropdown.contains(e.target)) {
+    dropdown.classList.add('hidden');
+  }
+});
 
     function toggleDropdown() {
       const dropdown = document.getElementById('serviceDropdown');
@@ -1642,12 +1828,28 @@
 
       paginatedCustomers.forEach(c => {
         const tr = document.createElement('tr');
-        
-        let displayService = c.service;
-        if (c.service) {
-          displayService = window.getServiceNameById(c.service);
-        }
-        
+
+let displayService = '';
+if (Array.isArray(c.services) && c.services.length > 0) {
+  // If services is an array of objects, extract the names
+  const serviceNames = c.services.map(s => {
+    if (typeof s === 'object' && s.name) {
+      return s.name;
+    }
+    return s.toString();
+  });
+  
+  displayService = serviceNames.length > 1 
+    ? `${serviceNames[0]} +${serviceNames.length - 1}` 
+    : serviceNames[0];
+} else if (c.service) {
+  // Check if it's an object or a string
+  if (typeof c.service === 'object' && c.service.name) {
+    displayService = c.service.name;
+  } else {
+    displayService = window.getServiceNameById(c.service);
+  }
+}
         tr.innerHTML = `
           <td>
             <input type="checkbox" class="customer-checkbox" value="${c.id}" onchange="updateEditButton()" style="cursor: pointer;">
@@ -1751,6 +1953,7 @@
       
       clearForm();
       clearErrors();
+      clearServiceSelection();
       
       editMode = false;
       selectedCustomerId = null;
@@ -1779,7 +1982,7 @@
     async function saveCustomer() {
       const customerName = document.getElementById('customerName').value.trim();
       const customerEmail = document.getElementById('customerEmail').value.trim();
-      const serviceName = document.getElementById('serviceSelect').value;
+      const selectedServices = getSelectedServices();
       const status = document.getElementById('statusSelect').value;
       const contactNumber = document.getElementById('contactNumber').value.trim();
       const employee = document.getElementById('employeeSelect').value;
@@ -1799,10 +2002,10 @@
         hasError = true;
       }
 
-      if (!serviceName) {
-        showError('serviceSelect', 'serviceError');
-        hasError = true;
-      }
+if (selectedServices.length === 0) {
+  showError('serviceSelectContainer', 'serviceError');
+  hasError = true;
+}
 
       if (contactNumber && !validatePhoneNumber(contactNumber)) {
         showError('contactNumber', 'phoneError');
@@ -1827,42 +2030,52 @@
       const formattedDate = dateObj.toISOString().split('T')[0];
       const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
       
-      const customerData = {
-        name: customerName,
-        email: customerEmail || '',
-        service: serviceName,
-        status: status,
-        phone: normalizedPhone,
-        staff: employee,
-        appointment: dateObj.toLocaleString(),
-        date: formattedDate,
-        time: formattedTime,
-        archived: false
-      };
+const customerData = {
+  name: customerName,
+  email: customerEmail || '',
+  services: selectedServices, 
+  service: selectedServices[0]?.name || '', 
+  status: status,
+  phone: normalizedPhone,
+  staff: employee,
+  appointment: dateObj.toLocaleString(),
+  date: formattedDate,
+  time: formattedTime,
+  archived: false
+};
       
       try {
         const { collection, doc, addDoc, updateDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
         
-        if (editMode && selectedCustomerId) {
-          const customerDoc = doc(window.db, "appointments", selectedCustomerId);
-          await updateDoc(customerDoc, customerData);
-          
-          if (customerEmail) {
-            await window.sendAppointmentEmail(customerData);
-          }
-          
-          alert('Customer updated successfully!');
-        } else {
-          customerData.createdAt = serverTimestamp();
-          const customersRef = collection(window.db, "appointments");
-          await addDoc(customersRef, customerData);
-          
-          if (customerEmail) {
-            await window.sendAppointmentEmail(customerData);
-          }
-          
-          alert('Customer added successfully!');
-        }
+if (editMode && selectedCustomerId) {
+  const customerDoc = doc(window.db, "appointments", selectedCustomerId);
+  await updateDoc(customerDoc, customerData);
+  
+  if (customerEmail) {
+    const emailData = { 
+      ...customerData, 
+      service: selectedServices.map(s => s.name).join(', ') 
+    };
+    await window.sendAppointmentEmail(emailData);
+  }
+  
+  alert('Customer updated successfully!');
+} else {
+  customerData.createdAt = serverTimestamp();
+  const customersRef = collection(window.db, "appointments");
+  await addDoc(customersRef, customerData);
+  
+  if (customerEmail) {
+
+    const emailData = { 
+      ...customerData, 
+      service: selectedServices.map(s => s.name).join(', ') 
+    };
+    await window.sendAppointmentEmail(emailData);
+  }
+  
+  alert('Customer added successfully!');
+}
         
         closeEditModal();
       } catch (error) {
@@ -1980,6 +2193,10 @@
       renderTable();
     });
 
+    window.removeService = removeService;
+    window.updateSelectedServices = updateSelectedServices;
+    window.getSelectedServices = getSelectedServices;
+    window.clearServiceSelection = clearServiceSelection;
     window.openAddModal = openAddModal;
     window.editSelectedCustomer = editSelectedCustomer;
     window.closeEditModal = closeEditModal;

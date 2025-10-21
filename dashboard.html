@@ -1041,31 +1041,57 @@ function monitorInventory() {
       );
     }
 
-    function updateReservations() {
-      const reservationTable = document.getElementById("reservationTable");
-      reservationTable.innerHTML = "";
-      
-      if (dataCache.customers.length === 0) {
-        reservationTable.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>';
-        return;
-      }
+function updateReservations() {
+  const reservationTable = document.getElementById("reservationTable");
+  reservationTable.innerHTML = "";
+  
+  if (dataCache.customers.length === 0) {
+    reservationTable.innerHTML = '<tr><td colspan="5" class="text-center text-gray-500 italic">No reservations found</td></tr>';
+    return;
+  }
 
-      let count = 0;
-      dataCache.customers.forEach(data => {
-        if (count >= 5) return;
-        const tr = document.createElement("tr");
-        tr.className = "border-b";
-        tr.innerHTML = `
-          <td>${data.name || data.customer || "N/A"}</td>
-          <td>${data.appointment || data.time || "N/A"}</td>
-          <td>${(data.status || "Pending").charAt(0).toUpperCase() + (data.status || "Pending").slice(1)}</td>
-          <td>${data.service || "N/A"}</td>
-          <td>${data.staff || "N/A"}</td>
-        `;
-        reservationTable.appendChild(tr);
-        count++;
+  let count = 0;
+  dataCache.customers.forEach(data => {
+    if (count >= 5) return;
+    
+    // Handle multiple services display
+    let serviceDisplay = 'N/A';
+    
+    if (Array.isArray(data.services) && data.services.length > 0) {
+      // Extract service names
+      const serviceNames = data.services.map(s => {
+        if (typeof s === 'object' && s.name) {
+          return s.name;
+        }
+        return s.toString();
       });
+      
+      if (serviceNames.length === 1) {
+        serviceDisplay = serviceNames[0];
+      } else if (serviceNames.length === 2) {
+        serviceDisplay = serviceNames.join(', ');
+      } else {
+        // Show first 2 services and add "+X more" indicator
+        serviceDisplay = `${serviceNames[0]}, ${serviceNames[1]} +${serviceNames.length - 2}`;
+      }
+    } else if (data.service) {
+      // Fallback to old single service format
+      serviceDisplay = data.service;
     }
+    
+    const tr = document.createElement("tr");
+    tr.className = "border-b";
+    tr.innerHTML = `
+      <td>${data.name || data.customer || "N/A"}</td>
+      <td>${data.appointment || data.time || "N/A"}</td>
+      <td>${(data.status || "Pending").charAt(0).toUpperCase() + (data.status || "Pending").slice(1)}</td>
+      <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${serviceDisplay}">${serviceDisplay}</td>
+      <td>${data.staff || "N/A"}</td>
+    `;
+    reservationTable.appendChild(tr);
+    count++;
+  });
+}
 
     function updateCounts() {
       let completed = 0, pending = 0, cancelled = 0;
@@ -1082,25 +1108,46 @@ function monitorInventory() {
       document.getElementById("cancelledCount").textContent = cancelled.toString().padStart(2, "0");
     }
 
-    function updateAgenda() {
-      const agendaList = document.getElementById("agendaList");
-      const todayISO = new Date().toISOString().split("T")[0];
-      
-      const todaysAppointments = dataCache.customers.filter(data => 
-        data.date === todayISO && (data.status || '').toLowerCase() === 'pending'
-      ).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+function updateAgenda() {
+  const agendaList = document.getElementById("agendaList");
+  const todayISO = new Date().toISOString().split("T")[0];
+  
+  const todaysAppointments = dataCache.customers.filter(data => 
+    data.date === todayISO && (data.status || '').toLowerCase() === 'pending'
+  ).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
 
-      agendaList.innerHTML = "";
-      if (todaysAppointments.length === 0) {
-        agendaList.innerHTML = '<li class="text-gray-500 italic">No appointments today</li>';
-      } else {
-        todaysAppointments.forEach(a => {
-          const li = document.createElement('li');
-          li.textContent = `${a.time || '-'} - ${a.name || a.customer || 'Customer'} - ${a.service || '-'}`;
-          agendaList.appendChild(li);
+  agendaList.innerHTML = "";
+  if (todaysAppointments.length === 0) {
+    agendaList.innerHTML = '<li class="text-gray-500 italic">No appointments today</li>';
+  } else {
+    todaysAppointments.forEach(a => {
+      // Handle multiple services display
+      let serviceDisplay = '-';
+      
+      if (Array.isArray(a.services) && a.services.length > 0) {
+        const serviceNames = a.services.map(s => {
+          if (typeof s === 'object' && s.name) return s.name;
+          return s.toString();
         });
+        
+        if (serviceNames.length === 1) {
+          serviceDisplay = serviceNames[0];
+        } else if (serviceNames.length === 2) {
+          serviceDisplay = serviceNames.join(', ');
+        } else {
+          serviceDisplay = `${serviceNames[0]}, ${serviceNames[1]} +${serviceNames.length - 2}`;
+        }
+      } else if (a.service) {
+        serviceDisplay = a.service;
       }
-    }
+      
+      const li = document.createElement('li');
+      li.textContent = `${a.time || '-'} - ${a.name || a.customer || 'Customer'} - ${serviceDisplay}`;
+      li.title = serviceDisplay; // Show full list on hover
+      agendaList.appendChild(li);
+    });
+  }
+}
 
     let currentInventoryIndex = 0;
     let inventoryItems = [];

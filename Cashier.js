@@ -203,43 +203,113 @@ async function loadInventoryProducts() {
 
 async function loadConfirmedCustomers() {
   try {
+    // Initial load with cache
     const q = query(collection(db, 'appointments'), where('status', '==', 'Confirmed'));
     const snapshot = await getDocs(q);
-    
+
     confirmedCustomers = [];
     snapshot.forEach(docSnap => {
       const customer = docSnap.data();
+      
+      let services = [];
+      
+      if (customer.services && Array.isArray(customer.services) && customer.services.length > 0) {
+        services = customer.services.map(serviceObj => {
+          if (typeof serviceObj === 'object' && serviceObj !== null) {
+            return {
+              name: serviceObj.name || '',
+              price: parseFloat(serviceObj.price) || 0,
+              id: serviceObj.id || null
+            };
+          } else if (typeof serviceObj === 'string') {
+            return { name: serviceObj, price: 0, id: null };
+          }
+          return null;
+        }).filter(s => s !== null && s.name);
+      } else if (customer.service) {
+        if (typeof customer.service === 'string') {
+          services = [{ name: customer.service, price: 0, id: null }];
+        } else if (typeof customer.service === 'object' && customer.service.name) {
+          services = [{ 
+            name: customer.service.name, 
+            price: customer.service.price || 0,
+            id: customer.service.id || null 
+          }];
+        }
+      }
+      
       confirmedCustomers.push({
         id: docSnap.id,
         name: customer.name || customer.fullName || '',
         email: customer.email || '',
         phone: customer.phone || customer.mobile || '',
-        address: customer.address || ''
+        address: customer.address || '',
+        services: services
       });
     });
     
     console.log('Loaded confirmed customers:', confirmedCustomers.length);
     
-    // Set up real-time listener for customers
+    // Set up real-time listener - only listens for CHANGES (not full re-reads)
     if (customersListener) {
       customersListener();
     }
     
     customersListener = onSnapshot(
-      query(collection(db, 'appointments'), where('status', '==', 'Confirmed')),
+      q,
       (snapshot) => {
-        confirmedCustomers = [];
-        snapshot.forEach(docSnap => {
-          const customer = docSnap.data();
-          confirmedCustomers.push({
-            id: docSnap.id,
+        // Only process changes, not entire collection
+        snapshot.docChanges().forEach(change => {
+          const customer = change.doc.data();
+          const customerId = change.doc.id;
+          
+          let services = [];
+          if (customer.services && Array.isArray(customer.services) && customer.services.length > 0) {
+            services = customer.services.map(serviceObj => {
+              if (typeof serviceObj === 'object' && serviceObj !== null) {
+                return {
+                  name: serviceObj.name || '',
+                  price: parseFloat(serviceObj.price) || 0,
+                  id: serviceObj.id || null
+                };
+              }
+              return null;
+            }).filter(s => s !== null && s.name);
+          } else if (customer.service) {
+            if (typeof customer.service === 'string') {
+              services = [{ name: customer.service, price: 0, id: null }];
+            }
+          }
+          
+          const customerData = {
+            id: customerId,
             name: customer.name || customer.fullName || '',
             email: customer.email || '',
             phone: customer.phone || customer.mobile || '',
-            address: customer.address || ''
-          });
+            address: customer.address || '',
+            services: services
+          };
+          
+          if (change.type === 'added') {
+            const exists = confirmedCustomers.find(c => c.id === customerId);
+            if (!exists) {
+              confirmedCustomers.push(customerData);
+              console.log('New customer added:', customerData.name);
+            }
+          } else if (change.type === 'modified') {
+            const index = confirmedCustomers.findIndex(c => c.id === customerId);
+            if (index !== -1) {
+              confirmedCustomers[index] = customerData;
+              console.log('Customer updated:', customerData.name);
+            }
+          } else if (change.type === 'removed') {
+            confirmedCustomers = confirmedCustomers.filter(c => c.id !== customerId);
+            console.log('Customer removed');
+          }
         });
-        console.log('Updated confirmed customers:', confirmedCustomers.length);
+      },
+      (error) => {
+        console.error('Customer listener error:', error);
       }
     );
     
@@ -352,20 +422,20 @@ function updateInventoryBubble() {
     button.appendChild(bubble);
   }
   
-  // Priority: No Stock (Red) > Low Stock (Yellow) > Overstock (Blue)
+  // Priority: No Stock > Low Stock > Overstock > wakwak go boom boom system
   if (noStockCount > 0) {
     bubble.textContent = noStockCount > 99 ? '99+' : noStockCount;
-    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.backgroundColor = '#dc2626';
     bubble.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.4)';
     bubble.style.display = 'flex';
   } else if (lowStockCount > 0) {
     bubble.textContent = lowStockCount > 99 ? '99+' : lowStockCount;
-    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.backgroundColor = '#f59e0b';
     bubble.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.4)';
     bubble.style.display = 'flex';
   } else if (overstockCount > 0) {
     bubble.textContent = overstockCount > 99 ? '99+' : overstockCount;
-    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.backgroundColor = '#3b82f6';
     bubble.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.4)';
     bubble.style.display = 'flex';
   } else {
@@ -388,7 +458,7 @@ function updatePurchaseOrderBubble(count) {
   
   if (count > 0) {
     bubble.textContent = count > 99 ? '99+' : count;
-    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.backgroundColor = '#8b5cf6';
     bubble.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.4)';
     bubble.style.display = 'flex';
   } else {
@@ -508,6 +578,28 @@ function selectCustomer(customerId) {
   const customer = confirmedCustomers.find(c => c.id === customerId);
   if (!customer) return;
   
+  // Check if switching to a different customer with items in cart
+  if (selectedCustomerId && selectedCustomerId !== customerId && cart.length > 0) {
+    if (!confirm('⚠️ Switching customers will clear your current cart.\n\nDo you want to continue?')) {
+      // User clicked "No" - close dropdown and keep current customer
+      document.getElementById('customerDropdown').classList.add('hidden');
+      return;
+    }
+    // User clicked "Yes" - clear cart
+    cart = [];
+    updateCart();
+  }
+  
+  // If selecting customer for first time with items in cart
+  if (!selectedCustomerId && cart.length > 0 && customerId) {
+    if (!confirm('⚠️ You have items in cart.\n\nDo you want to clear the cart and load this customer?')) {
+      document.getElementById('customerDropdown').classList.add('hidden');
+      return;
+    }
+    cart = [];
+    updateCart();
+  }
+  
   selectedCustomerId = customerId;
   
   document.getElementById('customerName').value = customer.name;
@@ -521,6 +613,98 @@ function selectCustomer(customerId) {
   const phoneInput = document.getElementById('customerPhone');
   if (phoneInput.value) {
     validatePhoneNumber(phoneInput);
+  }
+
+  // SERVICES TO CART 
+  if (customer.services && customer.services.length > 0) {
+    const serviceCount = customer.services.length;
+    const serviceText = serviceCount === 1 ? 'service' : 'services';
+    
+    if (confirm(`Add ${serviceCount} ${serviceText} from this appointment to cart?`)) {
+      
+      let addedCount = 0;
+      let notFoundServices = [];
+      
+      customer.services.forEach((serviceData, index) => {
+        
+        let serviceName = serviceData.name || '';
+        let servicePrice = parseFloat(serviceData.price) || 0;
+        let serviceId = serviceData.id || null;
+        
+        if (!serviceName) {
+          console.log('❌ No service name found');
+          return;
+        }
+        
+        // Try to find matching service in servicesData for updated price
+        const matchedService = servicesData.find(s => 
+          s.name.toLowerCase().trim() === serviceName.toLowerCase().trim() ||
+          s.id === serviceId ||
+          s.firebaseId === serviceId
+        );
+        
+        if (matchedService) {
+          cart.push({
+            name: matchedService.name,
+            price: matchedService.price,
+            category: matchedService.category || 'Service',
+            id: Date.now() + Math.random(),
+            isInventoryProduct: false,
+            firebaseId: matchedService.firebaseId || matchedService.id
+          });
+          addedCount++;
+        } else if (servicePrice > 0) {
+          // Service not in database but has price from appointment
+          console.log('✅ Not in database, using appointment price:', servicePrice);
+          cart.push({
+            name: serviceName,
+            price: servicePrice,
+            category: 'Service',
+            id: Date.now() + Math.random(),
+            isInventoryProduct: false,
+            firebaseId: serviceId
+          });
+          addedCount++;
+        } else {
+          // Service not found and no price
+          console.log('❌ Service not found and no price available');
+          notFoundServices.push(serviceName);
+        }
+      });
+
+      updateCart();
+      
+      // Show result notification
+      if (addedCount > 0) {
+        let message = `✓ ${addedCount} ${addedCount === 1 ? 'service' : 'services'} added to cart!`;
+        
+        if (notFoundServices.length > 0) {
+          message += `\n\n⚠ Not found (${notFoundServices.length}):\n${notFoundServices.join('\n')}`;
+          message += '\n\nThese services need to be added manually.';
+        }
+        
+        alert(message);
+      } else {
+        alert('⚠ No services could be added to cart.\n\nPlease add services manually.');
+      }
+    }
+  }
+}
+
+function clearCustomerSelection() {
+  selectedCustomerId = null;
+  document.getElementById('customerName').value = '';
+  document.getElementById('customerEmail').value = '';
+  document.getElementById('customerPhone').value = '';
+  document.getElementById('customerAddress').value = '';
+  
+  const phoneError = document.getElementById('phoneError');
+  if (phoneError) phoneError.classList.add('hidden');
+  
+  const phoneInput = document.getElementById('customerPhone');
+  if (phoneInput) {
+    phoneInput.classList.remove('border-red-300');
+    phoneInput.classList.add('border-pink-100');
   }
 }
 
@@ -690,6 +874,7 @@ window.checkout = checkout;
 window.toggleCustomerDropdown = toggleCustomerDropdown;
 window.filterCustomers = filterCustomers;
 window.selectCustomer = selectCustomer;
+window.clearCustomerSelection = clearCustomerSelection;
 
 // ==================== CATEGORY & PRODUCT MENUS ====================
 
@@ -1071,6 +1256,7 @@ function calculateChange() {
 function clearCart() {
   cart = [];
   selectedCustomerId = null;
+  clearCustomerSelection(); 
   updateCart();
   
   const fields = [
