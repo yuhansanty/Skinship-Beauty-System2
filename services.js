@@ -21,6 +21,8 @@ let currentUser = null;
 let servicesListener = null;
 let inventoryListener = null;
 let purchaseOrderListener = null;
+let sessionMonitor = null;
+
 
 // Cache for user data and categories
 let userDataCache = null;
@@ -38,6 +40,9 @@ async function loadCurrentUserName() {
           currentUser = userDataCache;
           document.getElementById('userDisplayName').textContent = currentUser.fullName;
           document.getElementById('logoutUsername').textContent = currentUser.fullName;
+          
+          // Setup session monitoring
+          setupSessionMonitoring(user.uid);
           return;
         }
 
@@ -62,6 +67,9 @@ async function loadCurrentUserName() {
         
         document.getElementById('userDisplayName').textContent = currentUser.fullName;
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        
+        // Setup session monitoring
+        setupSessionMonitoring(user.uid);
       } catch (error) {
         console.error('Error loading user data:', error);
         currentUser = {
@@ -72,10 +80,53 @@ async function loadCurrentUserName() {
         userDataCache = currentUser;
         document.getElementById('userDisplayName').textContent = currentUser.fullName;
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        
+        // Setup session monitoring even on error
+        setupSessionMonitoring(user.uid);
       }
     } else {
       window.location.href = 'index.html';
     }
+  });
+}
+
+// Session monitoring function
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = db.collection('users').doc(userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    auth.signOut();
+    return;
+  }
+  
+  sessionMonitor = userRef.onSnapshot((snapshot) => {
+    if (!snapshot.exists) {
+      console.warn('User document no longer exists');
+      auth.signOut();
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      auth.signOut().then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
   });
 }
 
@@ -141,6 +192,7 @@ async function confirmLogout() {
     if (servicesListener) servicesListener();
     if (inventoryListener) inventoryListener();
     if (purchaseOrderListener) purchaseOrderListener();
+    if (sessionMonitor) sessionMonitor();
     
     await auth.signOut();
     window.location.href = "index.html";
@@ -1049,6 +1101,7 @@ function cleanup() {
   if (servicesListener) servicesListener();
   if (inventoryListener) inventoryListener();
   if (purchaseOrderListener) purchaseOrderListener();
+  if (sessionMonitor) sessionMonitor();
   userDataCache = null;
   categoriesCache = null;
   servicesData = [];
@@ -1057,6 +1110,7 @@ function cleanup() {
 
 // Handle page unload
 window.addEventListener("beforeunload", async (e) => {
+  cleanup(); 
   await handleClockOut();
 });
 

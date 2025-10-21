@@ -59,6 +59,9 @@ let customersListener = null;
 
 // ==================== AUTH & USER INFO ====================
 
+// Add these variables at the top of cashier.js (around line 48)
+let sessionMonitor = null;
+
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -79,6 +82,9 @@ onAuthStateChanged(auth, async (user) => {
     dataLoaded = true;
   }
   
+  // Setup session monitoring
+  setupSessionMonitoring(user.uid);
+  
   currentView = 'services';
   currentCategory = 'all';
   renderServices(servicesData);
@@ -89,6 +95,47 @@ onAuthStateChanged(auth, async (user) => {
     paymentInput.dataset.listenerAdded = 'true';
   }
 });
+
+// ==================== SESSION MONITORING ====================
+
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  
+  const userRef = doc(db, "users", userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    signOut(auth);
+    return;
+  }
+  
+  sessionMonitor = onSnapshot(userRef, (snapshot) => {
+    if (!snapshot.exists()) {
+      console.warn('User document no longer exists');
+      signOut(auth);
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      signOut(auth).then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
 async function loadUserInfo(user) {
   try {
@@ -812,10 +859,11 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    // Cleanup listeners
+    // Cleanup listeners - ADD sessionMonitor here
     if (inventoryListener) inventoryListener();
     if (purchaseOrderListener) purchaseOrderListener();
     if (customersListener) customersListener();
+    if (sessionMonitor) sessionMonitor(); // ADD THIS LINE
     
     await signOut(auth);
     window.location.href = "index.html";
@@ -1713,4 +1761,5 @@ window.addEventListener('beforeunload', () => {
   if (inventoryListener) inventoryListener();
   if (purchaseOrderListener) purchaseOrderListener();
   if (customersListener) customersListener();
+  if (sessionMonitor) sessionMonitor();
 });

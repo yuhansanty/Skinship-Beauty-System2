@@ -24,6 +24,7 @@ let currentProductMode = 'existing';
 let selectedProduct = null;
 let purchaseOrderListener = null;
 let inventoryListener = null;
+let sessionMonitor = null;
 
 // Cache for user data, suppliers, and categories
 let userDataCache = null;
@@ -32,6 +33,46 @@ let categoriesCache = null;
 let itemCounterCache = null;
 let lastCounterFetch = 0;
 const COUNTER_CACHE_DURATION = 60000; // 1 minute
+
+// Session monitoring function
+function setupSessionMonitoring(userId) {
+  if (sessionMonitor) sessionMonitor();
+  
+  const userRef = db.collection('users').doc(userId);
+  const storedSessionId = sessionStorage.getItem('sessionId');
+  
+  if (!storedSessionId) {
+    console.warn('No session ID found, logging out...');
+    auth.signOut();
+    return;
+  }
+  
+  sessionMonitor = userRef.onSnapshot((snapshot) => {
+    if (!snapshot.exists) {
+      console.warn('User document no longer exists');
+      auth.signOut();
+      return;
+    }
+    
+    const data = snapshot.data();
+    const currentSessionId = data.currentSessionId;
+    
+    // Check if session ID has changed (another login or password change)
+    if (currentSessionId && currentSessionId !== storedSessionId) {
+      console.log('Session invalidated - another login detected or password changed');
+      
+      // Show notification before logout
+      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      
+      // Force logout
+      auth.signOut().then(() => {
+        window.location.href = 'index.html';
+      });
+    }
+  }, (error) => {
+    console.error('Session monitoring error:', error);
+  });
+}
 
 // Load current user
 auth.onAuthStateChanged(async (user) => {
@@ -42,6 +83,7 @@ auth.onAuthStateChanged(async (user) => {
         currentUser = userDataCache;
         document.getElementById('userDisplayName').textContent = currentUser.fullName;
         document.getElementById('logoutUsername').textContent = currentUser.fullName;
+        setupSessionMonitoring(user.uid);
         return;
       }
 
@@ -66,6 +108,9 @@ auth.onAuthStateChanged(async (user) => {
       
       document.getElementById('userDisplayName').textContent = currentUser.fullName;
       document.getElementById('logoutUsername').textContent = currentUser.fullName;
+      
+      // Start session monitoring
+      setupSessionMonitoring(user.uid);
     } catch (error) {
       console.error('Error loading user:', error);
       currentUser = {
@@ -76,6 +121,7 @@ auth.onAuthStateChanged(async (user) => {
       userDataCache = currentUser;
       document.getElementById('userDisplayName').textContent = currentUser.fullName;
       document.getElementById('logoutUsername').textContent = currentUser.fullName;
+      setupSessionMonitoring(user.uid);
     }
   } else {
     window.location.href = 'index.html';
@@ -142,6 +188,7 @@ async function confirmLogout() {
     // Detach listeners
     if (purchaseOrderListener) purchaseOrderListener();
     if (inventoryListener) inventoryListener();
+    if (sessionMonitor) sessionMonitor();
     
     await auth.signOut();
     window.location.href = "index.html";
@@ -1634,6 +1681,7 @@ document.addEventListener('keydown', function(e) {
 function cleanup() {
   if (purchaseOrderListener) purchaseOrderListener();
   if (inventoryListener) inventoryListener();
+  if (sessionMonitor) sessionMonitor();
   userDataCache = null;
   suppliersCache = null;
   categoriesCache = null;
