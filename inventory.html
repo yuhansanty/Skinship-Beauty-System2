@@ -541,6 +541,16 @@
             <input type="number" id="editMinStock" class="form-input" min="0" required />
           </div>
           <div class="form-group">
+  <label class="form-label">Original Order Qty</label>
+  <input type="number" id="editOriginalOrderQty" class="form-input" min="0" readonly style="background: #f3f4f6;" />
+  <small class="text-gray-500 text-xs">From purchase order (read-only)</small>
+</div>
+<div class="form-group">
+  <label class="form-label">Overstock Threshold</label>
+  <input type="number" id="editOverstockThreshold" class="form-input" min="0" />
+  <small class="text-gray-500 text-xs">Default: 20% of original order</small>
+</div>
+          <div class="form-group">
             <label class="form-label">Supplier</label>
             <input type="text" id="editItemSupplier" class="form-input" />
           </div>
@@ -550,7 +560,15 @@
           <label class="form-label">Description</label>
           <textarea id="editItemDescription" class="form-input" rows="3"></textarea>
         </div>
-
+        <!-- Restock History Section -->
+<div class="form-group col-span-2">
+  <label class="form-label">
+    <i class="fa-solid fa-clock-rotate-left mr-2"></i>Restock History
+  </label>
+  <div id="restockHistoryContainer" class="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+    <p class="text-gray-500 text-sm">No restock history available</p>
+  </div>
+</div>
         <div class="flex flex-col md:flex-row gap-3 mt-6">
           <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
             <i class="fa-solid fa-save mr-2"></i>Save Changes
@@ -594,10 +612,6 @@
           <i class="fa-solid fa-clock"></i>
           <span>Your session will be ended</span>
         </div>
-        <div class="logout-info-item">
-          <i class="fa-solid fa-shield-halved"></i>
-          <span>You will be clocked out automatically</span>
-        </div>
       </div>
 
       <div class="logout-modal-actions">
@@ -612,6 +626,68 @@
       </div>
     </div>
   </div>
+
+  <!-- Add Category Modal -->
+<div id="addCategoryModal" class="add-product-modal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-[#da5c73]">
+        <i class="fa-solid fa-plus-circle mr-2"></i>Add New Category
+      </h2>
+      <span class="modal-close" onclick="closeAddCategoryModal()">&times;</span>
+    </div>
+
+    <form id="addCategoryForm" onsubmit="handleAddCategory(event)">
+      <div class="form-group">
+        <label class="form-label">Category Name</label>
+        <input 
+          type="text" 
+          id="newCategoryName" 
+          class="form-input" 
+          placeholder="Enter category name" 
+          required 
+        />
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button type="submit" class="flex-1 bg-[#da5c73] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#c54d63] transition">
+          <i class="fa-solid fa-check mr-2"></i>Add Category
+        </button>
+        <button type="button" onclick="closeAddCategoryModal()" class="flex-1 bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+          <i class="fa-solid fa-xmark mr-2"></i>Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Manage Categories Modal -->
+<div id="manageCategoriesModal" class="add-product-modal">
+  <div class="modal-content" style="max-width: 600px;">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-bold text-[#da5c73]">
+        <i class="fa-solid fa-gear mr-2"></i>Manage Categories
+      </h2>
+      <span class="modal-close" onclick="closeManageCategoriesModal()">&times;</span>
+    </div>
+
+    <div class="mb-4">
+      <p class="text-gray-600 text-sm mb-4">
+        <i class="fa-solid fa-info-circle mr-2"></i>
+        You can delete categories here. Products in deleted categories will also be removed.
+      </p>
+      <div id="manageCategoriesList" class="space-y-2 max-h-96 overflow-y-auto">
+        <!-- Categories will be loaded here dynamically -->
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <button onclick="closeManageCategoriesModal()" class="w-full bg-gray-300 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-400 transition">
+        <i class="fa-solid fa-xmark mr-2"></i>Close
+      </button>
+    </div>
+  </div>
+</div>
 
   <script type="module" src="role-check.js"></script>
   <script src="inventory.js"></script>

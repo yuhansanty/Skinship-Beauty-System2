@@ -25,6 +25,110 @@
       justify-content: center;
       transition: .3s;
     }
+
+    /* Toast Notification Styles */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 400px;
+}
+
+.toast-notification {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  min-width: 350px;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-notification.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.toast-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.toast-notification.error .toast-icon {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.toast-notification.success .toast-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.toast-notification.warning .toast-icon {
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+.toast-notification.info .toast-icon {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.toast-content {
+  flex: 1;
+  padding-top: 2px;
+}
+
+.toast-content p {
+  margin: 0;
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.toast-close:hover {
+  color: #6b7280;
+}
+
+@media (max-width: 640px) {
+  #toastContainer {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .toast-notification {
+    min-width: auto;
+  }
+}
     .sidebar-btn:hover { 
       background: #da5c73;
       color: white;
@@ -62,7 +166,26 @@
     .stat-card:hover {
       transform: translateY(-4px);
     }
+    .modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.5);
+  pointer-events: none;
+}
 
+.modal.show,
+.modal[style*="display: block"] {
+  pointer-events: auto;
+}
+
+.modal-content {
+  pointer-events: auto;
+}
     
     .modal {
       display: none;
@@ -98,6 +221,17 @@
         transform: translateY(0);
       }
     }
+
+    td {
+  pointer-events: auto !important;
+}
+
+td button {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+  position: relative;
+  z-index: 10;
+}
     
     
     .info-box {
@@ -124,39 +258,40 @@
       background: #da5c73;
       color: white;
     }
+    
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.3s ease;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
 
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease, visibility 0.3s ease;
-      backdrop-filter: blur(4px);
-    }
+.modal-overlay.show {
+  display: flex !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
 
-    .modal-overlay.show {
-      opacity: 1;
-      visibility: visible;
-    }
-
-    .logout-modal {
-      background: white;
-      border-radius: 1rem;
-      padding: 2rem;
-      max-width: 450px;
-      width: 90%;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-      transform: scale(0.9);
-      transition: transform 0.3s ease;
-    }
+.logout-modal {
+  background: white;
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  pointer-events: auto;
+}
 
     .modal-overlay.show .logout-modal {
       transform: scale(1);
@@ -216,6 +351,8 @@
       border-radius: 0.5rem;
       margin-bottom: 0.75rem;
     }
+
+    
 
     .logout-info-item:last-child {
       margin-bottom: 0;
@@ -298,10 +435,12 @@
       background-color: rgba(0,0,0,0.5);
       align-items: center;
       justify-content: center;
+      pointer-events: none;
     }
 
     .add-category-modal.show {
       display: flex !important;
+      pointer-events: auto !important;
     }
 
 .sidebar-bubble {
@@ -333,6 +472,100 @@
 
 .sidebar-btn {
   position: relative;
+}
+
+      /* Action Toast Styles */
+.action-toast {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  min-width: 400px;
+  opacity: 0;
+  transform: translateX(100%);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 4px solid #16a34a;
+}
+
+.action-toast.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.action-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.action-toast-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.action-toast-title {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.action-toast-body {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.action-toast-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.action-toast-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.action-toast-btn-cancel {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.action-toast-btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.action-toast-btn-confirm {
+  background: #16a34a;
+  color: white;
+}
+
+.action-toast-btn-confirm:hover {
+  background: #15803d;
+}
+
+#newProductMinStock {
+  transition: all 0.3s ease;
+}
+
+#newProductMinStock.auto-updated {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
 }
 
 @media (max-width: 768px) {
@@ -373,7 +606,7 @@
         font-size: 12px;
         padding: 6px 12px;
       }
-      
+
       #searchInput {
         width: 100% !important;
         margin-bottom: 0.5rem;
@@ -402,6 +635,18 @@
         padding: 8px 4px !important;
       }
     }
+
+@media (max-width: 640px) {
+  #actionToastContainer {
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .action-toast {
+    min-width: auto;
+  }
+}
     
     @media (max-width: 480px) {
       .stat-card p {
@@ -420,8 +665,12 @@
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+  <div id="actionToastContainer" style="position: fixed; top: 80px; right: 20px; z-index: 10000; max-width: 450px;"></div>
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
+      
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
     </div>
     <button class="sidebar-btn" title="Dashboard" onclick="window.location.href='dashboard.html'"><i class="fa-solid fa-table-columns"></i></button>
@@ -632,8 +881,52 @@
               <input type="number" id="newProductPrice" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" step="0.01" placeholder="0.00" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">Minimum Stock Level *</label>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Minimum Stock Level *
+                <span class="text-xs text-gray-500 font-normal ml-1">(Auto: 20% of order qty)</span>
+              </label>
               <input type="number" id="newProductMinStock" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" value="10" />
+              <p class="text-xs text-gray-500 mt-1">
+                <i class="fa-solid fa-info-circle"></i> Automatically calculated as 20% of your order quantity
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Estimated Daily Demand (units/day)
+                <span class="text-xs text-red-500">*</span>
+              </label>
+              <input type="number" id="newProductDailyDemand" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" step="0.1" placeholder="e.g., 5" />
+              <p class="text-xs text-gray-500 mt-1">
+                <i class="fa-solid fa-chart-line"></i> Average units sold per day
+              </p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Target Stock Coverage (days)
+                <span class="text-xs text-red-500">*</span>
+              </label>
+              <input type="number" id="newProductStockCoverage" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="1" value="30" />
+              <p class="text-xs text-gray-500 mt-1">
+                <i class="fa-solid fa-calendar-days"></i> How many days of stock to maintain
+              </p>
+            </div>
+          </div>
+
+          <div class="info-box bg-blue-50 border-blue-500" id="overstockInfoBox" style="display: none;">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-calculator text-blue-600 mt-1"></i>
+              <div class="flex-1">
+                <p class="text-sm text-blue-800 font-semibold mb-2">Overstock Calculation Preview:</p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-blue-700">
+                  <div><strong>Current Stock Duration:</strong> <span id="previewStockDuration">-</span> days</div>
+                  <div><strong>Target Coverage:</strong> <span id="previewTargetCoverage">-</span> days</div>
+                  <div><strong>Overstock Status:</strong> <span id="previewOverstockStatus">-</span></div>
+                  <div><strong>Excess Units:</strong> <span id="previewExcessUnits">-</span></div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -651,7 +944,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Order Quantity *</label>
-              <input type="number" id="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" required oninput="calculateTotal()" />
+            <input type="number" id="quantity" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#da5c73]" min="0" required oninput="calculateTotal()" />
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Total Order Value</label>
@@ -779,6 +1072,272 @@
       </div>
     </div>
   </div>
+
+  <!-- Duplicate Product in Pending PO Modal -->
+  <div class="modal-overlay" id="duplicatePOModal">
+    <div class="logout-modal" style="max-width: 550px;" onclick="event.stopPropagation()">
+      <div class="logout-modal-header">
+        <div class="logout-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 100%);">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h2>⚠️ Product Already in Pending Order!</h2>
+        <p class="text-gray-600">A new product with this name already exists in a pending purchase order</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-box" style="color: #f59e0b;"></i>
+          <span>Product: <strong id="duplicatePOName"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-receipt" style="color: #f59e0b;"></i>
+          <span>Existing PO #: <strong id="duplicatePONumber"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-calendar" style="color: #f59e0b;"></i>
+          <span>Date: <strong id="duplicatePODate"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-truck" style="color: #f59e0b;"></i>
+          <span>Supplier: <strong id="duplicatePOSupplier"></strong></span>
+        </div>
+        <div class="logout-info-item" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+          <i class="fa-solid fa-info-circle" style="color: #f59e0b;"></i>
+          <span style="color: #92400e;"><strong>Note:</strong> This product will be added to inventory once that order is received</span>
+        </div>
+        <div class="logout-info-item" style="background: #dbeafe; border-left: 4px solid #3b82f6;">
+          <i class="fa-solid fa-question-circle" style="color: #3b82f6;"></i>
+          <span style="color: #1e40af;">Do you want to create another purchase order for this same new product?</span>
+        </div>
+      </div>
+      
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideDuplicatePOModal(false)">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="hideDuplicatePOModal(true)">
+          <i class="fa-solid fa-check"></i>
+          Proceed Anyway
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receive Order Confirmation Modal -->
+  <div class="modal-overlay" id="receiveOrderModal">
+    <div class="logout-modal" style="max-width: 500px;">
+      <div class="logout-modal-header">
+        <div class="logout-icon" style="background: linear-gradient(135deg, #d1fae5 0%, #16a34a 100%);">
+          <i class="fa-solid fa-check-circle"></i>
+        </div>
+        <h2>Mark as Received?</h2>
+        <p class="text-gray-600">Add inventory and complete this purchase order</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-receipt" style="color: #16a34a;"></i>
+          <span>PO #: <strong id="receivePONumber"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-box" style="color: #16a34a;"></i>
+          <span>Product: <strong id="receivePOProduct"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-hashtag" style="color: #16a34a;"></i>
+          <span>Quantity: <strong id="receivePOQuantity"></strong> units</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-truck" style="color: #16a34a;"></i>
+          <span>Supplier: <strong id="receivePOSupplier"></strong></span>
+        </div>
+        <div class="logout-info-item" style="background: #d1fae5; border-left: 4px solid #16a34a;">
+          <i class="fa-solid fa-info-circle" style="color: #16a34a;"></i>
+          <span style="color: #065f46;"><strong>Action:</strong> This will add <strong id="receivePOQuantityRepeat"></strong> units to inventory</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideReceiveOrderModal(false)">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);" onclick="hideReceiveOrderModal(true)">
+          <i class="fa-solid fa-check"></i>
+          Confirm Receipt
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Purchase Order Confirmation Modal -->
+  <div class="modal-overlay" id="deletePOModal">
+    <div class="logout-modal" style="max-width: 500px;">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-trash"></i>
+        </div>
+        <h2>Delete Purchase Order?</h2>
+        <p class="text-gray-600">This action cannot be undone</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-receipt" style="color: #dc2626;"></i>
+          <span>PO #: <strong id="deletePONumber"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-box" style="color: #dc2626;"></i>
+          <span>Product: <strong id="deletePOProduct"></strong></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-truck" style="color: #dc2626;"></i>
+          <span>Supplier: <strong id="deletePOSupplier"></strong></span>
+        </div>
+        <div class="logout-info-item" style="background: #fee2e2; border-left: 4px solid #dc2626;">
+          <i class="fa-solid fa-exclamation-triangle" style="color: #dc2626;"></i>
+          <span style="color: #991b1b;"><strong>Warning:</strong> This purchase order will be permanently deleted</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideDeletePOModal(false)">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" onclick="hideDeletePOModal(true)">
+          <i class="fa-solid fa-trash"></i>
+          Delete Order
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Confirmation Modal -->
+  <div class="modal-overlay" id="lowStockModal">
+    <div class="logout-modal" style="max-width: 500px;">
+      <div class="logout-modal-header">
+        <div class="logout-icon" style="background: linear-gradient(135deg, #fef3c7 0%, #f59e0b 100%);">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+        </div>
+        <h2>⚠️ Low Stock Warning!</h2>
+        <p id="lowStockTitle" class="text-gray-600"></p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-exclamation-circle" style="color: #f59e0b;"></i>
+          <span id="lowStockMessage1"></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-clock" style="color: #f59e0b;"></i>
+          <span id="lowStockMessage2"></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-box" style="color: #f59e0b;"></i>
+          <span id="lowStockMessage3"></span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideLowStockModal(false)">
+          <i class="fa-solid fa-arrow-left"></i>
+          Go Back
+        </button>
+        <button class="logout-btn logout-btn-confirm" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="hideLowStockModal(true)">
+          <i class="fa-solid fa-check"></i>
+          Continue Anyway
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zero Stock Confirmation Modal -->
+  <div class="modal-overlay" id="zeroStockModal">
+    <div class="logout-modal" style="max-width: 500px;">
+      <div class="logout-modal-header">
+        <div class="logout-icon">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </div>
+        <h2>⚠️ Zero Stock Warning!</h2>
+        <p class="text-gray-600">Creating product with ZERO initial quantity</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-box-open" style="color: #dc2626;"></i>
+          <span>The product will be added with 0 stock</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-exclamation-triangle" style="color: #dc2626;"></i>
+          <span>Status will be "Out of Stock"</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-cart-plus" style="color: #dc2626;"></i>
+          <span>You'll need another PO to add stock later</span>
+        </div>
+        <div class="logout-info-item" style="background: #fef3c7; border-left: 4px solid #f59e0b;">
+          <i class="fa-solid fa-lightbulb" style="color: #f59e0b;"></i>
+          <span style="color: #92400e;"><strong>Recommendation:</strong> Consider adding initial quantity now</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideZeroStockModal(false)">
+          <i class="fa-solid fa-arrow-left"></i>
+          Go Back
+        </button>
+        <button class="logout-btn logout-btn-confirm" onclick="hideZeroStockModal(true)">
+          <i class="fa-solid fa-check"></i>
+          Continue with 0
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overstock Confirmation Modal -->
+  <div class="modal-overlay" id="overstockModal">
+    <div class="logout-modal" style="max-width: 550px;">
+      <div class="logout-modal-header">
+        <div class="logout-icon" style="background: linear-gradient(135deg, #dbeafe 0%, #3b82f6 100%);">
+          <i class="fa-solid fa-info-circle"></i>
+        </div>
+        <h2>ℹ️ High Quantity Notice</h2>
+        <p id="overstockTitle" class="text-gray-600"></p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-chart-line" style="color: #3b82f6;"></i>
+          <span id="overstockMessage1"></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-dollar-sign" style="color: #3b82f6;"></i>
+          <span id="overstockMessage2"></span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-warehouse" style="color: #3b82f6;"></i>
+          <span id="overstockMessage3"></span>
+        </div>
+        <div class="logout-info-item" style="background: #f0f9ff; border-left: 4px solid #3b82f6;">
+          <i class="fa-solid fa-box" style="color: #3b82f6;"></i>
+          <span id="overstockRange" style="color: #1e40af;"></span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="hideOverstockModal(false)">
+          <i class="fa-solid fa-arrow-left"></i>
+          Adjust Quantity
+        </button>
+        <button class="logout-btn logout-btn-confirm" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);" onclick="hideOverstockModal(true)">
+          <i class="fa-solid fa-check">
+        Continue Anyway
+      </button>
+    </div>
+  </div>
+</div>
 
   <div class="modal-overlay" id="logoutModal">
     <div class="logout-modal">

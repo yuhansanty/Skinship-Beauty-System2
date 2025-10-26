@@ -249,6 +249,52 @@
       margin-bottom: 1.5rem;
     }
 
+    /* Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+    }
+    
+    .toast-notification {
+      background: white;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      animation: slideIn 0.3s ease;
+      max-width: 100%;
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+
     .logout-icon {
       width: 80px;
       height: 80px;
@@ -615,7 +661,56 @@
     let purchaseOrdersListener = null;
     let inventoryListener = null;
     let sessionMonitor = null;
-    let processedPOs = new Set();
+let processedPOs = new Set();
+
+    // Toast notification function
+    function showToast(message, type = 'info') {
+      let container = document.getElementById('toastContainer');
+      if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+      }
+      
+      const toast = document.createElement('div');
+      toast.className = `toast-notification ${type}`;
+      
+      const icons = {
+        error: 'fa-circle-xmark',
+        success: 'fa-circle-check',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
+      
+      const colors = {
+        error: '#dc2626',
+        success: '#16a34a',
+        warning: '#f59e0b',
+        info: '#3b82f6'
+      };
+      
+      toast.style.borderLeft = `4px solid ${colors[type]}`;
+      
+      toast.innerHTML = `
+        <div style="color: ${colors[type]}; font-size: 20px; flex-shrink: 0;">
+          <i class="fa-solid ${icons[type]}"></i>
+        </div>
+        <div style="flex: 1; font-size: 14px; color: #374151;">
+          <p style="margin: 0; white-space: pre-line;">${message}</p>
+        </div>
+        <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 18px; padding: 0; flex-shrink: 0;">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
 
     // Cache user data to reduce reads
     let userDataCache = null;
@@ -685,7 +780,7 @@
         console.error("Logout error:", error);
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
         await auth.signOut();
         window.location.href = "index.html";
       }
@@ -774,17 +869,19 @@ function setupSessionMonitoring(userId) {
     const data = snapshot.data();
     const currentSessionId = data.currentSessionId;
     
-    // Check if session ID has changed (another login or password change)
+// Check if session ID has changed (another login or password change)
     if (currentSessionId && currentSessionId !== storedSessionId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      showToast('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed', 'error');
       
-      // Force logout
-      auth.signOut().then(() => {
-        window.location.href = 'index.html';
-      });
+      // Force logout after a short delay to show the toast
+      setTimeout(() => {
+        auth.signOut().then(() => {
+          window.location.href = 'index.html';
+        });
+      }, 2000);
     }
   }, (error) => {
     console.error('Session monitoring error:', error);
@@ -1032,7 +1129,7 @@ function setupSessionMonitoring(userId) {
       try {
         const invoice = invoices.find(inv => inv.id === invoiceId);
         if (!invoice) {
-          alert('Invoice not found');
+showToast('Invoice not found', 'error');
           return;
         }
 
@@ -1041,7 +1138,7 @@ function setupSessionMonitoring(userId) {
         document.getElementById('invoiceDetailModal').classList.add('show');
       } catch (error) {
         console.error('Error viewing invoice:', error);
-        alert('Error loading invoice details');
+showToast('Error loading invoice details', 'error');
       }
     }
 
@@ -1222,13 +1319,6 @@ function setupSessionMonitoring(userId) {
       window.URL.revokeObjectURL(url);
     }
 
-// Helper function to determine status
-function determineStatus(qty, minStock) {
-  if (qty === 0) return 'out-of-stock';
-  if (qty <= minStock) return 'low-stock';
-  return 'in-stock';
-}
-
 // Monitor inventory for sidebar bubble - OPTIMIZED single listener
 function monitorInventory() {
   if (inventoryListener) {
@@ -1243,65 +1333,60 @@ function monitorInventory() {
       
       snapshot.forEach(doc => {
         const product = doc.data();
-        const qty = product.qty || 0;
-        const price = product.price || 0;
-        const minStock = product.minStock || 10;
-        
-        // Recalculate status based on current quantity
-        const status = determineStatus(qty, minStock);
+        const status = product.status || 'in-stock';
         
         if (status === 'out-of-stock') {
           noStockCount++;
         } else if (status === 'low-stock') {
           lowStockCount++;
-        } else if (qty > (minStock * 1.5) && qty > 0) {
+        } else if (status === 'overstock') {
           overstockCount++;
         }
       });
-          
-          updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
-        }, (error) => {
-          console.error('Error monitoring inventory:', error);
-        });
-    }
+      
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+    }, (error) => {
+      console.error('Error monitoring inventory:', error);
+    });
+}
 
-    // Update inventory bubble based on priority: red > yellow > blue
-    function updateInventoryBubble(noStock, lowStock, overstock) {
-      const bubble = document.getElementById('inventoryBubble');
-      
-      if (!bubble) return;
-      
-      if (noStock > 0) {
-        bubble.textContent = noStock > 99 ? '99+' : noStock;
-        bubble.style.backgroundColor = '#dc2626'; // Red for out of stock
-        bubble.style.display = 'flex';
-      } else if (lowStock > 0) {
-        bubble.textContent = lowStock > 99 ? '99+' : lowStock;
-        bubble.style.backgroundColor = '#f59e0b'; // Yellow for low stock
-        bubble.style.display = 'flex';
-      } else if (overstock > 0) {
-        bubble.textContent = overstock > 99 ? '99+' : overstock;
-        bubble.style.backgroundColor = '#3b82f6'; // Blue for overstock
-        bubble.style.display = 'flex';
-      } else {
-        bubble.style.display = 'none';
-      }
-    }
+// Update inventory bubble based on priority: red > yellow > blue
+function updateInventoryBubble(noStock, lowStock, overstock) {
+  const bubble = document.getElementById('inventoryBubble');
+  
+  if (!bubble) return;
+  
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
+}
 
-    // Update purchase order bubble
-    function updatePurchaseOrderBubble(count) {
-      const bubble = document.getElementById('purchaseOrderBubble');
-      
-      if (!bubble) return;
-      
-      if (count > 0) {
-        bubble.textContent = count > 99 ? '99+' : count;
-        bubble.style.backgroundColor = '#8b5cf6'; // Purple for purchase orders
-        bubble.style.display = 'flex';
-      } else {
-        bubble.style.display = 'none';
-      }
-    }
+// Update purchase order bubble
+function updatePurchaseOrderBubble(count) {
+  const bubble = document.getElementById('purchaseOrderBubble');
+  
+  if (!bubble) return;
+  
+  if (count > 0) {
+    bubble.textContent = count > 99 ? '99+' : count;
+    bubble.style.backgroundColor = '#8b5cf6'; // Purple
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
+}
 
     // Close dropdowns on outside click
     document.addEventListener('click', function(event) {

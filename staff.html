@@ -9,7 +9,8 @@
   <link rel="stylesheet" href="staff.css">
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full role-staff">
-  
+  <!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
@@ -35,12 +36,12 @@
       <!-- Header Bar -->
       <div class="flex justify-between items-center mb-6">
         <div class="flex items-center gap-2">
-          <input 
-            type="text" 
-            id="searchInput" 
-            placeholder="Search by name, gender, or mobile..." 
-            class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80"
-          />
+<input 
+  type="text" 
+  id="searchInput" 
+  placeholder="Search by name, gender, mobile, or schedule..." 
+  class="rounded-lg px-4 py-2 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#da5c73] w-80"
+/>
         </div>
         
         <div class="flex items-center gap-4">
@@ -82,42 +83,6 @@
     </div>
   </main>
 
-  <!-- History Modal -->
-  <div id="historyModal" class="modal-overlay">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title">Clock In/Out History</h2>
-          <p class="modal-subtitle" id="historyStaffName"></p>
-        </div>
-        <button class="modal-close" onclick="closeHistory()">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-      
-      <div class="modal-info">
-        <span id="historyCount">Total entries: 0</span>
-        <span id="pageInfo">Page 1 of 1</span>
-      </div>
-      
-      <div class="modal-body">
-        <table class="history-table">
-          <thead>
-            <tr>
-              <th>Clock In</th>
-              <th>Clock Out</th>
-            </tr>
-          </thead>
-          <tbody id="historyList"></tbody>
-        </table>
-      </div>
-      
-      <div class="modal-footer">
-        <div id="paginationControls" class="pagination-controls"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- Logout Confirmation Modal -->
   <div class="modal-overlay" id="logoutModal">
     <div class="logout-modal">
@@ -152,6 +117,45 @@
         <button class="logout-btn logout-btn-confirm" id="confirmLogoutBtn" onclick="confirmLogout()">
           <i class="fa-solid fa-right-from-bracket"></i>
           Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- Absent Confirmation Modal -->
+  <div class="modal-overlay" id="absentModal">
+    <div class="absent-modal">
+      <div class="absent-modal-header">
+        <div class="absent-icon" id="absentIconContainer">
+          <i class="fa-solid fa-user-xmark"></i>
+        </div>
+        <h2 id="absentModalTitle">Mark as Absent</h2>
+        <p id="absentModalMessage">Are you sure you want to mark this staff member as ABSENT?</p>
+      </div>
+
+      <div class="absent-modal-body">
+        <div class="absent-warning" id="absentWarning">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span>They will be marked absent and unavailable even if they log in.</span>
+        </div>
+        <div class="absent-success" id="absentSuccess" style="display: none;">
+          <i class="fa-solid fa-circle-check"></i>
+          <span>They will be able to become available again.</span>
+        </div>
+        <div class="absent-info-item">
+          <i class="fa-solid fa-user"></i>
+          <span id="absentStaffName">Staff Name</span>
+        </div>
+      </div>
+
+      <div class="absent-modal-actions">
+        <button class="absent-btn absent-btn-cancel" onclick="hideAbsentModal()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="absent-btn absent-btn-confirm" id="confirmAbsentBtn" onclick="confirmAbsentToggle()">
+          <i class="fa-solid fa-user-xmark"></i>
+          Mark Absent
         </button>
       </div>
     </div>

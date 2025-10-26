@@ -34,6 +34,127 @@ let itemCounterCache = null;
 let lastCounterFetch = 0;
 const COUNTER_CACHE_DURATION = 60000; // 1 minute
 
+// Make functions globally accessible
+window.editPO = editPO;
+window.deletePO = deletePO;
+window.receiveOrder = receiveOrder;
+window.viewPO = viewPO;
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  
+  const icons = {
+    error: 'fa-circle-xmark',
+    success: 'fa-circle-check',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fa-solid ${icons[type]}"></i>
+    </div>
+    <div class="toast-content">
+      <p>${message}</p>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
+function calculateOverstock(currentStock, dailyDemand, targetCoverage = 30) {
+  if (!dailyDemand || dailyDemand <= 0) {
+    return {
+      isOverstock: false,
+      excessUnits: 0,
+      stockDuration: 0,
+      targetCoverage: targetCoverage
+    };
+  }
+  
+  // Calculate how many days the current stock will last
+  const stockDuration = Math.floor(currentStock / dailyDemand);
+  
+  // Calculate estimated demand for target coverage period
+  const estimatedDemand = dailyDemand * targetCoverage;
+  
+  // Overstock if stock duration exceeds target coverage
+  const isOverstock = stockDuration > targetCoverage;
+  
+  // Calculate excess units above estimated demand
+  const excessUnits = Math.max(0, currentStock - estimatedDemand);
+  
+  return {
+    isOverstock: isOverstock,
+    excessUnits: Math.floor(excessUnits),
+    stockDuration: stockDuration,
+    targetCoverage: targetCoverage,
+    estimatedDemand: Math.floor(estimatedDemand)
+  };
+}
+
+function updateOverstockPreview() {
+  // Only show overstock preview for NEW products
+  if (currentProductMode !== 'new') {
+    const infoBox = document.getElementById('overstockInfoBox');
+    if (infoBox) {
+      infoBox.style.display = 'none';
+    }
+    return;
+  }
+  
+  const quantity = parseInt(document.getElementById('quantity')?.value) || 0;
+  const dailyDemand = parseFloat(document.getElementById('newProductDailyDemand')?.value) || 0;
+  const targetCoverage = parseInt(document.getElementById('newProductStockCoverage')?.value) || 30;
+  
+  const infoBox = document.getElementById('overstockInfoBox');
+  
+  if (quantity > 0 && dailyDemand > 0) {
+    // Calculate stock duration in days
+    const stockDuration = Math.floor(quantity / dailyDemand);
+    
+    // Calculate if it's overstock
+    const isOverstock = stockDuration > targetCoverage;
+    const excessUnits = isOverstock ? quantity - (dailyDemand * targetCoverage) : 0;
+    
+    infoBox.style.display = 'block';
+    
+    document.getElementById('previewStockDuration').textContent = stockDuration;
+    document.getElementById('previewTargetCoverage').textContent = targetCoverage;
+    
+    const statusSpan = document.getElementById('previewOverstockStatus');
+    if (isOverstock) {
+      statusSpan.textContent = '⚠️ OVERSTOCK';
+      statusSpan.className = 'font-bold text-orange-600';
+      infoBox.className = 'info-box bg-orange-50 border-orange-500';
+    } else {
+      statusSpan.textContent = '✓ OPTIMAL';
+      statusSpan.className = 'font-bold text-green-600';
+      infoBox.className = 'info-box bg-blue-50 border-blue-500';
+    }
+    
+    document.getElementById('previewExcessUnits').textContent = 
+      excessUnits > 0 ? `${Math.floor(excessUnits)} units` : 'None';
+    
+  } else {
+    infoBox.style.display = 'none';
+  }
+}
+
 // Session monitoring function
 function setupSessionMonitoring(userId) {
   if (sessionMonitor) sessionMonitor();
@@ -62,7 +183,7 @@ function setupSessionMonitoring(userId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+showToast('Your session has been ended because someone else logged into this account or your password was changed', 'error');
       
       // Force logout
       auth.signOut().then(() => {
@@ -179,11 +300,14 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    // Clear caches
+// Clear caches
     userDataCache = null;
     suppliersCache = null;
     categoriesCache = null;
     itemCounterCache = null;
+    
+    // Clear notification flag
+    sessionStorage.removeItem('poInventoryNotificationsShown');
     
     // Detach listeners
     if (purchaseOrderListener) purchaseOrderListener();
@@ -196,23 +320,37 @@ async function confirmLogout() {
     console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
     await auth.signOut();
     window.location.href = "index.html";
   }
 }
 
-// Update sidebar bubbles based on inventory and purchase orders
+// Update sidebar bubbles based on inventory status - NO FIREBASE READS
 function updateSidebarBubbles() {
-  // Inventory bubble
   const noStockCount = inventoryItems.filter(item => item.status === 'out-of-stock').length;
   const lowStockCount = inventoryItems.filter(item => item.status === 'low-stock').length;
-  const overstockCount = inventoryItems.filter(item => {
-    const minStockThreshold = item.minStock || 10;
-    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
-  }).length;
+  const overstockCount = inventoryItems.filter(item => item.status === 'overstock').length;
   
+  // Update inventory bubble (no stock - red, low stock - yellow, overstock - blue)
   updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+  
+  // Check if notifications have already been shown in this session
+  const notificationsShown = sessionStorage.getItem('poInventoryNotificationsShown');
+  
+  if (!notificationsShown) {
+    // Show toast for critical inventory issues (only once per session)
+    if (noStockCount > 0) {
+      showToast(`⚠️ ${noStockCount} product${noStockCount > 1 ? 's are' : ' is'} out of stock!`, 'error');
+    } else if (lowStockCount > 0) {
+      showToast(`⚠️ ${lowStockCount} product${lowStockCount > 1 ? 's are' : ' is'} running low on stock`, 'warning');
+    } else if (overstockCount > 0) {
+      showToast(`ℹ️ ${overstockCount} product${overstockCount > 1 ? 's have' : ' has'} excess inventory`, 'info');
+    }
+    
+    // Mark notifications as shown for this session
+    sessionStorage.setItem('poInventoryNotificationsShown', 'true');
+  }
   
   // Purchase Order bubble
   const pendingPOCount = purchaseOrders.filter(po => po.status === 'pending').length;
@@ -307,8 +445,10 @@ async function saveSuppliersToFirebase() {
   }
 }
 
-// Initialize the page
 document.addEventListener('DOMContentLoaded', async function() {
+
+    sessionStorage.removeItem('poInventoryNotificationsShown');
+
   await loadSuppliersFromFirebase();
   await loadCategoriesFromFirebase(); 
   loadInventoryItemsAndCategories();
@@ -326,36 +466,95 @@ document.addEventListener('DOMContentLoaded', async function() {
   
   document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
   
-  // Add event listeners for stock level indicator
-  const quantityInput = document.getElementById('quantity');
-  const minStockInput = document.getElementById('newProductMinStock');
+  // ADD THIS EVENT DELEGATION FOR ACTION BUTTONS
+  document.getElementById('poTableBody').addEventListener('click', function(e) {
+    const button = e.target.closest('.po-action-btn');
+    if (!button) return;
+    
+    const action = button.getAttribute('data-action');
+    const index = parseInt(button.getAttribute('data-index'));
+      
+    switch(action) {
+      case 'edit':
+        editPO(index);
+        break;
+      case 'receive':
+        receiveOrder(index);
+        break;
+      case 'delete':
+        deletePO(index);
+        break;
+      case 'view':
+        viewPO(index);
+        break;
+    }
+  });
   
-  if (quantityInput) {
-    // Mark as interacted when user types
-    quantityInput.addEventListener('input', function() {
+  // Rest of your existing code...
+  
+  document.getElementById('supplier').addEventListener('change', handleSupplierSelectChange);
+  
+// Add event listeners for stock level indicator
+const quantityInput = document.getElementById('quantity');
+const minStockInput = document.getElementById('newProductMinStock');
+
+if (quantityInput) {
+  quantityInput.addEventListener('input', function() {
+    this.dataset.hasInteracted = 'true';
+    
+    // Auto-calculate and set minimum stock to 20% of order quantity (only for new products)
+    if (currentProductMode === 'new' && this.value && parseInt(this.value) > 0) {
+      const orderQty = parseInt(this.value);
+      const suggested20Percent = Math.ceil(orderQty * 0.2);
+      
+      const minStockField = document.getElementById('newProductMinStock');
+      if (minStockField) {
+        minStockField.value = suggested20Percent;
+        
+        // Add visual feedback
+        minStockField.classList.add('auto-updated');
+        setTimeout(() => {
+          minStockField.classList.remove('auto-updated');
+        }, 1000);
+      }
+    }
+    
+    updateStockLevelIndicator();
+    updateOverstockPreview();
+    calculateTotal();
+  });
+  
+  // Also mark as interacted when user focuses on the field
+  quantityInput.addEventListener('focus', function() {
+    if (this.value) {
       this.dataset.hasInteracted = 'true';
       updateStockLevelIndicator();
-      calculateTotal();
-    });
-    
-    // Also mark as interacted when user focuses on the field
-    quantityInput.addEventListener('focus', function() {
-      if (this.value) {
-        this.dataset.hasInteracted = 'true';
-        updateStockLevelIndicator();
-      }
-    });
-  }
-  
-  if (minStockInput) {
-    minStockInput.addEventListener('input', function() {
-      // Only update if quantity has been interacted with
-      const quantityInput = document.getElementById('quantity');
-      if (quantityInput && quantityInput.dataset.hasInteracted === 'true') {
-        updateStockLevelIndicator();
-      }
-    });
-  }
+    }
+  });
+}
+
+if (minStockInput) {
+  minStockInput.addEventListener('input', function() {
+    // Only update if quantity has been interacted with
+    const quantityInput = document.getElementById('quantity');
+    if (quantityInput && quantityInput.dataset.hasInteracted === 'true') {
+      updateStockLevelIndicator();
+      updateOverstockPreview();
+    }
+  });
+}
+
+// Add event listeners for daily demand and stock coverage
+const dailyDemandInput = document.getElementById('newProductDailyDemand');
+const stockCoverageInput = document.getElementById('newProductStockCoverage');
+
+if (dailyDemandInput) {
+  dailyDemandInput.addEventListener('input', updateOverstockPreview);
+}
+
+if (stockCoverageInput) {
+  stockCoverageInput.addEventListener('input', updateOverstockPreview);
+}
 });
 
 // Load inventory items and categories with real-time listener
@@ -367,17 +566,20 @@ function loadInventoryItemsAndCategories() {
         const categorySet = new Set();
         categoryCounts = {};
         
-        snapshot.forEach(doc => {
-          const item = doc.data();
-          item.firebaseId = doc.id;
-          
-          // Recalculate status based on current quantity
-          const qty = item.qty || 0;
-          const minStock = item.minStock || 10;
-          item.status = determineStatus(qty, minStock);
-          
-          // Recalculate total
-          item.total = qty * (item.price || 0);
+snapshot.forEach(doc => {
+  const item = doc.data();
+  item.firebaseId = doc.id;
+  
+  // Recalculate status based on current quantity with overstock tracking
+  const qty = item.qty || 0;
+  const minStock = item.minStock || 10;
+  const originalOrderQty = item.originalOrderQty || 0;
+  const customThreshold = item.overstockThreshold || null;
+  
+  item.status = determineStatus(qty, minStock, originalOrderQty, customThreshold);
+  
+  // Recalculate total
+  item.total = qty * (item.price || 0);
           
           inventoryItems.push(item);
           
@@ -480,12 +682,12 @@ async function handleAddCategory(event) {
   const categoryName = document.getElementById('newCategoryName').value.trim();
   
   if (!categoryName) {
-    alert('Category name cannot be empty!');
+showToast('Category name cannot be empty!', 'error');
     return;
   }
   
   if (categories.some(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
-    alert('This category already exists! Please choose a different name.');
+showToast('This category already exists! Please choose a different name.', 'error');
     return;
   }
   
@@ -513,11 +715,11 @@ async function handleAddCategory(event) {
       categorySelect.value = categoryName;
     }, 100);
     
-    alert(`Category "${categoryName}" added successfully!\n\nYou can now use it when creating a new product in your purchase order.`);
+showToast(`Category "${categoryName}" added successfully! You can now use it when creating a new product in your purchase order.`, 'success');
     
   } catch (error) {
     console.error('Error adding category:', error);
-    alert('Error adding category: ' + error.message + '. Please try again.');
+    showToast('Error adding category: ' + error.message + '. Please try again.', 'error');
   }
 }
 
@@ -669,10 +871,10 @@ async function handleDeleteCategory(categoryName, itemCount) {
     
     closeManageCategoriesModal();
     
-    alert(`Category "${categoryName}" and its ${itemCount} item(s) have been deleted successfully!`);
+showToast(`Category "${categoryName}" and its ${itemCount} item(s) have been deleted successfully!`, 'success');
   } catch (error) {
     console.error('Error deleting category:', error);
-    alert('Error deleting category. Please try again.');
+showToast('Error deleting category. Please try again.', 'error');
   }
 }
 
@@ -745,12 +947,12 @@ async function handleAddSupplier(event) {
   const supplierName = document.getElementById('newSupplierName').value.trim();
   
   if (!supplierName) {
-    alert('Supplier name cannot be empty!');
+showToast('Supplier name cannot be empty!', 'error');
     return;
   }
   
   if (suppliers.some(s => s.toLowerCase() === supplierName.toLowerCase())) {
-    alert('This supplier already exists! Please choose a different name.');
+showToast('This supplier already exists! Please choose a different name.', 'error');
     return;
   }
   
@@ -765,7 +967,7 @@ async function handleAddSupplier(event) {
   const supplierSelect = document.getElementById('supplier');
   supplierSelect.value = supplierName;
   
-  alert(`Supplier "${supplierName}" added successfully!`);
+showToast(`Supplier "${supplierName}" added successfully!`, 'success');
 }
 
 // Open/Close Manage Suppliers Modal
@@ -845,7 +1047,7 @@ async function handleDeleteSupplier(supplierName, usageCount) {
   updateSupplierDropdown();
   loadManageSuppliersList();
   
-  alert(`Supplier "${supplierName}" has been deleted successfully!`);
+showToast(`Supplier "${supplierName}" has been deleted successfully!`, 'success');
 }
 
 window.openAddSupplierModal = openAddSupplierModal;
@@ -889,6 +1091,13 @@ function loadProductDetails() {
   document.getElementById('detailPrice').textContent = `₱ ${(selectedProduct.price || 0).toFixed(2)}`;
   
   document.getElementById('productDetails').style.display = 'block';
+  
+  // Hide overstock preview for existing products
+  const overstockInfoBox = document.getElementById('overstockInfoBox');
+  if (overstockInfoBox) {
+    overstockInfoBox.style.display = 'none';
+  }
+  
   calculateTotal();
 }
 
@@ -901,34 +1110,55 @@ function switchProductMode(mode) {
   const existingSection = document.getElementById('existingProductSection');
   const newSection = document.getElementById('newProductSection');
   
-  if (mode === 'existing') {
+if (mode === 'existing') {
     existingBtn.classList.add('active');
     newBtn.classList.remove('active');
     existingSection.style.display = 'block';
     newSection.style.display = 'none';
     
+    // Set required for existing product fields
     document.getElementById('existingProduct').required = true;
+    
+    // Remove required from new product fields
     document.getElementById('newProductName').required = false;
     document.getElementById('newProductCategory').required = false;
     document.getElementById('newProductPrice').required = false;
+    document.getElementById('newProductDailyDemand').required = false;
+    document.getElementById('newProductStockCoverage').required = false;
     
     // Hide indicator when switching to existing product
     hideStockLevelIndicator();
-  } else {
+    
+    // Hide overstock preview when switching to existing product
+    const overstockInfoBox = document.getElementById('overstockInfoBox');
+    if (overstockInfoBox) {
+      overstockInfoBox.style.display = 'none';
+    }
+} else {
     existingBtn.classList.remove('active');
     newBtn.classList.add('active');
     existingSection.style.display = 'none';
     newSection.style.display = 'block';
     
+    // Remove required from existing product field
     document.getElementById('existingProduct').required = false;
+    
+    // Set required for new product fields
     document.getElementById('newProductName').required = true;
     document.getElementById('newProductCategory').required = true;
     document.getElementById('newProductPrice').required = true;
+    document.getElementById('newProductDailyDemand').required = true;
+    document.getElementById('newProductStockCoverage').required = true;
     
     generateNewProductId();
     
     // Don't show indicator yet - wait for user interaction
     hideStockLevelIndicator();
+    
+    // Trigger overstock preview update if there's already data
+    setTimeout(() => {
+      updateOverstockPreview();
+    }, 100);
   }
   
   calculateTotal();
@@ -1004,7 +1234,6 @@ function calculateTotal() {
   document.getElementById('totalValue').value = `₱ ${total.toFixed(2)}`;
 }
 
-// Load purchase orders with real-time listener
 function loadPurchaseOrders() {
   try {
     purchaseOrderListener = db.collection('purchaseOrders')
@@ -1070,11 +1299,12 @@ function closePOModal() {
   document.getElementById('poModal').style.display = 'none';
 }
 
-// Real-time stock level indicator
 function updateStockLevelIndicator() {
   const quantityInput = document.getElementById('quantity');
   const quantity = parseInt(quantityInput.value) || 0;
   const minStock = parseInt(document.getElementById('newProductMinStock').value) || 10;
+  const dailyDemand = parseFloat(document.getElementById('newProductDailyDemand')?.value) || 0;
+  const targetCoverage = parseInt(document.getElementById('newProductStockCoverage')?.value) || 30;
   
   // Find the label for quantity input
   const quantityInputDiv = quantityInput.parentElement;
@@ -1099,6 +1329,11 @@ function updateStockLevelIndicator() {
     return;
   }
   
+  // Calculate overstock using proper formula
+  const overstockCalc = dailyDemand > 0 ? 
+    calculateOverstock(quantity, dailyDemand, targetCoverage) : 
+    { isOverstock: false, stockDuration: 0 };
+  
   // Determine status and message
   if (quantity === 0) {
     indicator.className = 'ml-2 text-xs font-semibold text-red-600';
@@ -1108,14 +1343,13 @@ function updateStockLevelIndicator() {
     indicator.className = 'ml-2 text-xs font-semibold text-yellow-600';
     indicator.textContent = `⚠️ Low Stock (min: ${minStock})`;
     indicator.style.display = 'inline';
-  } else if (quantity > (minStock * 2)) {
-    const overstockThreshold = Math.ceil(minStock * 1.5);
+  } else if (dailyDemand > 0 && overstockCalc.isOverstock) {
     indicator.className = 'ml-2 text-xs font-semibold text-blue-600';
-    indicator.textContent = `ℹ️ High Qty (threshold: ${overstockThreshold})`;
+    indicator.textContent = `ℹ️ Overstock (${overstockCalc.stockDuration} days vs ${targetCoverage} target)`;
     indicator.style.display = 'inline';
   } else {
     indicator.className = 'ml-2 text-xs font-semibold text-green-600';
-    indicator.textContent = '✓ Optimal';
+    indicator.textContent = dailyDemand > 0 ? `✓ Optimal (${overstockCalc.stockDuration} days)` : '✓ Optimal';
     indicator.style.display = 'inline';
   }
 }
@@ -1134,19 +1368,36 @@ function hideStockLevelIndicator() {
   }
 }
 
-// Add event listeners for real-time updates
-document.addEventListener('DOMContentLoaded', function() {
-  const quantityInput = document.getElementById('quantity');
-  const minStockInput = document.getElementById('newProductMinStock');
+
+// Show duplicate PO warning modal
+function showDuplicatePOModal(duplicatePO) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('duplicatePOModal');
+    document.getElementById('duplicatePOName').textContent = duplicatePO.productName;
+    document.getElementById('duplicatePONumber').textContent = duplicatePO.id;
+    document.getElementById('duplicatePODate').textContent = formatDate(duplicatePO.date);
+    document.getElementById('duplicatePOSupplier').textContent = duplicatePO.supplier;
+    
+    modal.classList.add('show');
+    
+    // Store resolve function
+    window.duplicatePOResolve = resolve;
+  });
+}
+
+function hideDuplicatePOModal(confirmed) {
+  const modal = document.getElementById('duplicatePOModal');
+  modal.classList.remove('show');
   
-  if (quantityInput) {
-    quantityInput.addEventListener('input', updateStockLevelIndicator);
+  if (window.duplicatePOResolve) {
+    window.duplicatePOResolve(confirmed);
+    window.duplicatePOResolve = null;
   }
-  
-  if (minStockInput) {
-    minStockInput.addEventListener('input', updateStockLevelIndicator);
-  }
-});
+}
+
+
+// Make function globally accessible
+window.hideDuplicatePOModal = hideDuplicatePOModal;
 
 // Handle form submission
 document.getElementById('poForm').addEventListener('submit', async function(e) {
@@ -1163,7 +1414,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
   
   if (currentProductMode === 'existing') {
     if (!selectedProduct) {
-      alert('Please select a product from inventory.');
+showToast('Please select a product from inventory.', 'error');
       return;
     }
     
@@ -1182,7 +1433,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     const productId = document.getElementById('newProductId').value;
     
     if (!name || !category || !price || category === '__ADD_NEW__' || category === '__MANAGE__') {
-      alert('Please fill in all required fields for the new product.');
+showToast('Please fill in all required fields for the new product.', 'error');
       return;
     }
     
@@ -1191,7 +1442,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     );
     
     if (duplicateName) {
-      alert(`⚠️ Duplicate Product Name!\n\nA product with the name "${duplicateName.name}" already exists in your inventory.\n\nProduct ID: ${duplicateName.id}\nCategory: ${duplicateName.category}\n\nPlease use the "Existing Product" option to order this item, or choose a different product name.`);
+      showToast(`⚠️ Duplicate Product Name! A product with the name "${duplicateName.name}" already exists. Product ID: ${duplicateName.id}, Category: ${duplicateName.category}. Please use the "Existing Product" option or choose a different name.`, 'error');
       return;
     }
     
@@ -1200,24 +1451,24 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
     );
     
     if (duplicateId) {
-      alert(`⚠️ Duplicate Product ID!\n\nA product with ID "${duplicateId.id}" already exists.\n\nProduct Name: ${duplicateId.name}\nCategory: ${duplicateId.category}\n\nPlease refresh the page to generate a new ID.`);
+      showToast(`⚠️ Duplicate Product ID! A product with ID "${duplicateId.id}" already exists (${duplicateId.name}). Please refresh the page to generate a new ID.`, 'error');
       await generateNewProductId();
       return;
     }
     
-    const duplicateInPO = purchaseOrders.find(po => 
-      po.isNewProduct && 
-      po.status === 'pending' && 
-      po.productName.toLowerCase().trim() === name.toLowerCase().trim()
-    );
-    
-    if (duplicateInPO) {
-      const useExisting = confirm(`⚠️ Product Already in Pending Order!\n\nA new product with the name "${duplicateInPO.productName}" is already in a pending purchase order (${duplicateInPO.id}).\n\nThis product will be added to inventory once that order is received.\n\nDo you want to create another purchase order for this same new product?\n\nClick "OK" to proceed anyway, or "Cancel" to go back.`);
-      
-      if (!useExisting) {
-        return;
-      }
-    }
+const duplicateInPO = purchaseOrders.find(po => 
+  po.isNewProduct && 
+  po.status === 'pending' && 
+  po.productName.toLowerCase().trim() === name.toLowerCase().trim()
+);
+
+if (duplicateInPO) {
+  const proceed = await showDuplicatePOModal(duplicateInPO);
+  
+  if (!proceed) {
+    return; // This is actually correct - it stops submission and keeps the form open
+  }
+}
     
     productData = {
       productName: name,
@@ -1237,7 +1488,7 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
   
   // Check if quantity field is empty
   if (quantityValue === '' || quantityValue === null) {
-    alert('Please enter an order quantity (you can enter 0 for product templates).');
+showToast('Please enter an order quantity (you can enter 0 for product templates).', 'error');
     return;
   }
   
@@ -1245,79 +1496,152 @@ document.getElementById('poForm').addEventListener('submit', async function(e) {
   
   // Validate quantity is a number and not negative
   if (isNaN(quantity) || quantity < 0) {
-    alert('Please enter a valid quantity (0 or greater).');
+showToast('Please enter a valid quantity (0 or greater).', 'error');
     return;
   }
   
   const totalValue = quantity * productData.unitPrice;
+
+// Check stock levels and warn user for NEW products only
+if (currentProductMode === 'new') {
+  const minStock = parseInt(document.getElementById('newProductMinStock').value);
+  const suggestedMinStock = Math.ceil(quantity * 0.2); // 20% of order quantity
+  const dailyDemand = parseFloat(document.getElementById('newProductDailyDemand')?.value) || 0;
+  const targetCoverage = parseInt(document.getElementById('newProductStockCoverage')?.value) || 30;
   
-  // Check stock levels and warn user for NEW products only
-  if (currentProductMode === 'new') {
-    const minStock = parseInt(document.getElementById('newProductMinStock').value);
-    
-    // Check if quantity will result in no stock (0)
-    if (quantity === 0) {
-      const confirmNoStock = confirm(`⚠️ Zero Stock Warning!\n\nYou are creating a new product with ZERO initial quantity.\n\nThis means:\n• The product will be added to inventory with 0 stock\n• Status will be "Out of Stock"\n• You'll need to create another purchase order to add stock later\n\nRecommendation: Consider adding an initial quantity now.\n\nDo you want to continue with 0 quantity?`);
-      
-      if (!confirmNoStock) {
-        return;
-      }
-    }
-    // Check if quantity will result in low stock
-    else if (quantity <= minStock) {
-      const confirmLowStock = confirm(`⚠️ Low Stock Warning!\n\nYour order quantity (${quantity} units) is at or below the minimum stock level (${minStock} units).\n\nThis means:\n• The product will immediately show as "Low Stock"\n• You may need to reorder soon\n• Recommended quantity: ${Math.ceil(minStock * 2)} units or more\n\nDo you want to continue with this quantity?`);
-      
-      if (!confirmLowStock) {
-        return;
-      }
-    }
-    // Check if quantity will result in overstock
-    else if (quantity > (minStock * 2)) {
-      const overstockThreshold = Math.ceil(minStock * 1.5);
-      const confirmOverstock = confirm(`ℹ️ High Quantity Notice\n\nYour order quantity (${quantity} units) is significantly above the minimum stock level (${minStock} units).\n\nThis will result in:\n• "Overstock" status (threshold: ${overstockThreshold} units)\n• Higher inventory holding costs\n• Potential storage space issues\n\nCurrent order: ${quantity} units\nOptimal range: ${minStock + 1} - ${overstockThreshold} units\n\nDo you want to continue with this quantity?`);
-      
-      if (!confirmOverstock) {
-        return;
-      }
-    }
+  // Validate required fields
+  if (!dailyDemand || dailyDemand <= 0) {
+    showToast('⚠️ Please enter the estimated daily demand to calculate overstock levels.', 'error');
+    document.getElementById('newProductDailyDemand')?.focus();
+    return;
   }
   
-  const formData = {
-    id: document.getElementById('poNumber').value,
-    date: document.getElementById('poDate').value,
-    supplier: document.getElementById('supplier').value,
-    ...productData,
-    quantity: quantity,
-    totalValue: totalValue,
-    status: 'pending',
-    createdBy: currentUser ? currentUser.fullName : 'Unknown',
-    createdDate: getCurrentDate()
-  };
-
-  try {
-    if (editingIndex === -1) {
-      await db.collection('purchaseOrders').add(formData);
-      
-      // Show appropriate success message based on quantity
-      if (currentProductMode === 'new' && quantity === 0) {
-        alert(`✅ Purchase Order Created!\n\nProduct: ${productData.productName}\nQuantity: 0 units (Product template created)\n\nNote: This product will be added to inventory with "Out of Stock" status. Create another purchase order to add stock.`);
-      } else {
-        alert('✅ Purchase order created successfully!');
-      }
-    } else {
-      const po = purchaseOrders[editingIndex];
-      await db.collection('purchaseOrders').doc(po.firebaseId).update(formData);
-      alert('✅ Purchase order updated successfully!');
+  // Calculate overstock using proper formula
+  const overstockCalc = calculateOverstock(quantity, dailyDemand, targetCoverage);
+  
+  // Check if quantity will result in no stock (0)
+  if (quantity === 0) {
+    const confirmNoStock = await showZeroStockModal();
+    
+    if (!confirmNoStock) {
+      return;
     }
+  }
+  // Check if minStock is less than 20% of order quantity
+  else if (minStock < suggestedMinStock) {
+    showToast(`⚠️ Minimum Stock Level Too Low! Your minimum stock (${minStock}) is below the recommended 20% of order quantity (${suggestedMinStock}). Consider increasing it for better inventory management.`, 'warning');
+  }
+  // Check if quantity will result in low stock
+  else if (quantity <= minStock) {
+    const confirmLowStock = await showLowStockModal(quantity, minStock);
+    
+    if (!confirmLowStock) {
+      return;
+    }
+  }
+  // Check if quantity will result in overstock using proper calculation
+  else if (overstockCalc.isOverstock) {
+    const confirmOverstock = await showOverstockModal(
+      quantity, 
+      minStock, 
+      overstockCalc.stockDuration,
+      targetCoverage,
+      overstockCalc.excessUnits,
+      dailyDemand
+    );
+    
+    if (!confirmOverstock) {
+      return;
+    }
+  }
+}
 
-    closePOModal();
-  } catch (error) {
-    console.error('Error saving purchase order:', error);
-    alert('Error saving purchase order. Please try again.');
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('logoutModal');
+    if (modal && modal.classList.contains('show')) {
+      hideLogoutModal();
+      return; // ADD RETURN to prevent other checks
+    }
+    const duplicatePOModal = document.getElementById('duplicatePOModal');
+    if (duplicatePOModal && duplicatePOModal.classList.contains('show')) {
+      hideDuplicatePOModal(false);
+      return; // ADD RETURN
+    }
+    const deletePOModal = document.getElementById('deletePOModal'); // ADD THIS
+    if (deletePOModal && deletePOModal.classList.contains('show')) {
+      hideDeletePOModal(false);
+      return; // ADD RETURN
+    }
+    const lowStockModal = document.getElementById('lowStockModal');
+    if (lowStockModal && lowStockModal.classList.contains('show')) {
+      hideLowStockModal(false);
+      return; // ADD RETURN
+    }
+    
+    const zeroStockModal = document.getElementById('zeroStockModal');
+    if (zeroStockModal && zeroStockModal.classList.contains('show')) {
+      hideZeroStockModal(false);
+      return; // ADD RETURN
+    }
+    
+    const overstockModal = document.getElementById('overstockModal');
+    if (overstockModal && overstockModal.classList.contains('show')) {
+      hideOverstockModal(false);
+      return; // ADD RETURN
+    }
   }
 });
+  
+const formData = {
+  id: document.getElementById('poNumber').value,
+  date: document.getElementById('poDate').value,
+  supplier: document.getElementById('supplier').value,
+  ...productData,
+  quantity: quantity,
+  totalValue: totalValue,
+  status: 'pending',
+  createdBy: currentUser ? currentUser.fullName : 'Unknown',
+  createdDate: getCurrentDate()
+};
 
-// Render table
+// Add overstock tracking data for new products
+if (currentProductMode === 'new') {
+  const dailyDemand = parseFloat(document.getElementById('newProductDailyDemand')?.value) || 0;
+  const targetCoverage = parseInt(document.getElementById('newProductStockCoverage')?.value) || 30;
+  
+  formData.newProductData = {
+    ...formData.newProductData,
+    dailyDemand: dailyDemand,
+    targetStockCoverage: targetCoverage,
+    estimatedDemand: dailyDemand * targetCoverage
+  };
+}
+
+try {
+  if (editingIndex === -1) {
+    await db.collection('purchaseOrders').add(formData);
+    
+    // Show appropriate success message based on quantity
+    if (currentProductMode === 'new' && quantity === 0) {
+      showToast(`✅ Purchase Order Created! Product: ${productData.productName}, Quantity: 0 units (Product template). This product will be added to inventory with "Out of Stock" status.`, 'success');
+    } else {
+      showToast('✅ Purchase order created successfully!', 'success');
+    }
+  } else {
+    const po = purchaseOrders[editingIndex];
+    await db.collection('purchaseOrders').doc(po.firebaseId).update(formData);
+    showToast('✅ Purchase order updated successfully!', 'success');
+  }
+
+  closePOModal();
+} catch (error) {
+  console.error('Error saving purchase order:', error);
+  showToast('Error saving purchase order. Please try again.', 'error');
+}
+});
+
 function renderTable() {
   const tbody = document.getElementById('poTableBody');
   tbody.innerHTML = '';
@@ -1352,17 +1676,17 @@ function renderTable() {
       <td class="py-4 px-4 text-center">
         <div class="flex justify-center gap-2">
           ${po.status === 'pending' ? `
-            <button onclick="editPO(${index})" class="text-blue-600 hover:text-blue-800" title="Edit">
+            <button data-action="edit" data-index="${index}" class="text-blue-600 hover:text-blue-800 po-action-btn" title="Edit" style="cursor: pointer; padding: 5px;">
               <i class="fa-solid fa-edit"></i>
             </button>
-            <button onclick="receiveOrder(${index})" class="text-green-600 hover:text-green-800" title="Mark as Received">
+            <button data-action="receive" data-index="${index}" class="text-green-600 hover:text-green-800 po-action-btn" title="Mark as Received" style="cursor: pointer; padding: 5px;">
               <i class="fa-solid fa-check"></i>
             </button>
-            <button onclick="deletePO(${index})" class="text-red-600 hover:text-red-800" title="Delete">
+            <button data-action="delete" data-index="${index}" class="text-red-600 hover:text-red-800 po-action-btn" title="Delete" style="cursor: pointer; padding: 5px;">
               <i class="fa-solid fa-trash"></i>
             </button>
           ` : `
-            <button onclick="viewPO(${index})" class="text-blue-600 hover:text-blue-800" title="View Details">
+            <button data-action="view" data-index="${index}" class="text-blue-600 hover:text-blue-800 po-action-btn" title="View Details" style="cursor: pointer; padding: 5px;">
               <i class="fa-solid fa-eye"></i>
             </button>
           `}
@@ -1379,7 +1703,7 @@ function editPO(index) {
   const po = purchaseOrders[index];
   
   if (po.status !== 'pending') {
-    alert('Only pending purchase orders can be edited.');
+showToast('Only pending purchase orders can be edited.', 'warning');
     return;
   }
   
@@ -1421,45 +1745,264 @@ function editPO(index) {
   document.getElementById('poModal').style.display = 'block';
 }
 
-// View PO details
 function viewPO(index) {
   const po = purchaseOrders[index];
-  alert(`Purchase Order Details:\n\nPO #: ${po.id}\nDate: ${formatDate(po.date)}\nSupplier: ${po.supplier}\nProduct: ${po.productName}\nINV ID: ${po.productId}\nCategory: ${po.category || 'N/A'}\nQuantity: ${po.quantity}\nUnit Price: ₱ ${(po.unitPrice || 0).toFixed(2)}\nTotal Value: ₱ ${(po.totalValue || 0).toFixed(2)}\nStatus: ${po.status}\n\nCreated by: ${po.createdBy || 'Unknown'}\nReceived by: ${po.receivedBy || 'N/A'}`);
+  showToast(`📋 PO #${po.id} | ${formatDate(po.date)} | Supplier: ${po.supplier} | Product: ${po.productName} (${po.productId}) | Category: ${po.category || 'N/A'} | Qty: ${po.quantity} | Unit Price: ₱${(po.unitPrice || 0).toFixed(2)} | Total: ₱${(po.totalValue || 0).toFixed(2)} | Status: ${po.status} | Created by: ${po.createdBy || 'Unknown'}`, 'info');
 }
 
-// Determine status based on quantity
-function determineStatus(qty, minStock) {
+// Modal confirmation handlers
+let confirmationResolve = null;
+
+function showLowStockModal(quantity, minStock) {
+  return new Promise((resolve) => {
+    confirmationResolve = resolve;
+    
+    document.getElementById('lowStockTitle').textContent = 
+      `Your order quantity (${quantity} units) is at or below minimum stock level (${minStock} units)`;
+    
+    document.getElementById('lowStockMessage1').textContent = 
+      'The product will immediately show as "Low Stock"';
+    
+    document.getElementById('lowStockMessage2').textContent = 
+      'You may need to reorder soon';
+    
+    document.getElementById('lowStockMessage3').textContent = 
+      `Recommended quantity: ${Math.ceil(minStock * 2)} units or more`;
+    
+    document.getElementById('lowStockModal').classList.add('show');
+  });
+}
+
+function hideLowStockModal(confirmed) {
+  document.getElementById('lowStockModal').classList.remove('show');
+  if (confirmationResolve) {
+    confirmationResolve(confirmed);
+    confirmationResolve = null;
+  }
+}
+
+function showZeroStockModal() {
+  return new Promise((resolve) => {
+    confirmationResolve = resolve;
+    document.getElementById('zeroStockModal').classList.add('show');
+  });
+}
+
+function hideZeroStockModal(confirmed) {
+  document.getElementById('zeroStockModal').classList.remove('show');
+  if (confirmationResolve) {
+    confirmationResolve(confirmed);
+    confirmationResolve = null;
+  }
+}
+
+function showOverstockModal(quantity, minStock, stockDuration, targetCoverage, excessUnits, dailyDemand) {
+  return new Promise((resolve) => {
+    confirmationResolve = resolve;
+    
+    const estimatedDemand = Math.round(dailyDemand * targetCoverage);
+    
+    document.getElementById('overstockTitle').textContent = 
+      `Stock duration (${stockDuration} days) exceeds target coverage (${targetCoverage} days)`;
+    
+    document.getElementById('overstockMessage1').textContent = 
+      `Excess inventory: ${excessUnits} units above estimated demand`;
+    
+    document.getElementById('overstockMessage2').textContent = 
+      'Higher inventory holding costs and capital tied up';
+    
+    document.getElementById('overstockMessage3').textContent = 
+      'Risk of product expiration or obsolescence';
+    
+    document.getElementById('overstockRange').innerHTML = 
+      `<strong>Formula:</strong> Overstock = ${quantity} (Total Stock) - ${estimatedDemand} (${dailyDemand}/day × ${targetCoverage} days) = ${excessUnits} excess units<br>` +
+      `<strong>Stock Duration:</strong> ${stockDuration} days | <strong>Target:</strong> ${targetCoverage} days | <strong>Recommendation:</strong> Order ${estimatedDemand} units instead`;
+    
+    document.getElementById('overstockModal').classList.add('show');
+  });
+}
+
+function hideOverstockModal(confirmed) {
+  document.getElementById('overstockModal').classList.remove('show');
+  if (confirmationResolve) {
+    confirmationResolve(confirmed);
+    confirmationResolve = null;
+  }
+}
+
+// Make functions globally accessible
+window.hideLowStockModal = hideLowStockModal;
+window.hideZeroStockModal = hideZeroStockModal;
+window.hideOverstockModal = hideOverstockModal;
+
+function determineStatus(qty, minStock, originalOrderQty = 0, customThreshold = null) {
   if (qty === 0) return 'out-of-stock';
   if (qty <= minStock) return 'low-stock';
+  
+  // Check for overstock using purchase order quantity
+  if (originalOrderQty > 0) {
+    const overstockCalc = calculateOverstock(qty, originalOrderQty, customThreshold);
+    if (overstockCalc.isOverstock) return 'overstock';
+  }
+  
   return 'in-stock';
 }
 
-// Receive order
+// Action Toast with Confirm/Cancel buttons
+function showActionToast(title, message, confirmText = 'Confirm', cancelText = 'Cancel') {
+  return new Promise((resolve) => {
+    const container = document.getElementById('actionToastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'action-toast';
+    
+    toast.innerHTML = `
+      <div class="action-toast-header">
+        <div class="action-toast-icon">
+          <i class="fa-solid fa-check-circle" style="font-size: 20px;"></i>
+        </div>
+        <div class="action-toast-title">${title}</div>
+      </div>
+      <div class="action-toast-body">${message}</div>
+      <div class="action-toast-buttons">
+        <button class="action-toast-btn action-toast-btn-cancel" onclick="this.closest('.action-toast').remove(); window.actionToastResolve(false);">
+          ${cancelText}
+        </button>
+        <button class="action-toast-btn action-toast-btn-confirm" onclick="this.closest('.action-toast').remove(); window.actionToastResolve(true);">
+          ${confirmText}
+        </button>
+      </div>
+    `;
+    
+    container.appendChild(toast);
+    
+    // Store resolve function globally
+    window.actionToastResolve = resolve;
+    
+    // Trigger animation
+    setTimeout(() => toast.classList.add('show'), 10);
+    
+    // Auto remove after 15 seconds if no action taken
+    setTimeout(() => {
+      if (toast.parentElement) {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          toast.remove();
+          resolve(false);
+        }, 300);
+      }
+    }, 15000);
+  });
+}
+
+// Show receive order confirmation modal
+// Show receive order confirmation modal
+function showReceiveOrderModal(po) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('receiveOrderModal');
+    
+    if (!modal) {
+      console.error('Receive order modal not found!');
+      resolve(confirm(`Mark this purchase order as received and add ${po.quantity} units of ${po.productName} to inventory?`));
+      return;
+    }
+    
+    document.getElementById('receivePONumber').textContent = po.id;
+    document.getElementById('receivePOProduct').textContent = po.productName;
+    document.getElementById('receivePOQuantity').textContent = po.quantity;
+    document.getElementById('receivePOQuantityRepeat').textContent = po.quantity;
+    document.getElementById('receivePOSupplier').textContent = po.supplier;
+    
+    modal.classList.add('show');
+    
+    // Store resolve function
+    window.receiveOrderResolve = resolve;
+  });
+}
+
+function hideReceiveOrderModal(confirmed) {
+  const modal = document.getElementById('receiveOrderModal');
+  
+  if (modal) {
+    modal.classList.remove('show');
+  }
+  
+  if (window.receiveOrderResolve) {
+    window.receiveOrderResolve(confirmed);
+    window.receiveOrderResolve = null;
+  }
+}
+
+// Make functions globally accessible
+window.hideReceiveOrderModal = hideReceiveOrderModal;
+
+function hideReceiveOrderModal(confirmed) {
+  const modal = document.getElementById('receiveOrderModal');
+  
+  if (modal) {
+    modal.classList.remove('show');
+  }
+  
+  if (window.receiveOrderResolve) {
+    window.receiveOrderResolve(confirmed);
+    window.receiveOrderResolve = null;
+  }
+}
+
+// Make functions globally accessible
+window.hideReceiveOrderModal = hideReceiveOrderModal;
+
 async function receiveOrder(index) {
   const po = purchaseOrders[index];
   
-  if (!confirm(`Mark this purchase order as received and add ${po.quantity} units of ${po.productName} to inventory?`)) {
+  // Show confirmation modal
+  const confirmed = await showReceiveOrderModal(po);
+  
+  if (!confirmed) {
     return;
   }
 
   try {
     const existingProduct = inventoryItems.find(item => item.id === po.productId);
 
-    if (existingProduct) {
-      const newQty = existingProduct.qty + po.quantity;
-      const newTotal = newQty * existingProduct.price;
-      const newStatus = determineStatus(newQty, existingProduct.minStock || 10);
+if (existingProduct) {
+  const newQty = existingProduct.qty + po.quantity;
+  const newTotal = newQty * existingProduct.price;
+  
+  // Get overstock tracking data (use existing or from PO if new product)
+  const dailyDemand = existingProduct.dailyDemand || 0;
+  const targetCoverage = existingProduct.targetStockCoverage || 30;
+  
+  const newStatus = determineStatus(newQty, existingProduct.minStock || 10, dailyDemand, targetCoverage);
 
-      await db.collection('inventory').doc(existingProduct.firebaseId).update({
-        qty: newQty,
-        total: newTotal,
-        status: newStatus,
-        date: getCurrentDate(),
-        lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
-        supplier: po.supplier
-      });
+  // Create restock history entry
+  const restockEntry = {
+    date: getCurrentDate(),
+    quantity: po.quantity,
+    purchaseOrderId: po.id,
+    addedBy: currentUser ? currentUser.fullName : 'Unknown',
+    notes: `Received from PO ${po.id} - Supplier: ${po.supplier}`
+  };
 
-      alert(`✅ Inventory updated!\n\n${po.productName} (${po.productId})\nPrevious Quantity: ${existingProduct.qty}\nAdded: ${po.quantity}\nNew Quantity: ${newQty}\n\nCategory: ${po.category}\nUnit Price: ₱ ${(po.unitPrice || 0).toFixed(2)}`);
+  // Prepare update object
+  const updateData = {
+    qty: newQty,
+    total: newTotal,
+    status: newStatus,
+    date: getCurrentDate(),
+    lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
+    supplier: po.supplier,
+    restockHistory: firebase.firestore.FieldValue.arrayUnion(restockEntry)
+  };
+
+  // If this is the FIRST time receiving this product (no originalOrderQty set yet)
+  if (!existingProduct.originalOrderQty) {
+    updateData.originalOrderQty = po.quantity;
+    updateData.overstockThreshold = Math.ceil(po.quantity * 0.20); // 20% of original order
+  }
+
+  await db.collection('inventory').doc(existingProduct.firebaseId).update(updateData);
+
+showToast(`✅ Inventory updated! ${po.productName} (${po.productId}). Previous: ${existingProduct.qty}, Added: ${po.quantity}, New: ${newQty}`, 'success');
     } else {
       if (po.isNewProduct) {
         const counterRef = db.collection('metadata').doc('inventoryCounter');
@@ -1480,28 +2023,46 @@ async function receiveOrder(index) {
         itemCounterCache = parseInt(po.productId.split('-')[1]);
         lastCounterFetch = Date.now();
 
-        const newProduct = {
-          id: po.productId,
-          name: po.productName,
-          category: po.category,
-          qty: po.quantity,
-          price: po.unitPrice,
-          total: po.quantity * po.unitPrice,
-          date: getCurrentDate(),
-          status: determineStatus(po.quantity, po.newProductData?.minStock || 10),
-          minStock: po.newProductData?.minStock || 10,
-          supplier: po.supplier,
-          description: po.newProductData?.description || `Added from Purchase Order ${po.id}`,
-          createdBy: currentUser ? currentUser.fullName : 'Unknown',
-          createdDate: getCurrentDate(),
-          lastEditedBy: currentUser ? currentUser.fullName : 'Unknown'
-        };
+const dailyDemand = po.newProductData?.dailyDemand || 0;
+const targetCoverage = po.newProductData?.targetStockCoverage || 30;
 
-        await db.collection('inventory').add(newProduct);
+// Create initial restock history entry
+const initialRestockEntry = {
+  date: getCurrentDate(),
+  quantity: po.quantity,
+  purchaseOrderId: po.id,
+  addedBy: currentUser ? currentUser.fullName : 'Unknown',
+  notes: `Initial stock from PO ${po.id} - Supplier: ${po.supplier}`
+};
 
-        alert(`✅ New product added to inventory!\n\n${po.productName} (${po.productId})\nCategory: ${po.category}\nQuantity: ${po.quantity}\nUnit Price: ₱ ${po.unitPrice.toFixed(2)}\nTotal Value: ₱ ${(po.quantity * po.unitPrice).toFixed(2)}`);
+const newProduct = {
+  id: po.productId,
+  name: po.productName,
+  category: po.category,
+  qty: po.quantity,
+  price: po.unitPrice,
+  total: po.quantity * po.unitPrice,
+  date: getCurrentDate(),
+  status: determineStatus(po.quantity, po.newProductData?.minStock || 10),
+  minStock: po.newProductData?.minStock || 10,
+  supplier: po.supplier,
+  description: po.newProductData?.description || `Added from Purchase Order ${po.id}`,
+  createdBy: currentUser ? currentUser.fullName : 'Unknown',
+  createdDate: getCurrentDate(),
+  lastEditedBy: currentUser ? currentUser.fullName : 'Unknown',
+  // Add overstock tracking fields
+  dailyDemand: dailyDemand,
+  targetStockCoverage: targetCoverage,
+  // Add original order tracking
+  originalOrderQty: po.quantity,
+  overstockThreshold: Math.ceil(po.quantity * 0.20), // 20% of original order
+  restockHistory: [initialRestockEntry]
+};
+await db.collection('inventory').add(newProduct);
+
+showToast(`✅ New product added to inventory! ${po.productName} (${po.productId}), Category: ${po.category}, Quantity: ${po.quantity}`, 'success');
       } else {
-        alert('⚠️ Error: Product not found in inventory and no new product data available.');
+showToast('⚠️ Error: Product not found in inventory and no new product data available.', 'error');
         return;
       }
     }
@@ -1514,26 +2075,82 @@ async function receiveOrder(index) {
 
   } catch (error) {
     console.error('Error processing order:', error);
-    alert('Error processing the order. Please try again.');
+showToast('Error processing the order. Please try again.', 'error');
   }
 }
 
-// Delete PO
+document.querySelectorAll('button[title="Delete"]').forEach((btn, i) => {
+});
+
 async function deletePO(index) {
-  if (!confirm('Are you sure you want to delete this purchase order?')) {
+  
+  const po = purchaseOrders[index];
+  
+  if (!po) {
+    console.error('Purchase order not found at index:', index);
+    showToast('Purchase order not found.', 'error');
+    return;
+  }
+  
+  // Show confirmation modal instead of browser confirm
+  const confirmed = await showDeleteConfirmationModal(po);
+  
+  if (!confirmed) {
     return;
   }
 
   try {
-    const po = purchaseOrders[index];
     await db.collection('purchaseOrders').doc(po.firebaseId).delete();
     
-    alert('Purchase order deleted successfully!');
+    showToast('Purchase order deleted successfully!', 'success');
   } catch (error) {
     console.error('Error deleting purchase order:', error);
-    alert('Error deleting purchase order. Please try again.');
+    showToast('Error deleting purchase order. Please try again.', 'error');
   }
 }
+
+// Make sure it's globally accessible
+window.deletePO = deletePO;
+
+function showDeleteConfirmationModal(po) {
+  
+  return new Promise((resolve) => {
+    const modal = document.getElementById('deletePOModal');
+    
+    if (!modal) {
+      console.error('Delete modal not found!');
+      // Fallback to browser confirm
+      resolve(confirm(`Delete purchase order ${po.id}?`));
+      return;
+    }
+    
+    document.getElementById('deletePONumber').textContent = po.id;
+    document.getElementById('deletePOProduct').textContent = po.productName;
+    document.getElementById('deletePOSupplier').textContent = po.supplier;
+    
+    modal.classList.add('show');
+  
+    // Store resolve function
+    window.deletePOResolve = resolve;
+  });
+}
+
+function hideDeletePOModal(confirmed) {
+  
+  const modal = document.getElementById('deletePOModal');
+  
+  if (modal) {
+    modal.classList.remove('show');
+  }
+  
+  if (window.deletePOResolve) {
+    window.deletePOResolve(confirmed);
+    window.deletePOResolve = null;
+  }
+}
+
+// Make sure it's globally accessible
+window.hideDeletePOModal = hideDeletePOModal;
 
 // Update statistics
 function updateStats() {
@@ -1645,6 +2262,11 @@ window.onclick = function(event) {
   if (event.target === modal) {
     closePOModal();
   }
+
+  const deletePOModal = document.getElementById('deletePOModal');
+  if (event.target === deletePOModal) { // CHANGE: only close if clicking the overlay itself
+    hideDeletePOModal(false);
+  }
   
   const categoryModal = document.getElementById('addCategoryModal');
   if (event.target === categoryModal) {
@@ -1667,12 +2289,34 @@ window.onclick = function(event) {
   }
 }
 
-// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     const modal = document.getElementById('logoutModal');
     if (modal && modal.classList.contains('show')) {
       hideLogoutModal();
+      return;
+    }
+
+    const receiveOrderModal = document.getElementById('receiveOrderModal');
+    if (receiveOrderModal && receiveOrderModal.classList.contains('show')) {
+      hideReceiveOrderModal(false);
+      return;
+    }
+    
+    // Add new modal handlers
+    const lowStockModal = document.getElementById('lowStockModal');
+    if (lowStockModal && lowStockModal.classList.contains('show')) {
+      hideLowStockModal(false);
+    }
+    
+    const zeroStockModal = document.getElementById('zeroStockModal');
+    if (zeroStockModal && zeroStockModal.classList.contains('show')) {
+      hideZeroStockModal(false);
+    }
+    
+    const overstockModal = document.getElementById('overstockModal');
+    if (overstockModal && overstockModal.classList.contains('show')) {
+      hideOverstockModal(false);
     }
   }
 });

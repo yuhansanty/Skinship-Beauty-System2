@@ -1187,7 +1187,18 @@
           return;
         }
 
-        const role = (userDoc.data().role || "").toLowerCase();
+          // NEW CODE - Check if account is archived
+const userData = userDoc.data();
+if (userData.archived === true) {
+  await auth.signOut();
+  showError("❌ This account has been archived and cannot log in.");
+  submitBtn.disabled = false;
+  submitBtn.textContent = "SIGN IN";
+  return;
+
+        }
+
+        const role = (userData.role || "").toLowerCase();
         if (!role || (role !== "admin" && role !== "staff")) {
           await auth.signOut();
           showError("❌ No valid role assigned. Contact system admin.");
@@ -1209,7 +1220,6 @@ if (is2FAValid(user.uid)) {
   sessionStorage.setItem('userId', user.uid);
   
   saveCredentials(email, password, remember);
-  const userData = userDoc.data();
   localStorage.setItem('currentUserRole', role);
   window.currentUserData = {
     email: email,

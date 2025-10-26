@@ -199,6 +199,111 @@
       margin-bottom: 0.5rem;
     }
 
+    /* Toast Notification Styles */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.toast-notification {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  animation: slideIn 0.3s ease;
+  max-width: 100%;
+  margin-bottom: 10px;
+}
+
+.toast-notification.error {
+  border-left: 4px solid #dc2626;
+}
+
+.toast-notification.success {
+  border-left: 4px solid #16a34a;
+}
+
+.toast-notification.warning {
+  border-left: 4px solid #f59e0b;
+}
+
+.toast-notification.info {
+  border-left: 4px solid #3b82f6;
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  font-size: 20px;
+}
+
+.toast-notification.error .toast-icon {
+  color: #dc2626;
+}
+
+.toast-notification.success .toast-icon {
+  color: #16a34a;
+}
+
+.toast-notification.warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast-notification.info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-content {
+  flex: 1;
+  font-size: 14px;
+  color: #374151;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.toast-close:hover {
+  color: #4b5563;
+}
+
+@media (max-width: 768px) {
+  .toast-notification {
+    padding: 12px;
+    font-size: 13px;
+  }
+  
+  .toast-icon {
+    font-size: 18px;
+  }
+}
+
     .logout-modal-header p {
       color: #6b7280;
       font-size: 1rem;
@@ -504,6 +609,59 @@
     let inventoryListener = null;
     let purchaseOrderListener = null;
     let userDataCache = null;
+    let sessionMonitor = null;
+
+
+    // Toast notification function
+function showToast(message, type = 'info') {
+  // Create container if it doesn't exist
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+    `;
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  
+  const icons = {
+    error: 'fa-circle-xmark',
+    success: 'fa-circle-check',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fa-solid ${icons[type]}"></i>
+    </div>
+    <div class="toast-content">
+      <p style="margin: 0;">${message}</p>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
 
     // Session monitoring function
 function setupSessionMonitoring(userId) {
@@ -532,13 +690,15 @@ function setupSessionMonitoring(userId) {
     if (currentSessionId && currentSessionId !== storedSessionId) {
       console.log('Session invalidated - another login detected or password changed');
       
-      // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
-      
-      // Force logout
-      signOut(auth).then(() => {
-        window.location.href = 'index.html';
-      });
+// Show notification before logout
+showToast('Your session has been ended because someone else logged into this account or your password was changed', 'error');
+
+// Force logout after delay to show toast
+setTimeout(() => {
+  signOut(auth).then(() => {
+    window.location.href = 'index.html';
+  });
+}, 3500);
     }
   }, (error) => {
     console.error('Session monitoring error:', error);
@@ -604,7 +764,7 @@ function setupSessionMonitoring(userId) {
         console.error("Logout error:", error);
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
       }
     }
 
@@ -689,45 +849,47 @@ window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
 
-    function monitorInventory() {
-      if (inventoryListener) {
-        inventoryListener();
-      }
+function monitorInventory() {
+  if (inventoryListener) {
+    inventoryListener();
+  }
 
-      const inventoryRef = collection(db, 'inventory');
-      const inventoryQuery = query(inventoryRef, limit(100));
+  const inventoryRef = collection(db, 'inventory');
+  const inventoryQuery = query(inventoryRef, limit(100));
+  
+  inventoryListener = onSnapshot(inventoryQuery, (snapshot) => {
+    let noStockCount = 0;
+    let lowStockCount = 0;
+    let overstockCount = 0;
+    
+    snapshot.forEach(doc => {
+      const item = doc.data();
+      const status = item.status || '';
       
-      inventoryListener = onSnapshot(inventoryQuery, (snapshot) => {
-        let noStockCount = 0;
-        let lowStockCount = 0;
-        let overstockCount = 0;
-        
-        snapshot.forEach(doc => {
-          const item = doc.data();
-          const qty = item.qty || 0;
-          const minStock = item.minStock || 10;
-          const status = item.status || '';
-          
-          if (status === 'out-of-stock' || qty === 0) {
-            noStockCount++;
-          } else if (status === 'low-stock' || qty <= minStock) {
-            lowStockCount++;
-          } else if (qty > (minStock * 1.5) && qty > 0) {
-            overstockCount++;
-          }
-        });
-        
-        updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
-      }, (error) => {
-        console.error('Error monitoring inventory:', error);
-      });
-    }
+      // Use the status field directly (it's calculated when inventory is updated)
+      if (status === 'out-of-stock') {
+        noStockCount++;
+      } else if (status === 'low-stock') {
+        lowStockCount++;
+      } else if (status === 'overstock') {
+        overstockCount++;
+      }
+    });
+    
+    updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+    
+  }, (error) => {
+    
+    console.error('Error monitoring inventory:', error);
+  });
+}
 
     function updateInventoryBubble(noStock, lowStock, overstock) {
       const button = document.querySelector('button[title="Inventory"]');
       if (!button) return;
       
       let bubble = button.querySelector('.sidebar-bubble');
+
       
       if (!bubble) {
         bubble = document.createElement('span');
@@ -735,6 +897,7 @@ window.addEventListener("beforeunload", async (e) => {
         button.style.position = 'relative';
         button.appendChild(bubble);
       }
+      
       
       if (noStock > 0) {
         bubble.textContent = noStock > 99 ? '99+' : noStock;
@@ -748,9 +911,9 @@ window.addEventListener("beforeunload", async (e) => {
         bubble.textContent = overstock > 99 ? '99+' : overstock;
         bubble.style.backgroundColor = '#3b82f6';
         bubble.style.display = 'flex';
-      } else {
-        bubble.style.display = 'none';
-      }
+} else {
+  bubble.style.display = 'none';
+}
     }
 
     function monitorPurchaseOrders() {
@@ -1159,10 +1322,10 @@ window.addEventListener("beforeunload", async (e) => {
       const startDateInput = document.getElementById('startDate').value;
       const endDateInput = document.getElementById('endDate').value;
       
-      if(!startDateInput || !endDateInput) {
-        alert('Please select both start and end dates');
-        return;
-      }
+if(!startDateInput || !endDateInput) {
+  showToast('Please select both start and end dates', 'warning');
+  return;
+}
       
       const startDate = new Date(startDateInput);
       startDate.setHours(0, 0, 0, 0);
@@ -1170,10 +1333,10 @@ window.addEventListener("beforeunload", async (e) => {
       const endDate = new Date(endDateInput);
       endDate.setHours(23, 59, 59, 999);
       
-      if(startDate > endDate) {
-        alert('Start date must be before end date');
-        return;
-      }
+if(startDate > endDate) {
+  showToast('Start date must be before end date', 'error');
+  return;
+}
       
       document.querySelectorAll('.filter-btn').forEach(btn => {
         if(btn.textContent.includes('All Time') || btn.textContent.includes('Today') || 
@@ -1192,10 +1355,10 @@ window.addEventListener("beforeunload", async (e) => {
     }
 
     window.exportToCSV = function() {
-      if (filteredSalesData.length === 0) {
-        alert('No data to export');
-        return;
-      }
+if (filteredSalesData.length === 0) {
+  showToast('No data to export', 'warning');
+  return;
+}
       
       let csv = 'Receipt No.,Customer Name,Service/Item,Quantity,Price,Date\n';
       
@@ -1221,9 +1384,10 @@ window.addEventListener("beforeunload", async (e) => {
       const month = String(today.getMonth() + 1).padStart(2, '0');
       const day = String(today.getDate()).padStart(2, '0');
       
-      a.download = `sales_report_${year}-${month}-${day}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+a.download = `sales_report_${year}-${month}-${day}.csv`;
+a.click();
+window.URL.revokeObjectURL(url);
+showToast(`Sales report exported successfully! (${filteredSalesData.length} transactions)`, 'success');
     }
 
     document.addEventListener('click', function(event) {

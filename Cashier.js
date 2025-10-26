@@ -56,11 +56,47 @@ let selectedCustomerId = null;
 let inventoryListener = null;
 let purchaseOrderListener = null;
 let customersListener = null;
+let sessionMonitor = null;
+
+// ==================== TOAST NOTIFICATION SYSTEM ====================
+
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  
+  const icons = {
+    error: 'fa-circle-xmark',
+    success: 'fa-circle-check',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <i class="fa-solid ${icons[type]}"></i>
+    </div>
+    <div class="toast-content">
+      <p>${message}</p>
+    </div>
+    <button class="toast-close" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  // Trigger animation
+  setTimeout(() => toast.classList.add('show'), 10);
+  
+  // Auto remove after 5 seconds
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
 
 // ==================== AUTH & USER INFO ====================
-
-// Add these variables at the top of cashier.js (around line 48)
-let sessionMonitor = null;
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -99,7 +135,7 @@ onAuthStateChanged(auth, async (user) => {
 // ==================== SESSION MONITORING ====================
 
 function setupSessionMonitoring(userId) {
-  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
+  if (sessionMonitor) sessionMonitor();
   
   const userRef = doc(db, "users", userId);
   const storedSessionId = sessionStorage.getItem('sessionId');
@@ -120,17 +156,16 @@ function setupSessionMonitoring(userId) {
     const data = snapshot.data();
     const currentSessionId = data.currentSessionId;
     
-    // Check if session ID has changed (another login or password change)
     if (currentSessionId && currentSessionId !== storedSessionId) {
       console.log('Session invalidated - another login detected or password changed');
       
-      // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      showToast('Your session has been ended because someone else logged into this account or your password was changed', 'error');
       
-      // Force logout
-      signOut(auth).then(() => {
-        window.location.href = 'index.html';
-      });
+      setTimeout(() => {
+        signOut(auth).then(() => {
+          window.location.href = 'index.html';
+        });
+      }, 3000);
     }
   }, (error) => {
     console.error('Session monitoring error:', error);
@@ -212,6 +247,7 @@ async function loadServicesFromFirebase() {
     
   } catch (error) {
     console.error('Error loading services:', error);
+    showToast('Error loading services', 'error');
   }
 }
 
@@ -245,12 +281,12 @@ async function loadInventoryProducts() {
     
   } catch (error) {
     console.error('Error loading inventory:', error);
+    showToast('Error loading inventory', 'error');
   }
 }
 
 async function loadConfirmedCustomers() {
   try {
-    // Initial load with cache
     const q = query(collection(db, 'appointments'), where('status', '==', 'Confirmed'));
     const snapshot = await getDocs(q);
 
@@ -297,7 +333,6 @@ async function loadConfirmedCustomers() {
     
     console.log('Loaded confirmed customers:', confirmedCustomers.length);
     
-    // Set up real-time listener - only listens for CHANGES (not full re-reads)
     if (customersListener) {
       customersListener();
     }
@@ -305,7 +340,6 @@ async function loadConfirmedCustomers() {
     customersListener = onSnapshot(
       q,
       (snapshot) => {
-        // Only process changes, not entire collection
         snapshot.docChanges().forEach(change => {
           const customer = change.doc.data();
           const customerId = change.doc.id;
@@ -362,13 +396,13 @@ async function loadConfirmedCustomers() {
     
   } catch (error) {
     console.error('Error loading confirmed customers:', error);
+    showToast('Error loading customers', 'error');
   }
 }
 
 // ==================== SIDEBAR BUBBLE SYSTEM ====================
 
 function setupSidebarBubbles() {
-  // Setup inventory listener for real-time updates
   if (inventoryListener) {
     inventoryListener();
   }
@@ -418,7 +452,6 @@ function setupSidebarBubbles() {
       
       updateInventoryBubble();
       
-      // Re-render products if currently viewing products
       if (currentView === 'products') {
         if (currentCategory === 'all') {
           renderServices(inventoryProducts);
@@ -433,7 +466,6 @@ function setupSidebarBubbles() {
     }
   );
 
-  // Setup purchase order listener
   if (purchaseOrderListener) {
     purchaseOrderListener();
   }
@@ -450,12 +482,9 @@ function setupSidebarBubbles() {
 }
 
 function updateInventoryBubble() {
-  const noStockCount = inventoryProducts.filter(item => item.status === 'out-of-stock' || item.qty === 0).length;
-  const lowStockCount = inventoryProducts.filter(item => item.status === 'low-stock' && item.qty > 0).length;
-  const overstockCount = inventoryProducts.filter(item => {
-    const minStockThreshold = item.minStock || 10;
-    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
-  }).length;
+  const noStockCount = inventoryProducts.filter(item => item.status === 'out-of-stock').length;
+  const lowStockCount = inventoryProducts.filter(item => item.status === 'low-stock').length;
+  const overstockCount = inventoryProducts.filter(item => item.status === 'overstock').length;
   
   const button = document.getElementById('inventoryBtn');
   if (!button) return;
@@ -469,21 +498,17 @@ function updateInventoryBubble() {
     button.appendChild(bubble);
   }
   
-  // Priority: No Stock > Low Stock > Overstock > wakwak go boom boom system
   if (noStockCount > 0) {
     bubble.textContent = noStockCount > 99 ? '99+' : noStockCount;
-    bubble.style.backgroundColor = '#dc2626';
-    bubble.style.boxShadow = '0 2px 8px rgba(220, 38, 38, 0.4)';
+    bubble.style.backgroundColor = '#dc2626'; // Red
     bubble.style.display = 'flex';
   } else if (lowStockCount > 0) {
     bubble.textContent = lowStockCount > 99 ? '99+' : lowStockCount;
-    bubble.style.backgroundColor = '#f59e0b';
-    bubble.style.boxShadow = '0 2px 8px rgba(245, 158, 11, 0.4)';
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
     bubble.style.display = 'flex';
   } else if (overstockCount > 0) {
     bubble.textContent = overstockCount > 99 ? '99+' : overstockCount;
-    bubble.style.backgroundColor = '#3b82f6';
-    bubble.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.4)';
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
     bubble.style.display = 'flex';
   } else {
     bubble.style.display = 'none';
@@ -516,40 +541,32 @@ function updatePurchaseOrderBubble(count) {
 // ==================== UI FUNCTIONS ====================
 
 function normalizePhoneNumber(phone) {
-  // Remove all non-digit characters
   let cleaned = phone.replace(/\D/g, '');
   
-  // Handle +63 or 63 prefix
   if (cleaned.startsWith('63')) {
     cleaned = '0' + cleaned.substring(2);
   }
   
-  // Ensure it starts with 09 and is 11 digits
   if (cleaned.startsWith('09') && cleaned.length === 11) {
     return cleaned;
   }
   
-  return phone; // Return original if invalid
+  return phone;
 }
 
 function validatePhoneNumber(input) {
   let value = input.value;
   
-  // Allow +63, 63, or 09 at the start
   if (value.startsWith('+63')) {
     let rest = value.substring(3).replace(/\D/g, '');
-    // Allow 10 digits after +63 (e.g., +639061301185)
     if (rest.length > 10) rest = rest.slice(0, 10);
     input.value = '+63' + rest;
   } else if (value.startsWith('63') && !value.startsWith('639')) {
     let rest = value.substring(2).replace(/\D/g, '');
-    // Allow 10 digits after 63 (e.g., 639061301185)
     if (rest.length > 10) rest = rest.slice(0, 10);
     input.value = '63' + rest;
   } else if (value.startsWith('63')) {
-    // Handle 639... format
     let rest = value.substring(2).replace(/\D/g, '');
-    // Allow 10 digits after 63 (e.g., 639061301185)
     if (rest.length > 10) rest = rest.slice(0, 10);
     input.value = '63' + rest;
   } else {
@@ -594,16 +611,11 @@ function filterCustomers() {
   const dropdown = document.getElementById('customerDropdown');
   const searchTerm = input.value.toLowerCase();
   
-  console.log('Filtering customers, total:', confirmedCustomers.length);
-  console.log('Search term:', searchTerm);
-  
   const filtered = confirmedCustomers.filter(customer => 
     customer.name.toLowerCase().includes(searchTerm) ||
     (customer.email && customer.email.toLowerCase().includes(searchTerm)) ||
     (customer.phone && customer.phone.includes(searchTerm))
   );
-  
-  console.log('Filtered customers:', filtered.length);
   
   if (filtered.length === 0) {
     dropdown.innerHTML = '<div class="px-4 py-3 text-gray-500 text-sm">No confirmed customers found</div>';
@@ -625,19 +637,15 @@ function selectCustomer(customerId) {
   const customer = confirmedCustomers.find(c => c.id === customerId);
   if (!customer) return;
   
-  // Check if switching to a different customer with items in cart
   if (selectedCustomerId && selectedCustomerId !== customerId && cart.length > 0) {
     if (!confirm('⚠️ Switching customers will clear your current cart.\n\nDo you want to continue?')) {
-      // User clicked "No" - close dropdown and keep current customer
       document.getElementById('customerDropdown').classList.add('hidden');
       return;
     }
-    // User clicked "Yes" - clear cart
     cart = [];
     updateCart();
   }
   
-  // If selecting customer for first time with items in cart
   if (!selectedCustomerId && cart.length > 0 && customerId) {
     if (!confirm('⚠️ You have items in cart.\n\nDo you want to clear the cart and load this customer?')) {
       document.getElementById('customerDropdown').classList.add('hidden');
@@ -656,13 +664,11 @@ function selectCustomer(customerId) {
   
   document.getElementById('customerDropdown').classList.add('hidden');
   
-  // Validate phone if present
   const phoneInput = document.getElementById('customerPhone');
   if (phoneInput.value) {
     validatePhoneNumber(phoneInput);
   }
 
-  // SERVICES TO CART 
   if (customer.services && customer.services.length > 0) {
     const serviceCount = customer.services.length;
     const serviceText = serviceCount === 1 ? 'service' : 'services';
@@ -679,11 +685,9 @@ function selectCustomer(customerId) {
         let serviceId = serviceData.id || null;
         
         if (!serviceName) {
-          console.log('❌ No service name found');
           return;
         }
         
-        // Try to find matching service in servicesData for updated price
         const matchedService = servicesData.find(s => 
           s.name.toLowerCase().trim() === serviceName.toLowerCase().trim() ||
           s.id === serviceId ||
@@ -701,8 +705,6 @@ function selectCustomer(customerId) {
           });
           addedCount++;
         } else if (servicePrice > 0) {
-          // Service not in database but has price from appointment
-          console.log('✅ Not in database, using appointment price:', servicePrice);
           cart.push({
             name: serviceName,
             price: servicePrice,
@@ -713,26 +715,22 @@ function selectCustomer(customerId) {
           });
           addedCount++;
         } else {
-          // Service not found and no price
-          console.log('❌ Service not found and no price available');
           notFoundServices.push(serviceName);
         }
       });
 
       updateCart();
       
-      // Show result notification
       if (addedCount > 0) {
-        let message = `✓ ${addedCount} ${addedCount === 1 ? 'service' : 'services'} added to cart!`;
+        let message = `${addedCount} ${addedCount === 1 ? 'service' : 'services'} added to cart!`;
         
         if (notFoundServices.length > 0) {
-          message += `\n\n⚠ Not found (${notFoundServices.length}):\n${notFoundServices.join('\n')}`;
-          message += '\n\nThese services need to be added manually.';
+          message += ` ${notFoundServices.length} service(s) not found and need to be added manually.`;
         }
         
-        alert(message);
+        showToast(message, 'success');
       } else {
-        alert('⚠ No services could be added to cart.\n\nPlease add services manually.');
+        showToast('No services could be added to cart. Please add services manually.', 'warning');
       }
     }
   }
@@ -755,27 +753,6 @@ function clearCustomerSelection() {
   }
 }
 
-function selectPaymentMethod(method) {
-  selectedPaymentMethod = method;
-  document.querySelectorAll('.payment-method-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  const selectedBtn = document.querySelector(`[data-method="${method}"]`);
-  if (selectedBtn) {
-    selectedBtn.classList.add('active');
-  }
-  
-  const referenceContainer = document.getElementById('referenceNumberContainer');
-  if (referenceContainer) {
-    if (method === 'check') {
-      referenceContainer.classList.remove('hidden');
-    } else {
-      referenceContainer.classList.add('hidden');
-    }
-  }
-  calculateChange();
-}
-
 function toggleUserMenu() {
   const menu = document.getElementById('userMenu');
   if (menu) {
@@ -791,7 +768,6 @@ window.onclick = function(event) {
     }
   }
   
-  // Close customer dropdown when clicking outside
   const customerDropdown = document.getElementById('customerDropdown');
   const customerNameInput = document.getElementById('customerName');
   if (customerDropdown && !customerDropdown.contains(event.target) && event.target !== customerNameInput) {
@@ -859,11 +835,10 @@ async function confirmLogout() {
   try {
     await handleClockOut();
     
-    // Cleanup listeners - ADD sessionMonitor here
     if (inventoryListener) inventoryListener();
     if (purchaseOrderListener) purchaseOrderListener();
     if (customersListener) customersListener();
-    if (sessionMonitor) sessionMonitor(); // ADD THIS LINE
+    if (sessionMonitor) sessionMonitor();
     
     await signOut(auth);
     window.location.href = "index.html";
@@ -874,7 +849,7 @@ async function confirmLogout() {
       confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
     }
     
-    alert("An error occurred during logout. Please try again.");
+    showToast('An error occurred during logout. Please try again.', 'error');
     await signOut(auth);
     window.location.href = "index.html";
   }
@@ -904,7 +879,6 @@ window.addEventListener("beforeunload", async (e) => {
 
 // Make functions globally accessible
 window.validatePhoneNumber = validatePhoneNumber;
-window.selectPaymentMethod = selectPaymentMethod;
 window.toggleUserMenu = toggleUserMenu;
 window.showLogoutModal = showLogoutModal;
 window.hideLogoutModal = hideLogoutModal;
@@ -1067,7 +1041,7 @@ function showProductCategory(category, categoryName) {
 }
 
 function getStockBadge(item) {
-  if (item.qty === undefined) return ''; // Service, no stock badge
+  if (item.qty === undefined) return '';
   
   if (item.qty === 0 || item.status === 'out-of-stock') {
     return '<span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold text-white bg-red-500 rounded-lg ml-1">No Stock</span>';
@@ -1119,7 +1093,7 @@ function renderServices(filteredItems = servicesData) {
       div.onclick = () => addToCart(item);
     } else {
       div.onclick = () => {
-        alert(`"${item.name}" is out of stock and cannot be added to cart!`);
+        showToast(`"${item.name}" is out of stock and cannot be added to cart!`, 'error');
       };
     }
     
@@ -1174,25 +1148,20 @@ function filterServices() {
 // ==================== CART FUNCTIONS ====================
 
 function addToCart(item) {
-  // For products, check if already in cart and get current quantity
   if (item.qty !== undefined) {
-    // Count how many of this specific product are already in cart
     const currentCartQty = cart.filter(cartItem => cartItem.firebaseId === item.firebaseId).length;
     
-    // Check if we have enough stock to add one more
     if (currentCartQty >= item.qty) {
-      alert(`Cannot add more "${item.name}"! Only ${item.qty} available in stock.`);
+      showToast(`Cannot add more "${item.name}"! Only ${item.qty} available in stock.`, 'warning');
       return;
     }
     
-    // Check if product is out of stock
     if (item.qty <= 0) {
-      alert(`"${item.name}" is out of stock!`);
+      showToast(`"${item.name}" is out of stock!`, 'error');
       return;
     }
   }
   
-  // Add item to cart with unique ID
   cart.push({
     ...item, 
     id: Date.now() + Math.random(),
@@ -1234,7 +1203,6 @@ function updateCart() {
       checkoutBtn.disabled = true;
     }
   } else {
-    // Group items by firebaseId and name for display
     const groupedItems = [];
     cart.forEach(item => {
       const existing = groupedItems.find(g => 
@@ -1292,7 +1260,7 @@ function calculateChange() {
   const changeAmount = document.getElementById('changeAmount');
   
   if (changeDisplay && changeAmount) {
-    if (selectedPaymentMethod === 'cash' && payment > 0 && change >= 0) {
+    if (payment > 0 && change >= 0) {
       changeDisplay.classList.remove('hidden');
       changeAmount.textContent = change.toFixed(2);
     } else {
@@ -1309,7 +1277,7 @@ function clearCart() {
   
   const fields = [
     'paymentInput', 'customerName', 'customerEmail', 
-    'customerAddress', 'customerPhone', 'referenceNumber'
+    'customerAddress', 'customerPhone'
   ];
   
   fields.forEach(fieldId => {
@@ -1322,16 +1290,6 @@ function clearCart() {
   
   if (changeDisplay) changeDisplay.classList.add('hidden');
   if (phoneError) phoneError.classList.add('hidden');
-  
-  selectedPaymentMethod = 'cash';
-  document.querySelectorAll('.payment-method-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  const cashBtn = document.querySelector('[data-method="cash"]');
-  if (cashBtn) cashBtn.classList.add('active');
-  
-  const refContainer = document.getElementById('referenceNumberContainer');
-  if (refContainer) refContainer.classList.add('hidden');
 }
 
 function checkout() {
@@ -1340,34 +1298,28 @@ function checkout() {
   const customerPhone = document.getElementById('customerPhone')?.value.trim();
   const payment = parseFloat(document.getElementById('paymentInput')?.value) || 0;
   const total = cart.reduce((sum, item) => sum + item.price, 0);
-  const referenceNumber = document.getElementById('referenceNumber')?.value.trim();
   
   if (!customerName) {
-    alert('Customer name is required');
+    showToast('Customer name is required', 'error');
     document.getElementById('customerName')?.focus();
     return;
   }
   
   if (customerEmail && !customerEmail.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-    alert('Please enter a valid email address');
+    showToast('Please enter a valid email address', 'error');
     return;
   }
   
   if (customerPhone) {
     const normalized = normalizePhoneNumber(customerPhone);
     if (!normalized.startsWith('09') || normalized.length !== 11) {
-      alert('Mobile number must be valid (09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)');
+      showToast('Mobile number must be valid (09XXXXXXXXX, +639XXXXXXXXX, or 639XXXXXXXXX)', 'error');
       return;
     }
   }
   
   if (payment < total) {
-    alert(`Insufficient payment! Total: ₱${total.toFixed(2)}`);
-    return;
-  }
-  
-  if (selectedPaymentMethod === 'check' && !referenceNumber) {
-    alert('Please enter reference or check number');
+    showToast(`Insufficient payment! Total: ₱${total.toFixed(2)}`, 'error');
     return;
   }
   
@@ -1378,13 +1330,11 @@ function checkout() {
 
 async function sendReceiptEmail(customerEmail, pdfBlob, receiptData) {
   try {
-    // Check if EmailJS is loaded
     if (typeof emailjs === 'undefined') {
       console.error('EmailJS library not loaded');
       return false;
     }
 
-    // Convert blob to base64
     const reader = new FileReader();
     const base64Promise = new Promise((resolve, reject) => {
       reader.onloadend = () => resolve(reader.result.split(',')[1]);
@@ -1394,13 +1344,11 @@ async function sendReceiptEmail(customerEmail, pdfBlob, receiptData) {
 
     const base64data = await base64Promise;
 
-    // Format items list for email
     let itemsList = '';
     receiptData.items.forEach(item => {
       itemsList += `${item.quantity}x ${item.name} - ₱${item.totalPrice.toFixed(2)}\n`;
     });
 
-    // Prepare email parameters
     const emailParams = {
       to_email: customerEmail,
       customer_name: receiptData.customerName,
@@ -1417,7 +1365,6 @@ async function sendReceiptEmail(customerEmail, pdfBlob, receiptData) {
       pdf_attachment: base64data
     };
 
-    // Send email using EmailJS
     const response = await emailjs.send(
       EMAILJS_SERVICE_ID,
       EMAILJS_TEMPLATE_ID,
@@ -1456,12 +1403,11 @@ async function generateReceipt() {
     const normalizedPhone = customerPhone ? normalizePhoneNumber(customerPhone) : '';
     const payment = parseFloat(document.getElementById('paymentInput')?.value) || 0;
     const total = cart.reduce((sum, item) => sum + item.price, 0);
-    const change = selectedPaymentMethod === 'cash' ? payment - total : 0;
-    const referenceNumber = document.getElementById('referenceNumber')?.value.trim();
+    const change = payment - total;
     const date = new Date().toLocaleDateString('en-PH');
     const time = new Date().toLocaleTimeString('en-PH');
     const receiptNumber = 'RCP-' + Date.now();
-    const paymentMethodText = selectedPaymentMethod === 'cash' ? 'Cash' : 'Check/Bank Transfer';
+    const paymentMethodText = 'Cash';
     const cashierName = currentUserData ? (currentUserData.fullName || currentUserData.fullname || 'Unknown') : 'Unknown';
     
     let y = 20;
@@ -1523,7 +1469,6 @@ async function generateReceipt() {
     
     pdfDoc.setFont(undefined, 'normal');
     
-    // Group cart items by product/service
     const groupedItems = {};
     cart.forEach(item => {
       const key = item.firebaseId || item.name;
@@ -1543,7 +1488,6 @@ async function generateReceipt() {
       }
     });
     
-    // Print grouped items
     Object.values(groupedItems).forEach(item => {
       if (y > 250) {
         pdfDoc.addPage();
@@ -1569,32 +1513,20 @@ async function generateReceipt() {
     pdfDoc.text(`PHP ${payment.toFixed(2)}`, 175, y);
     y += 6;
     
-    if (selectedPaymentMethod === 'cash') {
-      pdfDoc.setFont(undefined, 'bold');
-      pdfDoc.text('CHANGE:', 150, y);
-      pdfDoc.text(`PHP ${change.toFixed(2)}`, 175, y);
-      y += 10;
-    } else {
-      y += 4;
-    }
+    pdfDoc.setFont(undefined, 'bold');
+    pdfDoc.text('CHANGE:', 150, y);
+    pdfDoc.text(`PHP ${change.toFixed(2)}`, 175, y);
+    y += 10;
     
     pdfDoc.setFont(undefined, 'normal');
     pdfDoc.text(`Mode of Payment: ${paymentMethodText}`, 20, y);
-    y += 6;
-    
-    if (selectedPaymentMethod === 'check' && referenceNumber) {
-      pdfDoc.text(`Reference/Check No: ${referenceNumber}`, 20, y);
-      y += 10;
-    } else {
-      y += 4;
-    }
+    y += 10;
     
     pdfDoc.line(140, y, 190, y);
     y += 5;
     pdfDoc.setFontSize(9);
     pdfDoc.text('AUTHORIZED SIGNATURE', 165, y, { align: 'center' });
     
-    // Prepare receipt data with grouped items
     const receiptItems = Object.values(groupedItems).map(item => ({
       name: item.name,
       category: item.category,
@@ -1615,22 +1547,20 @@ async function generateReceipt() {
       payment: payment,
       change: change,
       paymentMethod: paymentMethodText,
-      referenceNumber: referenceNumber || '',
+      referenceNumber: '',
       date: date,
       time: time,
       timestamp: serverTimestamp(),
       createdAt: new Date().toISOString()
     };
     
-    // Prepare database updates - use groupedItems to get correct quantities
     const dbPromises = [];
     
-    // Update inventory for products - FIXED: Use grouped quantities
     for (const [key, groupedItem] of Object.entries(groupedItems)) {
       if (groupedItem.isInventoryProduct && groupedItem.firebaseId) {
         const productRef = doc(db, 'inventory', groupedItem.firebaseId);
         const updatePromise = updateDoc(productRef, {
-          qty: increment(-groupedItem.quantity) // Use the grouped quantity
+          qty: increment(-groupedItem.quantity)
         }).then(() => {
           console.log(`Inventory updated for product ${groupedItem.firebaseId}: -${groupedItem.quantity}`);
         }).catch(error => {
@@ -1641,7 +1571,6 @@ async function generateReceipt() {
       }
     }
     
-    // Update customer status if selected from dropdown
     if (selectedCustomerId) {
       console.log('Updating customer status to Completed for:', selectedCustomerId);
       const customerRef = doc(db, 'appointments', selectedCustomerId);
@@ -1658,7 +1587,6 @@ async function generateReceipt() {
       dbPromises.push(customerPromise);
     }
     
-    // Save receipt to cashier_receipt collection
     const receiptPromise = addDoc(collection(db, "cashier_receipt"), receiptData)
       .then(receiptRef => {
         console.log('Receipt saved to cashier_receipt with ID:', receiptRef.id);
@@ -1669,7 +1597,6 @@ async function generateReceipt() {
     
     dbPromises.push(receiptPromise);
     
-    // Save to sales collection for reports
     const salesData = {
       receiptNumber: receiptNumber,
       customerName: customerName,
@@ -1696,19 +1623,15 @@ async function generateReceipt() {
     
     dbPromises.push(salesPromise);
     
-    // Execute all database updates
     await Promise.allSettled(dbPromises);
     
-    // Generate PDF blob for email
     const pdfBlob = pdfDoc.output('blob');
     
-    // Send email if customer email is provided
     let emailSent = false;
     if (customerEmail) {
       emailSent = await sendReceiptEmail(customerEmail, pdfBlob, receiptData);
     }
     
-    // Download PDF
     const fileName = `Receipt_${customerName.replace(/\s+/g, '_')}_${date.replace(/\//g, '-')}.pdf`;
     pdfDoc.save(fileName);
     
@@ -1717,25 +1640,23 @@ async function generateReceipt() {
     }
     
     setTimeout(() => {
-      let alertMessage = `Receipt generated successfully!\n\nReceipt No: ${receiptNumber}\nTotal: ₱${total.toFixed(2)}\nPayment: ₱${payment.toFixed(2)}`;
-      if (selectedPaymentMethod === 'cash') {
-        alertMessage += `\nChange: ₱${change.toFixed(2)}`;
-      }
+      let message = `Receipt generated successfully! Receipt No: ${receiptNumber}`;
+      
       if (selectedCustomerId) {
-        alertMessage += '\n\n✓ Customer status updated to: Completed';
+        message += ' | Customer status updated to Completed';
       }
+      
       if (customerEmail) {
         if (emailSent) {
-          alertMessage += '\n✓ Receipt sent to email successfully!';
+          message += ' | Receipt sent to email';
         } else {
-          alertMessage += '\n✗ Failed to send email (check EmailJS configuration)';
+          showToast('Failed to send email (check EmailJS configuration)', 'warning');
         }
       }
-      alertMessage += '\n✓ Sale recorded in reports';
-      alert(alertMessage);
+      
+      showToast(message, 'success');
       clearCart();
       
-      // Refresh product view if showing products
       if (currentView === 'products') {
         if (currentCategory === 'all') {
           renderServices(inventoryProducts);
@@ -1752,11 +1673,10 @@ async function generateReceipt() {
       loadingModal.classList.add('hidden');
     }
     
-    alert('Error generating receipt: ' + error.message + '\n\nPlease check your internet connection and try again.');
+    showToast('Error generating receipt: ' + error.message, 'error');
   }
 }
 
-// Cleanup on page unload
 window.addEventListener('beforeunload', () => {
   if (inventoryListener) inventoryListener();
   if (purchaseOrderListener) purchaseOrderListener();

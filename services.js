@@ -30,6 +30,75 @@ let categoriesCache = null;
 let lastCategoriesFetch = 0;
 const CACHE_DURATION = 300000; // 5 minutes
 
+// Toast notification function
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+    `;
+    document.body.appendChild(container);
+  }
+  
+  const toast = document.createElement('div');
+  toast.className = `toast-notification ${type}`;
+  
+  const icons = {
+    error: 'fa-circle-xmark',
+    success: 'fa-circle-check',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  const colors = {
+    error: '#dc2626',
+    success: '#16a34a',
+    warning: '#f59e0b',
+    info: '#3b82f6'
+  };
+  
+  toast.style.cssText = `
+    background: white;
+    border-left: 4px solid ${colors[type]};
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: slideIn 0.3s ease;
+    max-width: 100%;
+  `;
+  
+  toast.innerHTML = `
+    <div style="color: ${colors[type]}; font-size: 20px; flex-shrink: 0;">
+      <i class="fa-solid ${icons[type]}"></i>
+    </div>
+    <div style="flex: 1; font-size: 14px; color: #374151;">
+      <p style="margin: 0;">${message}</p>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 18px; padding: 0; flex-shrink: 0;">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 5000);
+}
+
 // Load current user's full name - OPTIMIZED with caching
 async function loadCurrentUserName() {
   auth.onAuthStateChanged(async (user) => {
@@ -118,7 +187,7 @@ function setupSessionMonitoring(userId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+showToast('Your session has been ended because someone else logged in or your password was changed', 'warning');
       
       // Force logout
       auth.signOut().then(() => {
@@ -200,7 +269,7 @@ async function confirmLogout() {
     console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
     await auth.signOut();
     window.location.href = "index.html";
   }
@@ -330,19 +399,18 @@ function closeAddCategoryModal() {
   document.getElementById('addCategoryForm').reset();
 }
 
-// Handle Add Category - OPTIMIZED
 async function handleAddCategory(event) {
   event.preventDefault();
   
   const categoryName = document.getElementById('newCategoryName').value.trim();
   
   if (!categoryName) {
-    alert('Category name cannot be empty!');
+    showToast('Category name cannot be empty!', 'error');
     return;
   }
-  
+
   if (categories.some(cat => cat.name.toLowerCase() === categoryName.toLowerCase())) {
-    alert('This category already exists! Please choose a different name.');
+    showToast('This category already exists! Please choose a different name.', 'error');
     return;
   }
   
@@ -368,11 +436,11 @@ async function handleAddCategory(event) {
       editSelect.value = categoryName;
     }
     
-    alert(`Category "${categoryName}" added successfully!`);
+    showToast(`Category "${categoryName}" added successfully!`, 'success');
     
   } catch (error) {
     console.error('Error adding category:', error);
-    alert('Error adding category. Please try again.');
+    showToast('Error adding category. Please try again.', 'error');
   }
 }
 
@@ -422,7 +490,6 @@ function loadManageCategoriesList() {
   });
 }
 
-// Handle Delete Category - OPTIMIZED with batch delete
 async function handleDeleteCategory(categoryName, serviceCount) {
   const servicesInCategory = servicesData.filter(s => s.category === categoryName);
   
@@ -469,10 +536,10 @@ async function handleDeleteCategory(categoryName, serviceCount) {
     updateCategorySelects();
     loadManageCategoriesList();
     
-    alert(`Category "${categoryName}" and its ${servicesInCategory.length} service(s) have been deleted successfully!`);
+    showToast(`Category "${categoryName}" and its ${servicesInCategory.length} service(s) deleted successfully!`, 'success');
   } catch (error) {
     console.error('Error deleting category:', error);
-    alert('Error deleting category. Please try again.');
+    showToast('Error deleting category. Please try again.', 'error');
   }
 }
 
@@ -551,9 +618,7 @@ function monitorInventory() {
     inventoryListener();
   }
 
-  // Only listen for status changes, limit to 100 items to reduce reads
   inventoryListener = db.collection('inventory')
-    .limit(100)
     .onSnapshot((snapshot) => {
       let noStockCount = 0;
       let lowStockCount = 0;
@@ -561,15 +626,13 @@ function monitorInventory() {
       
       snapshot.forEach(doc => {
         const item = doc.data();
-        const qty = item.qty || 0;
-        const minStock = item.minStock || 10;
-        const status = item.status || '';
+        const status = item.status || 'in-stock';
         
-        if (status === 'out-of-stock' || qty === 0) {
+        if (status === 'out-of-stock') {
           noStockCount++;
-        } else if (status === 'low-stock' || qty <= minStock) {
+        } else if (status === 'low-stock') {
           lowStockCount++;
-        } else if (qty > (minStock * 1.5) && qty > 0) {
+        } else if (status === 'overstock') {
           overstockCount++;
         }
       });
@@ -578,6 +641,36 @@ function monitorInventory() {
     }, (error) => {
       console.error('Error monitoring inventory:', error);
     });
+}
+
+function updateInventoryBubble(noStock, lowStock, overstock) {
+  const button = document.querySelector('button[title="Inventory"]');
+  if (!button) return;
+  
+  let bubble = button.querySelector('.sidebar-bubble');
+  
+  if (!bubble) {
+    bubble = document.createElement('span');
+    bubble.className = 'sidebar-bubble';
+    button.style.position = 'relative';
+    button.appendChild(bubble);
+  }
+  
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
+    bubble.style.backgroundColor = '#dc2626'; // Red
+    bubble.style.display = 'flex';
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
+    bubble.style.backgroundColor = '#f59e0b'; // Yellow
+    bubble.style.display = 'flex';
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
+    bubble.style.backgroundColor = '#3b82f6'; // Blue
+    bubble.style.display = 'flex';
+  } else {
+    bubble.style.display = 'none';
+  }
 }
 
 function updateInventoryBubble(noStock, lowStock, overstock) {
@@ -720,7 +813,6 @@ async function generateUniqueServiceId() {
   }
 }
 
-// Handle Add Service Form Submission
 async function handleAddService(event) {
   event.preventDefault();
   
@@ -729,14 +821,14 @@ async function handleAddService(event) {
   const price = parseFloat(document.getElementById('servicePrice').value);
   
   if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
-    alert('Please select a valid category');
+    showToast('Please select a valid category', 'error');
     return;
   }
 
   const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
   
   if (!categoryExists) {
-    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
+    showToast('The selected category does not exist in the database. Please select an existing category or create a new one.', 'error');
     return;
   }
   
@@ -756,10 +848,10 @@ async function handleAddService(event) {
     newService.firebaseId = docRef.id;
     
     closeAddServiceModal();
-    alert(`Service "${name}" added successfully!`);
+    showToast(`Service "${name}" added successfully!`, 'success');
   } catch (error) {
     console.error('Error adding service:', error);
-    alert('Error adding service. Please try again.');
+    showToast('Error adding service. Please try again.', 'error');
   }
 }
 
@@ -822,14 +914,14 @@ async function handleEditService(e) {
   const category = document.getElementById('editServiceCategorySelect').value;
   
   if (!category || category === '__ADD_NEW__' || category === '__MANAGE__') {
-    alert('Please select a valid category');
+    showToast('Please select a valid category', 'error');
     return;
   }
 
   const categoryExists = categories.some(cat => cat.name.toLowerCase() === category.toLowerCase());
   
   if (!categoryExists) {
-    alert('The selected category does not exist in the database. Please select an existing category or create a new one.');
+    showToast('The selected category does not exist in the database. Please select an existing category or create a new one.', 'error');
     return;
   }
   
@@ -846,13 +938,13 @@ async function handleEditService(e) {
       await db.collection('services').doc(id).update(updatedService);
 
       closeEditServiceModal();
-      alert('✅ Service updated successfully!');
+      showToast('Service updated successfully!', 'success');
     } else {
-      alert('Error: Missing Firestore document ID.');
+      showToast('Error: Missing Firestore document ID.', 'error');
     }
   } catch (error) {
     console.error('Error updating service:', error);
-    alert('Error updating service. Check console for details.');
+    showToast('Error updating service. Please try again.', 'error');
   }
 }
 
@@ -1066,33 +1158,90 @@ function loadServicesFromFirebase() {
   }
 }
 
-// Delete service function
-async function handleDeleteService() {
-  const id = document.getElementById('editFirebaseId').value;
-  const serviceName = document.getElementById('editServiceName').value;
+let pendingDeleteCategoryName = null;
+let pendingDeleteCategoryServiceCount = 0;
+
+// Show delete category modal
+function showDeleteCategoryModal(categoryName, serviceCount) {
+  pendingDeleteCategoryName = categoryName;
+  pendingDeleteCategoryServiceCount = serviceCount;
   
-  if (!confirm(`Are you sure you want to delete "${serviceName}"? This action cannot be undone.`)) {
-    return;
+  document.getElementById('deleteCategoryNameDisplay').textContent = categoryName;
+  
+  if (serviceCount === 0) {
+    document.getElementById('deleteCategoryMessage').textContent = `Are you sure you want to delete the category "${categoryName}"?`;
+    document.getElementById('deleteCategoryWarningText').textContent = 'This action cannot be undone';
+    document.getElementById('deleteCategoryServiceCountItem').style.display = 'none';
+  } else {
+    document.getElementById('deleteCategoryMessage').textContent = `Warning: This category has ${serviceCount} service(s)`;
+    document.getElementById('deleteCategoryWarningText').textContent = 'All services in this category will also be deleted';
+    document.getElementById('deleteCategoryServiceCountItem').style.display = 'flex';
+    document.getElementById('deleteCategoryServiceCountText').textContent = `${serviceCount} service${serviceCount !== 1 ? 's' : ''} will be deleted`;
   }
   
+  document.getElementById('deleteCategoryModal').classList.add('show');
+}
+
+function hideDeleteCategoryModal() {
+  document.getElementById('deleteCategoryModal').classList.remove('show');
+  pendingDeleteCategoryName = null;
+  pendingDeleteCategoryServiceCount = 0;
+}
+
+async function handleDeleteCategory(categoryName, serviceCount) {
+  // Show custom modal instead of confirm()
+  showDeleteCategoryModal(categoryName, serviceCount);
+}
+
+async function confirmDeleteCategory() {
+  const confirmBtn = document.getElementById('confirmDeleteCategoryBtn');
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Deleting...';
+  
   try {
-    if (id) {
-      await db.collection('services').doc(id).delete();
+    const servicesInCategory = servicesData.filter(s => s.category === pendingDeleteCategoryName);
+    
+    // Use batched deletes (max 500 per batch)
+    const batches = [];
+    let currentBatch = db.batch();
+    let operationCount = 0;
+    
+    servicesInCategory.forEach(service => {
+      currentBatch.delete(db.collection('services').doc(service.firebaseId));
+      operationCount++;
       
-      // Reset category filter to "All Categories"
-      const categoryFilter = document.getElementById('categoryFilter');
-      if (categoryFilter) {
-        categoryFilter.value = 'all';
+      if (operationCount === 500) {
+        batches.push(currentBatch);
+        currentBatch = db.batch();
+        operationCount = 0;
       }
-      
-      closeEditServiceModal();
-      alert('Service deleted successfully!');
-    } else {
-      alert('Error: Missing service ID.');
+    });
+    
+    if (operationCount > 0) {
+      batches.push(currentBatch);
     }
+    
+    // Commit all batches
+    await Promise.all(batches.map(batch => batch.commit()));
+    
+    // Update local data
+    servicesData = servicesData.filter(s => s.category !== pendingDeleteCategoryName);
+    categories = categories.filter(c => c.name !== pendingDeleteCategoryName);
+    categoriesCache = categories;
+    
+    updateStats();
+    updateCategorySelects();
+    loadManageCategoriesList();
+    
+    hideDeleteCategoryModal();
+    showToast(`Category "${pendingDeleteCategoryName}" and its ${servicesInCategory.length} service(s) deleted successfully!`, 'success');
   } catch (error) {
-    console.error('Error deleting service:', error);
-    alert('Error deleting service. Check console for details.');
+    console.error('Error deleting category:', error);
+    showToast('Error deleting category. Please try again.', 'error');
+    hideDeleteCategoryModal();
+  } finally {
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete Category';
   }
 }
 
@@ -1114,6 +1263,74 @@ window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
 
+// Global variables for delete service confirmation
+let pendingDeleteServiceId = null;
+let pendingDeleteServiceName = null;
+
+// Show delete service modal
+function showDeleteServiceModal(serviceName, serviceId) {
+  pendingDeleteServiceId = serviceId;
+  pendingDeleteServiceName = serviceName;
+  
+  document.getElementById('deleteServiceNameDisplay').textContent = serviceName;
+  document.getElementById('deleteServiceMessage').textContent = `Are you sure you want to delete "${serviceName}"?`;
+  document.getElementById('deleteServiceModal').classList.add('show');
+}
+
+function hideDeleteServiceModal() {
+  document.getElementById('deleteServiceModal').classList.remove('show');
+  pendingDeleteServiceId = null;
+  pendingDeleteServiceName = null;
+}
+
+async function handleDeleteService() {
+  const id = document.getElementById('editFirebaseId').value;
+  const serviceName = document.getElementById('editServiceName').value;
+  
+  // Show custom modal instead of confirm()
+  showDeleteServiceModal(serviceName, id);
+}
+
+async function confirmDeleteService() {
+  const confirmBtn = document.getElementById('confirmDeleteServiceBtn');
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Deleting...';
+  
+  // Get the service name before deleting
+   const service = servicesData.find(s => s.firebaseId === pendingDeleteServiceId);
+   const serviceName = service ? service.name : 'Service';
+  
+  try {
+    if (pendingDeleteServiceId) {
+      // Get the service name before deleting
+      const service = servicesData.find(s => s.firebaseId === pendingDeleteServiceId);
+      const serviceName = service ? service.name : 'Service';
+      
+      await db.collection('services').doc(pendingDeleteServiceId).delete();
+      
+      // Reset category filter to "All Categories"
+      const categoryFilter = document.getElementById('categoryFilter');
+      if (categoryFilter) {
+        categoryFilter.value = 'all';
+      }
+      
+      hideDeleteServiceModal();
+      closeEditServiceModal();
+showToast(`Service "${serviceName}" deleted successfully!`, 'success');
+    } else {
+      showToast('Error: Missing service ID.', 'error');
+      hideDeleteServiceModal();
+    }
+  } catch (error) {
+    console.error('Error deleting service:', error);
+    showToast('Error deleting service. Please try again.', 'error');
+    hideDeleteServiceModal();
+  } finally {
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete Service';
+  }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
   // Set loading state
@@ -1121,7 +1338,41 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('servicesTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Loading services data...</td></tr>';
   
   loadCurrentUserName();
-  loadServicesFromFirebase(); // This will also load categories
+  loadServicesFromFirebase();
+
+  // Close delete modals when clicking outside or pressing Escape
+document.addEventListener('click', function(event) {
+  const deleteServiceModal = document.getElementById('deleteServiceModal');
+  const deleteCategoryModal = document.getElementById('deleteCategoryModal');
+  
+  if (deleteServiceModal && event.target === deleteServiceModal) {
+    hideDeleteServiceModal();
+  }
+  
+  if (deleteCategoryModal && event.target === deleteCategoryModal) {
+    hideDeleteCategoryModal();
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const deleteServiceModal = document.getElementById('deleteServiceModal');
+    const deleteCategoryModal = document.getElementById('deleteCategoryModal');
+    const logoutModal = document.getElementById('logoutModal');
+    
+    if (deleteServiceModal && deleteServiceModal.classList.contains('show')) {
+      hideDeleteServiceModal();
+    }
+    
+    if (deleteCategoryModal && deleteCategoryModal.classList.contains('show')) {
+      hideDeleteCategoryModal();
+    }
+    
+    if (logoutModal && logoutModal.classList.contains('show')) {
+      hideLogoutModal();
+    }
+  }
+});
   
   // Monitor inventory and purchase orders for sidebar bubbles
   monitorInventory();

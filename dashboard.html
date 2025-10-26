@@ -594,6 +594,135 @@
         width: 100%;
       }
 
+      /* Toast Notification Styles */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 500px;
+  pointer-events: all;
+  animation: slideIn 0.3s ease-out;
+  border-left: 4px solid #3b82f6;
+}
+
+.toast.success {
+  border-left-color: #10b981;
+}
+
+.toast.error {
+  border-left-color: #ef4444;
+}
+
+.toast.warning {
+  border-left-color: #f59e0b;
+}
+
+.toast.info {
+  border-left-color: #3b82f6;
+}
+
+.toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  color: #10b981;
+}
+
+.toast.error .toast-icon {
+  color: #ef4444;
+}
+
+.toast.warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast.info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.toast-message {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.toast.hiding {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
       .sidebar-bubble {
         width: 18px;
         height: 18px;
@@ -605,6 +734,8 @@
   </style>
 </head>
 <body class="bg-[#e6bfc7]">
+  <!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
   <aside id="sidebar">
     <div class="mb-6 mt-2">
       <i class="fa-solid fa-spa text-3xl text-[#da5c73]"></i>
@@ -841,7 +972,7 @@ function setupSessionMonitoring(userId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+showToast('Your session has been ended because someone else logged in or your password was changed', 'warning', 5000);
       
       // Force logout
       signOut(auth).then(() => {
@@ -860,51 +991,83 @@ function setupSessionMonitoring(userId) {
       staff: []
     };
 
-    // Helper function to determine status
-function determineStatus(qty, minStock) {
-  if (qty === 0) return 'out-of-stock';
-  if (qty <= minStock) return 'low-stock';
-  return 'in-stock';
+    // Toast notification system
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  
+  const icons = {
+    success: 'fa-circle-check',
+    error: 'fa-circle-xmark',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  const titles = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info'
+  };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="fas ${icons[type]} toast-icon"></i>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
 }
+
+window.showToast = showToast;
 
 function monitorInventory() {
-  if (inventoryListener) inventoryListener();
+      if (inventoryListener) inventoryListener();
 
-  inventoryListener = onSnapshot(
-    collection(db, 'inventory'),
-    (snapshot) => {
-      dataCache.inventory = [];
-      snapshot.forEach((doc) => {
-        const product = doc.data();
-        const qty = product.qty || product.quantity || 0;
-        const price = product.price || 0;
-        const minStock = product.minStock || 10;
-        
-        // Recalculate status based on current quantity
-        product.status = determineStatus(qty, minStock);
-        
-        // Recalculate total
-        product.total = qty * price;
-        
-        dataCache.inventory.push({ id: doc.id, ...product });
-      });
-      updateInventorySidebarBubbles();
-      updateInventoryAlerts();
-    },
-    (error) => console.error('Error monitoring inventory:', error)
-  );
-}
-
-    function updateInventorySidebarBubbles() {
-      const noStockCount = dataCache.inventory.filter(item => item.status === 'out-of-stock').length;
-      const lowStockCount = dataCache.inventory.filter(item => item.status === 'low-stock').length;
-      const overstockCount = dataCache.inventory.filter(item => {
-        const minStockThreshold = item.minStock || 10;
-        const qty = item.qty || item.quantity || 0;
-        return qty > (minStockThreshold * 1.5) && qty > 0;
-      }).length;
+      const inventoryRef = collection(db, 'inventory');
+      const inventoryQuery = query(inventoryRef, limit(100));
       
-      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+      inventoryListener = onSnapshot(inventoryQuery, (snapshot) => {
+        let noStockCount = 0;
+        let lowStockCount = 0;
+        let overstockCount = 0;
+        
+        dataCache.inventory = [];
+        
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          const status = item.status || '';
+          
+          // Use the status field directly (it's calculated when inventory is updated)
+          if (status === 'out-of-stock') {
+            noStockCount++;
+          } else if (status === 'low-stock') {
+            lowStockCount++;
+          } else if (status === 'overstock') {
+            overstockCount++;
+          }
+          
+          dataCache.inventory.push({ id: doc.id, ...item });
+        });
+        
+        updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+        updateInventoryAlerts();
+        
+      }, (error) => {
+        console.error('Error monitoring inventory:', error);
+      });
     }
 
     function updateInventoryBubble(noStock, lowStock, overstock) {
@@ -969,33 +1132,34 @@ function monitorInventory() {
       }
     }
 
-    async function handleClockOut() {
-      const user = auth.currentUser;
-      if (!user) return;
-      
-      try {
-        const today = new Date().toLocaleDateString();
-        const logsRef = collection(db, "staffLogs", user.uid, "history");
-        const todayQuery = query(logsRef, where("date", "==", today));
-        const todaySnap = await getDocs(todayQuery);
-        
-        if (!todaySnap.empty) {
-          const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
-          if (activeLog) {
-            await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
-              clockOut: new Date().toLocaleString()
-            }, { merge: true });
-          }
-        }
-
-        await updateDoc(doc(db, "users", user.uid), { 
-          availability: false,
-          lastUpdated: serverTimestamp()
-        });
-      } catch (error) {
-        console.error("Error during clock out:", error);
+async function handleClockOut() {
+  const user = auth.currentUser;
+  if (!user) return;
+  
+  try {
+    const today = new Date().toLocaleDateString();
+    const logsRef = collection(db, "staffLogs", user.uid, "history");
+    const todayQuery = query(logsRef, where("date", "==", today));
+    const todaySnap = await getDocs(todayQuery);
+    
+    if (!todaySnap.empty) {
+      const activeLog = todaySnap.docs.find(doc => !doc.data().clockOut);
+      if (activeLog) {
+        await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
+          clockOut: new Date().toLocaleString()
+        }, { merge: true });
       }
     }
+
+    await updateDoc(doc(db, "users", user.uid), { 
+      availability: false,
+      onLaunchBreak: false,
+      lastUpdated: serverTimestamp()
+    });
+  } catch (error) {
+    console.error("Error during clock out:", error);
+  }
+}
 
     window.showLogoutModal = function() {
       document.getElementById('logoutModal').classList.add('show');
@@ -1005,32 +1169,48 @@ function monitorInventory() {
       document.getElementById('logoutModal').classList.remove('show');
     }
 
-    window.confirmLogout = async function() {
-      const confirmBtn = document.getElementById('confirmLogoutBtn');
-      confirmBtn.classList.add('loading');
-      confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
+window.confirmLogout = async function() {
+  const confirmBtn = document.getElementById('confirmLogoutBtn');
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
-      try {
-        await handleClockOut();
-        
-        if (customersListener) customersListener();
-        if (cashierListener) cashierListener();
-        if (inventoryListener) inventoryListener();
-        if (staffListener) staffListener();
-        if (purchaseOrderListener) purchaseOrderListener();
-        if (sessionMonitor) sessionMonitor();
-
-        await signOut(auth);
-        window.location.href = "index.html";
-      } catch (error) {
-        console.error("Logout error:", error);
-        confirmBtn.classList.remove('loading');
-        confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        alert("An error occurred during logout. Please try again.");
-        await signOut(auth);
-        window.location.href = "index.html";
-      }
+  try {
+    await handleClockOut();
+    
+    // Additional cleanup - set availability to false
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, "users", user.uid);
+      await updateDoc(userRef, { 
+        availability: false,
+        onLaunchBreak: false,
+        lastUpdated: serverTimestamp()
+      });
+      
+      // Wait for Firestore to update
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
+    
+    if (customersListener) customersListener();
+    if (cashierListener) cashierListener();
+    if (inventoryListener) inventoryListener();
+    if (staffListener) staffListener();
+    if (purchaseOrderListener) purchaseOrderListener();
+    if (sessionMonitor) sessionMonitor();
+
+    sessionStorage.removeItem('sessionId');
+
+    await signOut(auth);
+    window.location.href = "index.html";
+  } catch (error) {
+    console.error("Logout error:", error);
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
+showToast("An error occurred during logout. Please try again.", 'error');
+    await signOut(auth);
+    window.location.href = "index.html";
+  }
+}
 
     document.getElementById('logoutModal')?.addEventListener('click', function(e) {
       if (e.target === this) window.hideLogoutModal();
@@ -1340,68 +1520,65 @@ function goToInventorySlide(index) {
 }
     window.goToInventorySlide = goToInventorySlide;
 
-    function updateInventoryAlerts() {
-      const alertItems = [];
-      dataCache.inventory.forEach(data => {
-        const productName = data.name || "Unnamed Product";
-        const quantity = Number(data.quantity || data.qty || 0);
-        const minStock = Number(data.minStock || 10);
-        const overstockThreshold = minStock * 1.5;
-        
-        // Out of stock - Red
-        if (quantity === 0) {
-          alertItems.push({ 
-            productName, 
-            quantity, 
-            minStock, 
-            statusText: "OUT OF STOCK", 
-            statusColor: "text-red-600",
-            bgColor: '#ffe6e6',
-            borderColor: '#ffb3b3',
-            barColor: 'bg-red-500',
-            priority: 1
-          });
-        }
-        // Low stock - Yellow
-        else if (quantity > 0 && quantity <= minStock) {
-          alertItems.push({ 
-            productName, 
-            quantity, 
-            minStock, 
-            statusText: "LOW STOCK", 
-            statusColor: "text-yellow-600",
-            bgColor: '#fff4e6',
-            borderColor: '#ffd1a8',
-            barColor: 'bg-yellow-500',
-            priority: 2
-          });
-        }
-        // Overstock - Blue
-        else if (quantity > overstockThreshold) {
-          alertItems.push({ 
-            productName, 
-            quantity, 
-            minStock, 
-            statusText: "OVERSTOCK", 
-            statusColor: "text-blue-600",
-            bgColor: '#e6f2ff',
-            borderColor: '#a8d1ff',
-            barColor: 'bg-blue-500',
-            priority: 3
-          });
-        }
+function updateInventoryAlerts() {
+  const alertItems = [];
+  dataCache.inventory.forEach(data => {
+    const productName = data.name || "Unnamed Product";
+    const quantity = Number(data.quantity || data.qty || 0);
+    const minStock = Number(data.minStock || 10);
+    const status = data.status || ''; // Read status directly from Firebase
+    
+    // ONLY show alerts for out-of-stock, low-stock, and overstock
+    // Skip in-stock items
+    if (status === 'out-of-stock') {
+      alertItems.push({ 
+        productName, 
+        quantity, 
+        minStock, 
+        statusText: "OUT OF STOCK", 
+        statusColor: "text-red-600",
+        bgColor: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+        borderColor: '#fca5a5',
+        priority: 1
       });
-
-      // Sort by priority (out of stock first, then low stock, then overstock)
-      alertItems.sort((a, b) => {
-        if (a.priority !== b.priority) return a.priority - b.priority;
-        return a.quantity - b.quantity;
-      });
-      
-      inventoryItems = alertItems;
-      currentInventoryIndex = 0;
-      createInventoryCarousel();
     }
+    else if (status === 'low-stock') {
+      alertItems.push({ 
+        productName, 
+        quantity, 
+        minStock, 
+        statusText: "LOW STOCK", 
+        statusColor: "text-yellow-600",
+        bgColor: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+        borderColor: '#fcd34d',
+        priority: 2
+      });
+    }
+    else if (status === 'overstock') {
+      alertItems.push({ 
+        productName, 
+        quantity, 
+        minStock, 
+        statusText: "OVERSTOCK", 
+        statusColor: "text-blue-600",
+        bgColor: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
+        borderColor: '#93c5fd',
+        priority: 3
+      });
+    }
+    // If status is 'in-stock' or anything else, we skip it (no alert needed)
+  });
+
+  // Sort by priority (out of stock first, then low stock, then overstock)
+  alertItems.sort((a, b) => {
+    if (a.priority !== b.priority) return a.priority - b.priority;
+    return a.quantity - b.quantity;
+  });
+  
+  inventoryItems = alertItems;
+  currentInventoryIndex = 0;
+  createInventoryCarousel();
+}
 
     let revenueChart = null;
 
@@ -1509,47 +1686,107 @@ function goToInventorySlide(index) {
       }
     }
 
-    function updateStaffAvailability() {
-      const staffAvailabilityList = document.getElementById("staffAvailabilityList");
-      staffAvailabilityList.innerHTML = '';
+function updateStaffAvailability() {
+  const staffAvailabilityList = document.getElementById("staffAvailabilityList");
+  staffAvailabilityList.innerHTML = '';
 
-      const onlineUsers = [];
-      let currentUserInfo = null;
+  const onlineUsers = [];
+  const absentUsers = [];
+  let currentUserInfo = null;
 
-      dataCache.staff.forEach(userData => {
-        const userId = userData.id;
-        const name = userData.fullName || userData.username || "Unnamed";
-        const isAvailable = userData.availability === true;
+  dataCache.staff.forEach(userData => {
+    const userId = userData.id;
+    const name = userData.fullName || userData.username || "Unnamed";
+    const isAvailable = userData.availability === true;
+    const isAbsent = userData.isAbsent === true;
+    const onLaunchBreak = userData.onLaunchBreak === true;
 
-        if (userId === window.appState.currentUserId) {
-          currentUserInfo = { name, isAvailable };
-        }
-        if (!isAvailable || userId === window.appState.currentUserId) return;
-        onlineUsers.push({ id: userId, name });
-      });
-
-      if (currentUserInfo && currentUserInfo.isAvailable) {
-        const div = document.createElement("div");
-        div.className = "staff-availability-item";
-        div.style.fontWeight = "600";
-        div.style.background = "#d1fae5";
-        div.innerHTML = `<div class="status-dot"></div><span>${currentUserInfo.name} (You)</span>`;
-        staffAvailabilityList.appendChild(div);
-      }
-
-      if (onlineUsers.length === 0) {
-        if (!currentUserInfo || !currentUserInfo.isAvailable) {
-          staffAvailabilityList.innerHTML = '<p class="text-gray-500 italic text-sm">No users online</p>';
-        }
-      } else {
-        onlineUsers.forEach(user => {
-          const div = document.createElement("div");
-          div.className = "staff-availability-item";
-          div.innerHTML = `<div class="status-dot"></div><span>${user.name}</span>`;
-          staffAvailabilityList.appendChild(div);
-        });
-      }
+    if (userId === window.appState.currentUserId) {
+      currentUserInfo = { name, isAvailable, isAbsent, onLaunchBreak };
     }
+    
+    // Add to absent list if marked absent
+    if (isAbsent) {
+      absentUsers.push({ id: userId, name, isCurrentUser: userId === window.appState.currentUserId });
+    }
+    // Don't show in online list if absent, unavailable, on break, or current user
+    else if (!isAvailable || onLaunchBreak || userId === window.appState.currentUserId) {
+      return;
+    } else {
+      onlineUsers.push({ id: userId, name });
+    }
+  });
+
+  // Show current user first if available and not absent
+  if (currentUserInfo && currentUserInfo.isAvailable && !currentUserInfo.isAbsent && !currentUserInfo.onLaunchBreak) {
+    const div = document.createElement("div");
+    div.className = "staff-availability-item";
+    div.style.fontWeight = "600";
+    div.style.background = "#d1fae5";
+    div.innerHTML = `<div class="status-dot"></div><span>${currentUserInfo.name} (You)</span>`;
+    staffAvailabilityList.appendChild(div);
+  }
+
+  // Show current user if on break
+  if (currentUserInfo && currentUserInfo.onLaunchBreak && !currentUserInfo.isAbsent) {
+    const div = document.createElement("div");
+    div.className = "staff-availability-item";
+    div.style.fontWeight = "600";
+    div.style.background = "#fef3c7";
+    div.innerHTML = `
+      <div class="status-dot" style="background: #f59e0b;"></div>
+      <span>${currentUserInfo.name} (You) - On Break</span>
+    `;
+    staffAvailabilityList.appendChild(div);
+  }
+
+  // Show current user if absent
+  if (currentUserInfo && currentUserInfo.isAbsent) {
+    const div = document.createElement("div");
+    div.className = "staff-availability-item";
+    div.style.fontWeight = "600";
+    div.style.background = "#fee2e2";
+    div.innerHTML = `
+      <div class="status-dot" style="background: #dc2626;"></div>
+      <span>${currentUserInfo.name} (You) - Absent</span>
+    `;
+    staffAvailabilityList.appendChild(div);
+  }
+
+  // Show other online users
+  if (onlineUsers.length > 0) {
+    onlineUsers.forEach(user => {
+      const div = document.createElement("div");
+      div.className = "staff-availability-item";
+      div.innerHTML = `<div class="status-dot"></div><span>${user.name}</span>`;
+      staffAvailabilityList.appendChild(div);
+    });
+  }
+
+  // Show absent users
+  if (absentUsers.length > 0) {
+    absentUsers.forEach(user => {
+      // Skip if already shown as current user
+      if (user.isCurrentUser) return;
+      
+      const div = document.createElement("div");
+      div.className = "staff-availability-item";
+      div.style.background = "#fee2e2";
+      div.innerHTML = `
+        <div class="status-dot" style="background: #dc2626;"></div>
+        <span>${user.name} - Absent</span>
+      `;
+      staffAvailabilityList.appendChild(div);
+    });
+  }
+
+  // Show "No users online" only if no one is available (excluding absent users)
+  if (onlineUsers.length === 0 && (!currentUserInfo || !currentUserInfo.isAvailable || currentUserInfo.isAbsent || currentUserInfo.onLaunchBreak)) {
+    if (absentUsers.length === 0) {
+      staffAvailabilityList.innerHTML = '<p class="text-gray-500 italic text-sm">No users online</p>';
+    }
+  }
+}
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {

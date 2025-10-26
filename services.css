@@ -161,6 +161,8 @@
   animation: bubblePulse 2s ease-in-out infinite;
 }
 
+
+
 @keyframes bubblePulse {
   0%, 100% {
     transform: scale(1);
@@ -404,6 +406,37 @@ button:focus, input:focus, select:focus, textarea:focus {
   outline: 2px solid #da5c73;
   outline-offset: 2px;
 }
+/* Toast Notification Styles */
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  #toastContainer {
+    right: 10px !important;
+    left: 10px !important;
+    max-width: calc(100% - 20px) !important;
+  }
+}
+
 
 /* Print styles */
 @media print {

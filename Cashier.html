@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
-  <!-- EmailJS SDK -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
@@ -79,6 +78,7 @@
       box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
       animation: bubblePulse 2s ease-in-out infinite;
       z-index: 10;
+      pointer-events: none;
     }
 
     @keyframes bubblePulse {
@@ -133,33 +133,6 @@
 
     .cart-item {
       animation: slideIn 0.3s ease;
-    }
-
-    .payment-method-btn {
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: 2px solid #fce4ec;
-      background: white;
-      color: #b97b8b;
-      font-weight: 500;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .payment-method-btn:hover {
-      background: #fce4ec;
-      border-color: #da5c73;
-    }
-
-    .payment-method-btn.active {
-      background: linear-gradient(135deg, #da5c73 0%, #b97b8b 100%);
-      color: white;
-      border-color: #da5c73;
-      box-shadow: 0 2px 8px rgba(218, 92, 115, 0.3);
     }
 
     @keyframes slideIn {
@@ -386,7 +359,6 @@
       }
     }
 
-    /* Customer Dropdown Styles */
     .customer-dropdown {
       position: absolute;
       top: 100%;
@@ -406,7 +378,6 @@
       background: #fce4ec;
     }
 
-    /* Logout Modal Styles */
     .logout-modal-overlay {
       position: fixed;
       top: 0;
@@ -564,6 +535,98 @@
       animation: spin 1s linear infinite;
     }
 
+    /* Toast Notification Styles */
+    #toastContainer {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-width: 400px;
+    }
+
+    .toast-notification {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      min-width: 350px;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .toast-notification.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    .toast-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast-notification.error .toast-icon {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .toast-notification.success .toast-icon {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .toast-notification.warning .toast-icon {
+      background: #fffbeb;
+      color: #f59e0b;
+    }
+
+    .toast-notification.info .toast-icon {
+      background: #eff6ff;
+      color: #3b82f6;
+    }
+
+    .toast-content {
+      flex: 1;
+      padding-top: 2px;
+    }
+
+    .toast-content p {
+      margin: 0;
+      font-size: 14px;
+      color: #1f2937;
+      line-height: 1.5;
+    }
+
+    .toast-close {
+      background: none;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: color 0.2s;
+    }
+
+    .toast-close:hover {
+      color: #6b7280;
+    }
+
     @media (max-width: 640px) {
       .sidebar {
         width: 60px;
@@ -597,6 +660,16 @@
       
       #servicesList {
         grid-template-columns: 1fr;
+      }
+
+      #toastContainer {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+      }
+
+      .toast-notification {
+        min-width: auto;
       }
     }
 
@@ -632,7 +705,7 @@
     }
 
     @media (max-width: 640px) {
-      button, .sidebar-btn, .category-btn, .payment-method-btn {
+      button, .sidebar-btn, .category-btn {
         min-height: 44px;
         min-width: 44px;
       }
@@ -640,6 +713,9 @@
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
 
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto z-50">
@@ -829,22 +905,9 @@
               </div>
             </div>
 
-            <!-- Payment Method -->
-            <div class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-2">Payment Method</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button type="button" class="payment-method-btn active" data-method="cash" onclick="selectPaymentMethod('cash')">
-                  <i class="fa-solid fa-money-bill-wave mr-1"></i>Cash
-                </button>
-                <button type="button" class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check')">
-                  <i class="fa-solid fa-building-columns mr-1"></i>Check/Bank
-                </button>
-              </div>
-            </div>
-
             <!-- Payment Input -->
             <div class="mb-3">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Payment Amount</label>
+              <label class="block text-xs font-medium text-gray-700 mb-1">Payment Amount (Cash)</label>
               <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-bold">₱</span>
                 <input
@@ -856,17 +919,6 @@
                   step="0.01"
                 />
               </div>
-            </div>
-
-            <!-- Reference Number -->
-            <div class="mb-3 hidden" id="referenceNumberContainer">
-              <label class="block text-xs font-medium text-gray-700 mb-1">Reference/Check Number</label>
-              <input
-                type="text"
-                id="referenceNumber"
-                placeholder="Enter reference or check number"
-                class="w-full p-3 rounded-lg border-2 border-pink-100 focus:border-pink-300 focus:outline-none text-sm"
-              />
             </div>
 
             <!-- Change Display -->

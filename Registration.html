@@ -11,22 +11,28 @@
     .sidebar-btn:hover { background:#da5c73;color:white;transform:scale(1.1) }
     .sidebar-btn.active { background:#da5c73;color:white }
     
-    .sidebar-bubble {
+.sidebar-bubble {
       position: absolute;
-      top: -5px;
-      right: -5px;
-      background: #dc2626;
-      color: white;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
       border-radius: 50%;
-      width: 22px;
-      height: 22px;
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
-      font-size: 11px;
+      color: white;
+      font-size: 10px;
       font-weight: bold;
-      border: 2px solid #f7d4d0;
+      padding: 0 4px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      z-index: 10;
+      animation: bubblePulse 2s ease-in-out infinite;
+    }
+
+    @keyframes bubblePulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
     }
     
     .tab-btn {
@@ -116,48 +122,6 @@
       box-shadow: none;
     }
     
-    .alert {
-      padding: 1rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-      font-weight: 500;
-      display: none;
-      animation: slideIn 0.3s ease;
-    }
-    
-    .alert.show {
-      display: block;
-    }
-    
-    .alert-success {
-      background: #d1fae5;
-      color: #065f46;
-      border: 1px solid #6ee7b7;
-    }
-    
-    .alert-error {
-      background: #fee2e2;
-      color: #991b1b;
-      border: 1px solid #fca5a5;
-    }
-    
-    .alert-warning {
-      background: #fef3c7;
-      color: #92400e;
-      border: 1px solid #fcd34d;
-    }
-    
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    
     .grid-2 {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -169,9 +133,428 @@
         grid-template-columns: 1fr;
       }
     }
+
+    /* Toast Notification Styles */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 400px;
+    }
+
+    .toast {
+      background: white;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: slideInRight 0.3s ease;
+      border-left: 4px solid;
+      min-width: 300px;
+    }
+
+    .toast.success {
+      border-left-color: #10b981;
+      background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    }
+
+    .toast.error {
+      border-left-color: #ef4444;
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    }
+
+    .toast.warning {
+      border-left-color: #f59e0b;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    }
+
+    .toast.info {
+      border-left-color: #3b82f6;
+      background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    }
+
+    .toast-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .toast.success .toast-icon {
+      color: #10b981;
+    }
+
+    .toast.error .toast-icon {
+      color: #ef4444;
+    }
+
+    .toast.warning .toast-icon {
+      color: #f59e0b;
+    }
+
+    .toast.info .toast-icon {
+      color: #3b82f6;
+    }
+
+    .toast-content {
+      flex: 1;
+    }
+
+    .toast-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #1f2937;
+    }
+
+    .toast-message {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .toast-close {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+      flex-shrink: 0;
+    }
+
+    .toast-close:hover {
+      color: #4b5563;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
+
+    .toast.removing {
+      animation: slideOutRight 0.3s ease forwards;
+    }
+
+    /* Time Slot Styles */
+    .time-slot {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f9fafb;
+      text-align: center;
+    }
+
+    .time-slot:hover {
+      border-color: #da5c73;
+      background: #fff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.15);
+    }
+
+    .time-slot.selected {
+      border-color: #da5c73;
+      background: linear-gradient(135deg, #fce7eb 0%, #fdd4dc 100%);
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.2);
+    }
+
+    .time-slot i {
+      font-size: 24px;
+      color: #da5c73;
+      margin-bottom: 8px;
+    }
+
+    .time-slot .time-text {
+      font-weight: 600;
+      color: #374151;
+      font-size: 1rem;
+    }
+
+    .time-slot .time-desc {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    .step-indicator {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+
+    .step-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #e5e7eb;
+      color: #9ca3af;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 0.875rem;
+      transition: all 0.3s;
+    }
+
+    .step.active .step-number {
+      background: #da5c73;
+      color: white;
+    }
+
+    .step.completed .step-number {
+      background: #10b981;
+      color: white;
+    }
+
+    .step-label {
+      font-size: 0.875rem;
+      color: #9ca3af;
+      font-weight: 500;
+    }
+
+    .step.active .step-label {
+      color: #da5c73;
+    }
+
+    .step.completed .step-label {
+      color: #10b981;
+    }
+
+    .step-divider {
+      width: 40px;
+      height: 2px;
+      background: #e5e7eb;
+    }
+
+    .step.completed ~ .step-divider {
+      background: #10b981;
+    }
+
+    .archive-card {
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .archive-card:hover {
+      border-color: #da5c73;
+      box-shadow: 0 4px 12px rgba(218, 92, 115, 0.1);
+    }
+
+    .btn-restore {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-restore:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .btn-restore:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-archive {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-archive:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
+
+    .btn-view {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: 0.5rem;
+    }
+
+    .btn-view:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+    }
+
+    .btn-delete {
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-left: 0.5rem;
+    }
+
+    .btn-delete:hover {
+      background: #b91c1c;
+      transform: translateY(-1px);
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Hide schedule step for admin */
+.hide-schedule-step #step2Indicator,
+.hide-schedule-step .step-divider {
+  display: none !important;
+}
+
+    .modal.show {
+      display: flex;
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+      animation: modalSlideIn 0.3s ease;
+    }
+
+    @keyframes modalSlideIn {
+      from {
+        transform: translateY(-50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .modal-title {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #1f2937;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      color: #9ca3af;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .modal-close:hover {
+      color: #ef4444;
+    }
+
+    .info-row {
+      display: flex;
+      padding: 0.75rem;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .info-row:last-child {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-weight: 600;
+      color: #6b7280;
+      min-width: 150px;
+    }
+
+    .info-value {
+      color: #1f2937;
+      flex: 1;
+    }
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
@@ -196,16 +579,19 @@
     <div class="w-full max-w-6xl">
       <!-- Header -->
       <div class="text-center mb-8">
-        <h1 class="text-5xl font-bold text-white mb-2">REGISTRATION</h1>
-        <p class="text-white/80">Manage user accounts and access</p>
+        <h1 class="text-5xl font-bold text-white mb-2" style="display: inline-block; padding: 0.5rem 2rem; border-radius: 0;">REGISTRATION</h1>
+        <p class="text-white/80 mt-4">Manage user accounts and access</p>
       </div>
 
       <!-- Tabs -->
-      <div class="flex justify-center mb-8 bg-white/20 backdrop-blur-sm rounded-2xl p-2 max-w-2xl mx-auto">
+      <div class="flex justify-center mb-8 bg-white/20 backdrop-blur-sm rounded-2xl p-2 max-w-4xl mx-auto">
         <button class="tab-btn active" onclick="showTab(0)">
           <i class="fa-solid fa-user-plus mr-2"></i>Create Account
         </button>
         <button class="tab-btn" onclick="showTab(1)">
+          <i class="fa-solid fa-archive mr-2"></i>Archive Account
+        </button>
+        <button class="tab-btn" onclick="showTab(2)">
           <i class="fa-solid fa-key mr-2"></i>Change Password
         </button>
       </div>
@@ -215,74 +601,216 @@
         <!-- Create Account Tab -->
         <div class="tab-content">
           <div class="form-card">
-            <div class="alert alert-success" id="registerSuccess"></div>
-            <div class="alert alert-error" id="registerError"></div>
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+              <div class="step active" id="step1Indicator">
+                <div class="step-number">1</div>
+                <div class="step-label">Personal Info</div>
+              </div>
+              <div class="step-divider"></div>
+              <div class="step" id="step2Indicator">
+                <div class="step-number">2</div>
+                <div class="step-label">Schedule</div>
+              </div>
+            </div>
             
             <form id="registerForm">
-              <div class="grid-2">
-                <div class="input-group">
-                  <label><i class="fa-solid fa-user mr-2"></i>Full Name *</label>
-                  <input type="text" id="fullName" class="input-field" placeholder="Enter full name" required>
+              <!-- Step 1: Personal Information -->
+              <div id="step1" class="form-step">
+                <div class="grid-2">
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-user mr-2"></i>First Name *</label>
+                    <input type="text" id="firstName" class="input-field" placeholder="Enter first name" required>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-user mr-2"></i>Last Name *</label>
+                    <input type="text" id="lastName" class="input-field" placeholder="Enter last name" required>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-at mr-2"></i>Username *</label>
+                    <input type="text" id="username" class="input-field" placeholder="Enter username" required>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-phone mr-2"></i>Mobile Number *</label>
+                    <input type="text" id="mobile" class="input-field" placeholder="09XXXXXXXXX" maxlength="11" required>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-venus-mars mr-2"></i>Gender *</label>
+                    <select id="gender" class="input-field" required>
+                      <option value="" disabled selected>Select Gender</option>
+                      <option value="female">Female</option>
+                      <option value="male">Male</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-envelope mr-2"></i>Email *</label>
+                    <input type="email" id="email" class="input-field" placeholder="email@example.com" required>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-user-tie mr-2"></i>Role *</label>
+                    <select id="role" class="input-field" required>
+                      <option value="" disabled selected>Select Role</option>
+                      <option value="admin">Admin</option>
+                      <option value="staff">Staff</option>
+                    </select>
+                  </div>
+
+                  <div class="input-group">
+                    <label><i class="fa-solid fa-lock mr-2"></i>Password *</label>
+                    <input type="password" id="password" class="input-field" placeholder="Enter password" required>
+                  </div>
+
+                  <div class="input-group" style="grid-column: 1 / -1;">
+                    <label><i class="fa-solid fa-lock mr-2"></i>Confirm Password *</label>
+                    <input type="password" id="confirmPassword" class="input-field" placeholder="Confirm password" required>
+                  </div>
                 </div>
 
-                <div class="input-group">
-                  <label><i class="fa-solid fa-at mr-2"></i>Username *</label>
-                  <input type="text" id="username" class="input-field" placeholder="Enter username" required>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-phone mr-2"></i>Mobile Number *</label>
-                  <input type="text" id="mobile" class="input-field" placeholder="09XXXXXXXXX" maxlength="11" required>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-venus-mars mr-2"></i>Gender *</label>
-                  <select id="gender" class="input-field" required>
-                    <option value="" disabled selected>Select Gender</option>
-                    <option value="female">Female</option>
-                    <option value="male">Male</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-envelope mr-2"></i>Email *</label>
-                  <input type="email" id="email" class="input-field" placeholder="email@example.com" required>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-user-tie mr-2"></i>Role *</label>
-                  <select id="role" class="input-field" required>
-                    <option value="" disabled selected>Select Role</option>
-                    <option value="admin">Admin</option>
-                    <option value="staff">Staff</option>
-                  </select>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-lock mr-2"></i>Password *</label>
-                  <input type="password" id="password" class="input-field" placeholder="Enter password" required>
-                </div>
-
-                <div class="input-group">
-                  <label><i class="fa-solid fa-lock mr-2"></i>Confirm Password *</label>
-                  <input type="password" id="confirmPassword" class="input-field" placeholder="Confirm password" required>
-                </div>
+                <button type="button" class="btn-primary mt-4" onclick="goToStep2()">
+                  <i class="fa-solid fa-arrow-right mr-2"></i>Next
+                </button>
               </div>
 
-              <button type="submit" class="btn-primary mt-4">
-                <i class="fa-solid fa-user-plus mr-2"></i>Create Account
-              </button>
+              <!-- Step 2: Schedule Selection -->
+              <div id="step2" class="form-step" style="display: none;">
+<h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">
+  <i class="fa-solid fa-clock mr-2 text-[#da5c73]"></i>Select Staff Schedule
+</h3>
+<p class="text-sm text-gray-600 text-center mb-6">
+  Choose the preferred working hours for this staff member
+</p>
+                
+<div class="grid-2 mb-6">
+  <div class="time-slot" onclick="selectTimeSlot(this, '10:00-13:00')">
+    <i class="fa-solid fa-sun"></i>
+    <div class="time-text">10:00 AM - 1:00 PM</div>
+    <div class="time-desc">Morning Shift</div>
+  </div>
+
+  <div class="time-slot" onclick="selectTimeSlot(this, '13:00-17:00')">
+    <i class="fa-solid fa-cloud-sun"></i>
+    <div class="time-text">1:00 PM - 5:00 PM</div>
+    <div class="time-desc">Afternoon Shift</div>
+  </div>
+
+  <div class="time-slot" onclick="selectTimeSlot(this, '17:00-21:00')">
+    <i class="fa-solid fa-moon"></i>
+    <div class="time-text">5:00 PM - 9:00 PM</div>
+    <div class="time-desc">Evening Shift</div>
+  </div>
+
+  <div class="time-slot" onclick="toggleCustomSchedule(this)">
+    <i class="fa-solid fa-calendar-days"></i>
+    <div class="time-text">Custom Schedule</div>
+    <div class="time-desc">Set your own hours</div>
+  </div>
+</div>
+
+<!-- Custom Schedule Input (Hidden by default) -->
+<div id="customScheduleInput" style="display: none; margin-bottom: 1.5rem; padding: 1.5rem; background: #f9fafb; border-radius: 12px; border: 2px solid #e5e7eb;">
+  <h4 style="font-weight: 600; color: #374151; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+    <i class="fa-solid fa-clock"></i>
+    Set Custom Hours
+  </h4>
+  <div class="grid-2" style="gap: 1rem;">
+    <div>
+      <label style="display: block; font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; font-weight: 500;">
+        <i class="fa-solid fa-play mr-1"></i>Start Time
+      </label>
+      <input type="time" id="customStartTime" class="input-field" value="09:00">
+    </div>
+    <div>
+      <label style="display: block; font-size: 0.875rem; color: #6b7280; margin-bottom: 0.5rem; font-weight: 500;">
+        <i class="fa-solid fa-stop mr-1"></i>End Time
+      </label>
+      <input type="time" id="customEndTime" class="input-field" value="17:00">
+    </div>
+  </div>
+  <button type="button" onclick="applyCustomSchedule()" style="width: 100%; margin-top: 1rem; padding: 0.75rem; background: #da5c73; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+    <i class="fa-solid fa-check mr-2"></i>Apply Custom Schedule
+  </button>
+</div>
+
+                <input type="hidden" id="selectedSchedule" required>
+
+                <div class="grid-2 gap-3">
+                  <button type="button" class="btn-primary" onclick="goToStep1()" style="background: #6b7280;">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>Back
+                  </button>
+                  <button type="submit" class="btn-primary">
+                    <i class="fa-solid fa-user-plus mr-2"></i>Create Account
+                  </button>
+                </div>
+              </div>
             </form>
+          </div>
+        </div>
+        
+
+        <!-- Archive Account Tab -->
+        <div class="tab-content hidden">
+          <div class="form-card" style="min-height: 500px;">
+            <!-- Sub-tabs for Archive Account -->
+            <div class="flex justify-center mb-6 bg-gray-100 rounded-xl p-2">
+              <button class="tab-btn active" onclick="showArchiveSubTab(0)" id="archiveSubTab0">
+                <i class="fa-solid fa-user-slash mr-2"></i>Archive User
+              </button>
+              <button class="tab-btn" onclick="showArchiveSubTab(1)" id="archiveSubTab1">
+                <i class="fa-solid fa-list mr-2"></i>Archived List
+              </button>
+            </div>
+
+            <!-- Archive User Sub-tab -->
+            <div class="archive-subtab" id="archiveSubContent0">
+              <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fa-solid fa-user-slash mr-2 text-[#da5c73]"></i>Select User to Archive
+              </h3>
+              
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <p class="text-sm text-blue-800">
+                  <i class="fa-solid fa-info-circle mr-2"></i>
+                  Only staff accounts can be archived. Admin accounts cannot be archived.
+                </p>
+              </div>
+              
+              <div id="activeUsersList" class="max-h-[500px] overflow-y-auto">
+                <!-- Active users will be loaded here -->
+              </div>
+            </div>
+
+            <!-- Archived List Sub-tab -->
+            <div class="archive-subtab hidden" id="archiveSubContent1">
+              <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                <i class="fa-solid fa-archive mr-2 text-[#da5c73]"></i>Archived Accounts
+              </h3>
+              
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+  <p class="text-sm text-blue-800">
+    <i class="fa-solid fa-info-circle mr-2"></i>
+    Archived accounts cannot log in but their data is preserved. You can restore them anytime.
+  </p>
+</div>
+              
+              <div id="archivedAccountsList" class="max-h-[500px] overflow-y-auto">
+                <!-- Archived accounts will be loaded here -->
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Change Password Tab -->
         <div class="tab-content hidden">
-          <div class="form-card" style="max-width: 600px;">
-            <div class="alert alert-success" id="resetSuccess"></div>
-            <div class="alert alert-error" id="resetError"></div>
-            <div class="alert alert-warning" id="resetCooldown" style="display: none;"></div>
+          <div class="form-card" style="max-width: 600px; min-height: 500px;">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+              <i class="fa-solid fa-key mr-2 text-[#da5c73]"></i>Password Reset
+            </h3>
             
             <form id="changePassForm">
               <div class="input-group">
@@ -307,6 +835,19 @@
     </div>
   </main>
 
+  <!-- User Info Modal -->
+  <div class="modal" id="userInfoModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-user mr-2 text-[#da5c73]"></i>Account Information</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="userInfoContent">
+        <!-- User info will be loaded here -->
+      </div>
+    </div>
+  </div>
+
   <script>
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -319,24 +860,536 @@
       tabContents.forEach((content, i) => {
         content.classList.toggle('hidden', i !== idx);
       });
+      
+      // Load active users and archived list when Archive Account tab is selected
+      if (idx === 1) {
+        loadActiveUsers();
+        // Don't load archived yet, wait for subtab switch
+      }
     }
+
+    // Archive sub-tab switching
+    function showArchiveSubTab(idx) {
+      const subTabs = document.querySelectorAll('[id^="archiveSubTab"]');
+      const subContents = document.querySelectorAll('[id^="archiveSubContent"]');
+      
+      subTabs.forEach((btn, i) => {
+        btn.classList.toggle('active', i === idx);
+      });
+      subContents.forEach((content, i) => {
+        content.classList.toggle('hidden', i !== idx);
+      });
+      
+      // Load archived list when that sub-tab is selected
+      if (idx === 1) {
+        loadArchivedAccounts();
+      }
+    }
+
+    window.showArchiveSubTab = showArchiveSubTab;
     
-    // Alert messages
-    function showMessage(elementId, text, type) {
-      const el = document.getElementById(elementId);
-      el.textContent = text;
-      el.classList.add('show');
+    // Toast Notification System
+    function showToast(message, type = 'info', title = '') {
+      const toastContainer = document.getElementById('toastContainer');
+      
+      const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
+      
+      const titles = {
+        success: title || 'Success!',
+        error: title || 'Error!',
+        warning: title || 'Warning!',
+        info: title || 'Information'
+      };
+      
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icons[type]} toast-icon"></i>
+        <div class="toast-content">
+          <div class="toast-title">${titles[type]}</div>
+          <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="this.parentElement.remove()">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      `;
+      
+      toastContainer.appendChild(toast);
+      
       setTimeout(() => {
-        el.classList.remove('show');
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 300);
       }, 5000);
     }
+
+// Update button text and hide/show schedule step based on role selection
+document.getElementById('role')?.addEventListener('change', function() {
+  const nextBtn = document.querySelector('#step1 button[type="button"]');
+  const stepIndicator = document.querySelector('.step-indicator');
+  
+  if (this.value === 'admin') {
+    nextBtn.innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Create Account';
+    stepIndicator.classList.add('hide-schedule-step');
+  } else {
+    nextBtn.innerHTML = '<i class="fa-solid fa-arrow-right mr-2"></i>Next';
+    stepIndicator.classList.remove('hide-schedule-step');
+  }
+});
+
+// Form steps
+function goToStep2() {
+  const firstName = document.getElementById('firstName').value.trim();
+  const lastName = document.getElementById('lastName').value.trim();
+  const username = document.getElementById('username').value.trim();
+  const mobile = document.getElementById('mobile').value.trim();
+  const gender = document.getElementById('gender').value;
+  const email = document.getElementById('email').value.trim();
+  const role = document.getElementById('role').value;
+  const password = document.getElementById('password').value.trim();
+  const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+  if (!firstName || !lastName || !username || !mobile || !gender || !email || !role || !password || !confirmPassword) {
+    showToast('Please fill in all required fields', 'warning', 'Incomplete Form');
+    return;
+  }
+
+  if (!/^09\d{9}$/.test(mobile)) {
+    showToast('Mobile number must start with 09 and be exactly 11 digits', 'error', 'Invalid Mobile');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showToast('Passwords do not match', 'error', 'Password Mismatch');
+    return;
+  }
+
+  // If admin role is selected, skip schedule selection and submit directly
+  if (role === 'admin') {
+    document.getElementById('selectedSchedule').value = 'No schedule'; // Set default for admin
+    
+    // Show loading state on button
+    const btn = document.querySelector('#step1 button[type="button"]');
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Creating Account...';
+    
+    // Trigger form submission
+    const form = document.getElementById('registerForm');
+    const submitEvent = new Event('submit', { cancelable: true, bubbles: true });
+    form.dispatchEvent(submitEvent);
+    
+    return;
+  }
+
+  // If staff role, proceed to schedule selection
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('step1Indicator').classList.remove('active');
+  document.getElementById('step1Indicator').classList.add('completed');
+  document.getElementById('step2Indicator').classList.add('active');
+}
+
+function goToStep1() {
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step1').style.display = 'block';
+  document.getElementById('step1Indicator').classList.add('active');
+  document.getElementById('step1Indicator').classList.remove('completed');
+  document.getElementById('step2Indicator').classList.remove('active');
+  
+  // Reset button text and step visibility based on current role
+  const role = document.getElementById('role').value;
+  const nextBtn = document.querySelector('#step1 button[type="button"]');
+  const stepIndicator = document.querySelector('.step-indicator');
+  
+  if (role === 'admin') {
+    nextBtn.innerHTML = '<i class="fa-solid fa-user-plus mr-2"></i>Create Account';
+    stepIndicator.classList.add('hide-schedule-step');
+  } else {
+    nextBtn.innerHTML = '<i class="fa-solid fa-arrow-right mr-2"></i>Next';
+    stepIndicator.classList.remove('hide-schedule-step');
+  }
+}
+
+// Time Slot Selection
+function selectTimeSlot(element, schedule) {
+  // Remove selected class from all time slots
+  document.querySelectorAll('.time-slot').forEach(slot => {
+    slot.classList.remove('selected');
+  });
+  
+  // Add selected class to clicked slot
+  element.classList.add('selected');
+  
+  // Set the hidden input value
+  document.getElementById('selectedSchedule').value = schedule;
+  
+  // Hide custom schedule input when preset is selected
+  const customInput = document.getElementById('customScheduleInput');
+  if (customInput) {
+    customInput.style.display = 'none';
+  }
+  
+  // Visual feedback
+  showToast('Schedule selected: ' + getScheduleLabel(schedule), 'success', 'Schedule Set');
+}
+
+// Toggle Custom Schedule Input
+function toggleCustomSchedule(element) {
+  const customInput = document.getElementById('customScheduleInput');
+  const isVisible = customInput.style.display === 'block';
+  
+  // Remove selected class from all slots
+  document.querySelectorAll('.time-slot').forEach(slot => {
+    slot.classList.remove('selected');
+  });
+  
+  if (!isVisible) {
+    // Show custom input
+    customInput.style.display = 'block';
+    element.classList.add('selected');
+  } else {
+    // Hide custom input
+    customInput.style.display = 'none';
+  }
+}
+
+// Apply Custom Schedule
+function applyCustomSchedule() {
+  const startTime = document.getElementById('customStartTime').value;
+  const endTime = document.getElementById('customEndTime').value;
+  
+  if (!startTime || !endTime) {
+    showToast('Please select both start and end times', 'warning', 'Incomplete Schedule');
+    return;
+  }
+  
+  // Validate that end time is after start time
+  if (startTime >= endTime) {
+    showToast('End time must be after start time', 'error', 'Invalid Time Range');
+    return;
+  }
+  
+  // Format the schedule
+  const customSchedule = `${startTime}-${endTime}`;
+  
+  // Set the hidden input
+  document.getElementById('selectedSchedule').value = customSchedule;
+  
+  // Remove selected from all other slots and select only custom slot
+  document.querySelectorAll('.time-slot').forEach(slot => {
+    slot.classList.remove('selected');
+  });
+  
+  const customSlot = document.querySelector('.time-slot:last-child');
+  customSlot.classList.add('selected');
+  
+  // Update the custom schedule slot to show selected schedule
+  customSlot.innerHTML = `
+    <i class="fa-solid fa-calendar-check"></i>
+    <div class="time-text">${formatTime(startTime)} - ${formatTime(endTime)}</div>
+    <div class="time-desc">Custom Schedule</div>
+  `;
+  
+  // Hide the input form after applying
+  document.getElementById('customScheduleInput').style.display = 'none';
+  
+  showToast(`Custom schedule set: ${formatTime(startTime)} - ${formatTime(endTime)}`, 'success', 'Schedule Confirmed');
+}
+
+// Format time to 12-hour format
+function formatTime(time24) {
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour % 12 || 12;
+  return `${hour12}:${minutes} ${ampm}`;
+}
+
+// Make functions global
+window.toggleCustomSchedule = toggleCustomSchedule;
+window.applyCustomSchedule = applyCustomSchedule;
+
+// Helper function to get readable schedule label
+function getScheduleLabel(schedule) {
+  const labels = {
+    '10:00-13:00': '10:00 AM - 1:00 PM (Morning)',
+    '13:00-17:00': '1:00 PM - 5:00 PM (Afternoon)',
+    '17:00-21:00': '5:00 PM - 9:00 PM (Evening)'
+  };
+  return labels[schedule] || schedule;
+}
+
+// Make functions global
+window.selectTimeSlot = selectTimeSlot;
+window.goToStep1 = goToStep1;
+window.goToStep2 = goToStep2;
+    
+// Confirmation modal - COMPLETE FIXED VERSION
+let storedCallback = null;
+let requiresPassword = false;
+
+window.showConfirmModal = function(title, message, callback, btnText = 'Confirm', btnColor = '#da5c73', needsPassword = false) {
+  document.getElementById('confirmModalTitle').innerHTML = title;
+  document.getElementById('confirmModalMessage').innerHTML = message;
+  document.getElementById('confirmModalBtn').innerHTML = `<i class="fa-solid fa-check mr-2"></i>${btnText}`;
+  document.getElementById('confirmModalBtn').style.background = btnColor;
+  
+  // Show/hide password field
+  requiresPassword = needsPassword;
+  const passwordSection = document.getElementById('passwordConfirmSection');
+  const passwordInput = document.getElementById('confirmPasswordModal');
+  const passwordError = document.getElementById('passwordError');
+  
+  if (needsPassword) {
+    passwordSection.style.display = 'block';
+    passwordInput.value = '';
+    passwordError.style.display = 'none';
+  } else {
+    passwordSection.style.display = 'none';
+  }
+  
+  storedCallback = callback;
+  document.getElementById('confirmModal').classList.add('show');
+  
+  // Focus on password input if needed
+  if (needsPassword) {
+    setTimeout(() => passwordInput.focus(), 100);
+  }
+}
+
+window.closeConfirmModal = function() {
+  document.getElementById('confirmModal').classList.remove('show');
+  storedCallback = null;
+  requiresPassword = false;
+  const passwordInput = document.getElementById('confirmPasswordModal');
+  const passwordError = document.getElementById('passwordError');
+  if (passwordInput) passwordInput.value = '';
+  if (passwordError) passwordError.style.display = 'none';
+}
+
+window.executeConfirmAction = async function() {
+  const confirmBtn = document.getElementById('confirmModalBtn');
+  const originalBtnContent = confirmBtn.innerHTML;
+  
+  // If password is required, verify it first
+  if (requiresPassword) {
+    const password = document.getElementById('confirmPasswordModal').value.trim();
+    const passwordError = document.getElementById('passwordError');
+    const passwordErrorText = document.getElementById('passwordErrorText');
+    
+    if (!password) {
+      passwordError.style.display = 'block';
+      passwordErrorText.textContent = 'Password is required';
+      return;
+    }
+    
+    // Hide any previous errors
+    passwordError.style.display = 'none';
+    
+    // Disable button and show loading
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Verifying...';
+    
+    try {
+      // Get current user
+      const currentUser = window.auth.currentUser;
+      if (!currentUser) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = originalBtnContent;
+        passwordError.style.display = 'block';
+        passwordErrorText.textContent = 'Session expired. Please refresh and try again.';
+        return;
+      }
+      
+      // Re-authenticate user with their password
+      await window.signInWithEmailAndPassword(window.auth, currentUser.email, password);
+      
+      // Password is correct, proceed with action
+      if (storedCallback) {
+        const cb = storedCallback;
+        window.closeConfirmModal();
+        await cb();
+      }
+      
+    } catch (error) {
+      // Password verification failed
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = originalBtnContent;
+      
+      passwordError.style.display = 'block';
+      
+      console.error('Auth error:', error.code, error.message);
+      
+      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-login-credentials') {
+        passwordErrorText.textContent = 'Incorrect password. Please try again.';
+      } else if (error.code === 'auth/too-many-requests') {
+        passwordErrorText.textContent = 'Too many failed attempts. Please try again later.';
+      } else {
+        passwordErrorText.textContent = `Authentication failed: ${error.message}`;
+      }
+      
+      return; // Don't close modal, let user try again
+    }
+  } else {
+    // No password required, execute directly
+    if (storedCallback) {
+      const cb = storedCallback;
+      window.closeConfirmModal();
+      await cb();
+    }
+  }
+}
+
+// Modal functions
+function closeModal() {
+  document.getElementById('userInfoModal').classList.remove('show');
+}
+
+// Global function stubs (will be populated by Firebase module)
+window.viewUserInfo = null;
+window.restoreAccount = null;
+window.archiveAccount = null;
+
+// Consolidated DOM event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  
+  const activeUsersList = document.getElementById('activeUsersList');
+  const archivedAccountsList = document.getElementById('archivedAccountsList');
+  const passwordInput = document.getElementById('confirmPasswordModal');
+  
+  // Active users list event delegation
+  if (activeUsersList) {
+    activeUsersList.addEventListener('click', function(e) {
+      const button = e.target.closest('button[data-action]');
+      if (!button) return;
+      
+      const action = button.getAttribute('data-action');
+      const userId = button.getAttribute('data-user-id');
+      
+      if (action === 'view') {
+        window.viewUserInfo(userId);
+      } else if (action === 'archive') {
+        window.archiveAccount(userId);
+      }
+    });
+  }
+  
+  // Archived users list event delegation
+  if (archivedAccountsList) {
+    archivedAccountsList.addEventListener('click', function(e) {
+      const button = e.target.closest('button[data-action]');
+      if (!button) return;
+      
+      const action = button.getAttribute('data-action');
+      const userId = button.getAttribute('data-user-id');
+      
+      if (action === 'view') {
+        window.viewUserInfo(userId);
+      } else if (action === 'restore') {
+        window.restoreAccount(userId);
+      }
+    });
+  }
+  
+  // Password input Enter key listener
+  if (passwordInput) {
+    passwordInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        window.executeConfirmAction();
+      }
+    });
+  }
+});
+
+    function showUserInfo(userId, userData) {
+      const modal = document.getElementById('userInfoModal');
+      const content = document.getElementById('userInfoContent');
+      
+      const isArchived = userData.archived === true;
+      const archivedDate = userData.archivedAt ? new Date(userData.archivedAt) : null;
+      const expiryDate = archivedDate ? new Date(archivedDate.getTime() + (30 * 24 * 60 * 60 * 1000)) : null;
+      const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
+      
+      content.innerHTML = `
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-user mr-2"></i>Full Name:</div>
+          <div class="info-value">${userData.fullName || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-at mr-2"></i>Username:</div>
+          <div class="info-value">${userData.username || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-envelope mr-2"></i>Email:</div>
+          <div class="info-value">${userData.email || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-phone mr-2"></i>Mobile:</div>
+          <div class="info-value">${userData.mobile || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-venus-mars mr-2"></i>Gender:</div>
+          <div class="info-value">${userData.gender || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-user-tie mr-2"></i>Role:</div>
+          <div class="info-value">${userData.role || 'N/A'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-clock mr-2"></i>Schedule:</div>
+          <div class="info-value">${userData.schedule || 'No schedule'}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-calendar mr-2"></i>Created:</div>
+          <div class="info-value">${userData.createdAt ? new Date(userData.createdAt).toLocaleString() : 'N/A'}</div>
+        </div>
+${isArchived ? `
+  <div class="info-row">
+    <div class="info-label"><i class="fa-solid fa-archive mr-2"></i>Archived:</div>
+    <div class="info-value">${archivedDate ? archivedDate.toLocaleString() : 'N/A'}</div>
+  </div>
+  <div class="info-row">
+    <div class="info-label"><i class="fa-solid fa-info-circle mr-2"></i>Status:</div>
+    <div class="info-value" style="color: #f59e0b; font-weight: bold;">
+      Cannot log in (Archived)
+    </div>
+  </div>
+` : ''}
+        <div class="info-row">
+          <div class="info-label"><i class="fa-solid fa-toggle-${userData.availability ? 'on' : 'off'} mr-2"></i>Availability:</div>
+          <div class="info-value">${userData.availability ? 'Available' : 'Unavailable'}</div>
+        </div>
+      `;
+      
+      modal.classList.add('show');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('userInfoModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeModal();
+      }
+    });
+
+    // Close confirm modal when clicking outside
+    document.getElementById('confirmModal')?.addEventListener('click', function(e) {
+      if (e.target === this) {
+        window.closeConfirmModal();
+      }
+    });
   </script>
 
   <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDocs, collection, query, where, updateDoc, getDoc, onSnapshot, deleteDoc, limit } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";  
 
     const firebaseConfig = {
       apiKey: "AIzaSyD2Yh7L4Wl9XRlOgxnzZyo8xxds6a02UJY",
@@ -347,9 +1400,13 @@
       appId: "1:963752770497:web:8911cc6a375acdbdcc8d40"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Make auth and signInWithEmailAndPassword global
+window.auth = auth;
+window.signInWithEmailAndPassword = signInWithEmailAndPassword;
 
     const COOLDOWN_TIME = 160;
     let resetCooldownTimer = null;
@@ -357,129 +1414,108 @@
     let purchaseOrderListener = null;
     let sessionMonitor = null;
 
-function setupSessionMonitoring(userId) {
-  if (sessionMonitor) sessionMonitor(); // Cleanup previous listener
-  
-  const userRef = doc(db, "users", userId);
-  const storedSessionId = sessionStorage.getItem('sessionId');
-  
-  if (!storedSessionId) {
-    console.warn('No session ID found, logging out...');
-    auth.signOut();
-    window.location.href = 'index.html';
-    return;
-  }
-  
-  sessionMonitor = onSnapshot(userRef, (snapshot) => {
-    if (!snapshot.exists()) {
-      console.warn('User document no longer exists');
-      auth.signOut();
-      window.location.href = 'index.html';
-      return;
-    }
-    
-    const data = snapshot.data();
-    const currentSessionId = data.currentSessionId;
-    
-    // Check if session ID has changed (another login or password change)
-    if (currentSessionId && currentSessionId !== storedSessionId) {
-      console.log('Session invalidated - another login detected or password changed');
+    function setupSessionMonitoring(userId) {
+      if (sessionMonitor) sessionMonitor();
       
-      // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+      const userRef = doc(db, "users", userId);
+      const storedSessionId = sessionStorage.getItem('sessionId');
       
-      // Force logout
-      auth.signOut().then(() => {
+      if (!storedSessionId) {
+        console.warn('No session ID found, logging out...');
+        auth.signOut();
         window.location.href = 'index.html';
+        return;
+      }
+      
+      sessionMonitor = onSnapshot(userRef, (snapshot) => {
+        if (!snapshot.exists()) {
+          console.warn('User document no longer exists');
+          auth.signOut();
+          window.location.href = 'index.html';
+          return;
+        }
+        
+        const data = snapshot.data();
+        const currentSessionId = data.currentSessionId;
+        
+        if (currentSessionId && currentSessionId !== storedSessionId) {
+          console.log('Session invalidated - another login detected or password changed');
+          
+          showToast('Your session has been ended because someone else logged into this account or your password was changed', 'warning', 'Session Ended');
+          
+          setTimeout(() => {
+            auth.signOut().then(() => {
+              window.location.href = 'index.html';
+            });
+          }, 2000);
+        }
+      }, (error) => {
+        console.error('Session monitoring error:', error);
       });
     }
-  }, (error) => {
-    console.error('Session monitoring error:', error);
-  });
-}
 
-// Auth check - single read
-onAuthStateChanged(auth, async (currentUser) => {
-  if (!currentUser) {
-    window.location.href = "index.html";
-    return;
-  }
+    onAuthStateChanged(auth, async (currentUser) => {
+      if (!currentUser) {
+        window.location.href = "index.html";
+        return;
+      }
 
-  try {
-    const userRef = doc(db, "users", currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) {
-      window.location.href = "index.html";
-      return;
-    }
-    const currentRole = userSnap.data().role;
-    if (currentRole !== "admin") {
-      alert("Access denied: Staff cannot access Registration page.");
-      window.location.href = "dashboard.html";
-      return;
-    }
-    
-    // Setup session monitoring AFTER auth check
-    setupSessionMonitoring(currentUser.uid);
-    
-    // After auth check, start monitoring
-    monitorInventory();
-    monitorPurchaseOrders();
-  } catch (err) {
-    console.error("Auth check failed:", err.message);
-  }
-});
-
-// Helper function to determine status
-function determineStatus(qty, minStock) {
-  if (qty === 0) return 'out-of-stock';
-  if (qty <= minStock) return 'low-stock';
-  return 'in-stock';
-}
-
-// Monitor inventory for sidebar bubbles - single listener
-function monitorInventory() {
-  if (inventoryListener) {
-    inventoryListener();
-  }
-
-  inventoryListener = onSnapshot(
-    collection(db, 'inventory'),
-    (snapshot) => {
-      const inventoryData = [];
-      snapshot.forEach((doc) => {
-        const product = doc.data();
-        const qty = product.qty || 0;
-        const price = product.price || 0;
-        const minStock = product.minStock || 10;
+      try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+          window.location.href = "index.html";
+          return;
+        }
+        const currentRole = userSnap.data().role;
+        if (currentRole !== "admin") {
+          showToast('Staff cannot access Registration page', 'error', 'Access Denied');
+          setTimeout(() => {
+            window.location.href = "dashboard.html";
+          }, 1500);
+          return;
+        }
         
-        // Recalculate status based on current quantity
-        product.status = determineStatus(qty, minStock);
+        setupSessionMonitoring(currentUser.uid);
+        monitorInventory();
+        monitorPurchaseOrders();
+      } catch (err) {
+        console.error("Auth check failed:", err.message);
+      }
+    });
+
+    function monitorInventory() {
+      if (inventoryListener) {
+        inventoryListener();
+      }
+
+      const inventoryRef = collection(db, 'inventory');
+      const inventoryQuery = query(inventoryRef, limit(100));
+      
+      inventoryListener = onSnapshot(inventoryQuery, (snapshot) => {
+        let noStockCount = 0;
+        let lowStockCount = 0;
+        let overstockCount = 0;
         
-        // Recalculate total
-        product.total = qty * price;
+        snapshot.forEach(doc => {
+          const item = doc.data();
+          const status = item.status || '';
+          
+          // Use the status field directly (it's calculated when inventory is updated)
+          if (status === 'out-of-stock') {
+            noStockCount++;
+          } else if (status === 'low-stock') {
+            lowStockCount++;
+          } else if (status === 'overstock') {
+            overstockCount++;
+          }
+        });
         
-        inventoryData.push(product);
+        updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
+        
+      }, (error) => {
+        console.error('Error monitoring inventory:', error);
       });
-      
-      updateInventorySidebarBubbles(inventoryData);
-    },
-    (error) => {
-      console.error('Error monitoring inventory:', error);
-    }
-  );
-}
-
-    // Update inventory sidebar bubbles
-    function updateInventorySidebarBubbles(inventoryData) {
-      const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
-      const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
-      const overstockCount = inventoryData.filter(item => {
-        const minStockThreshold = item.minStock || 10;
-        return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
-      }).length;
-      
-      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
     }
 
     function updateInventoryBubble(noStock, lowStock, overstock) {
@@ -491,42 +1527,41 @@ function monitorInventory() {
       if (!bubble) {
         bubble = document.createElement('span');
         bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
         button.appendChild(bubble);
       }
       
       if (noStock > 0) {
         bubble.textContent = noStock > 99 ? '99+' : noStock;
-        bubble.style.backgroundColor = '#dc2626'; // Red
+        bubble.style.backgroundColor = '#dc2626';
         bubble.style.display = 'flex';
       } else if (lowStock > 0) {
         bubble.textContent = lowStock > 99 ? '99+' : lowStock;
-        bubble.style.backgroundColor = '#f59e0b'; // Yellow
+        bubble.style.backgroundColor = '#f59e0b';
         bubble.style.display = 'flex';
       } else if (overstock > 0) {
         bubble.textContent = overstock > 99 ? '99+' : overstock;
-        bubble.style.backgroundColor = '#3b82f6'; // Blue
+        bubble.style.backgroundColor = '#3b82f6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Monitor purchase orders for sidebar bubble - single listener
-    function monitorPurchaseOrders() {
+function monitorPurchaseOrders() {
       if (purchaseOrderListener) {
         purchaseOrderListener();
       }
 
-      purchaseOrderListener = onSnapshot(
-        query(collection(db, 'purchaseOrders'), where('status', '==', 'pending')),
-        (snapshot) => {
-          const newOrderCount = snapshot.size;
-          updatePurchaseOrderBubble(newOrderCount);
-        },
-        (error) => {
-          console.error('Error monitoring purchase orders:', error);
-        }
-      );
+      const poRef = collection(db, 'purchaseOrders');
+      const poQuery = query(poRef, where('status', '==', 'pending'), limit(100));
+      
+      purchaseOrderListener = onSnapshot(poQuery, (snapshot) => {
+        const newOrderCount = snapshot.size;
+        updatePurchaseOrderBubble(newOrderCount);
+      }, (error) => {
+        console.error('Error monitoring purchase orders:', error);
+      });
     }
 
     function updatePurchaseOrderBubble(count) {
@@ -538,19 +1573,19 @@ function monitorInventory() {
       if (!bubble) {
         bubble = document.createElement('span');
         bubble.className = 'sidebar-bubble';
+        button.style.position = 'relative';
         button.appendChild(bubble);
       }
       
       if (count > 0) {
         bubble.textContent = count > 99 ? '99+' : count;
-        bubble.style.backgroundColor = '#8b5cf6'; // Purple
+        bubble.style.backgroundColor = '#8b5cf6';
         bubble.style.display = 'flex';
       } else {
         bubble.style.display = 'none';
       }
     }
 
-    // Password reset cooldown
     function checkResetCooldown() {
       const cooldownEnd = parseInt(localStorage.getItem('passwordResetCooldown') || '0');
       const now = Date.now();
@@ -563,7 +1598,6 @@ function monitorInventory() {
 
     function startResetCooldown(seconds) {
       const resetBtn = document.getElementById('resetBtn');
-      const cooldownDiv = document.getElementById('resetCooldown');
       
       resetBtn.disabled = true;
       let remaining = seconds;
@@ -571,8 +1605,6 @@ function monitorInventory() {
       function updateDisplay() {
         const minutes = Math.floor(remaining / 60);
         const secs = remaining % 60;
-        cooldownDiv.textContent = `⏱️ Please wait ${minutes}:${secs.toString().padStart(2, '0')} before sending another reset link`;
-        cooldownDiv.style.display = 'block';
         resetBtn.innerHTML = `<i class="fa-solid fa-clock mr-2"></i>Wait ${minutes}:${secs.toString().padStart(2, '0')}`;
       }
       
@@ -585,7 +1617,6 @@ function monitorInventory() {
           clearInterval(resetCooldownTimer);
           resetBtn.disabled = false;
           resetBtn.innerHTML = '<i class="fa-solid fa-paper-plane mr-2"></i>Send Reset Link';
-          cooldownDiv.style.display = 'none';
           localStorage.removeItem('passwordResetCooldown');
         } else {
           updateDisplay();
@@ -595,98 +1626,339 @@ function monitorInventory() {
 
     checkResetCooldown();
 
-    // Create Account Form
-    document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const fullName = document.getElementById("fullName").value.trim();
-      const username = document.getElementById("username").value.trim();
-      const mobile = document.getElementById("mobile").value.trim();
-      const gender = document.getElementById("gender").value;
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const confirmPassword = document.getElementById("confirmPassword").value.trim();
-      const role = document.getElementById("role").value;
+// Create Account Form
+document.getElementById("registerForm")?.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  
+  const firstName = document.getElementById("firstName").value.trim();
+  const lastName = document.getElementById("lastName").value.trim();
+  const fullName = `${firstName} ${lastName}`;
+  const username = document.getElementById("username").value.trim();
+  const mobile = document.getElementById("mobile").value.trim();
+  const gender = document.getElementById("gender").value;
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+  const role = document.getElementById("role").value;
+  let schedule = document.getElementById("selectedSchedule").value;
 
-      if (!/^09\d{9}$/.test(mobile)) {
-        showMessage("registerError", "⚠ Mobile number must start with 09 and be exactly 11 digits", "error");
-        return;
-      }
+  // Validate schedule only for staff
+  if (role === 'staff' && !schedule) {
+    showToast('Please select a preferred schedule', 'warning', 'Schedule Required');
+    return;
+  }
 
-      if (password !== confirmPassword) {
-        showMessage("registerError", "⚠ Passwords do not match", "error");
-        return;
-      }
+  // For admin, set schedule to "No schedule"
+  if (role === 'admin') {
+    schedule = 'No schedule';
+  }
 
-      try {
-        // Check for duplicates
-        const usernameQuery = query(collection(db, "users"), where("username", "==", username));
-        const usernameSnapshot = await getDocs(usernameQuery);
-        if (!usernameSnapshot.empty) {
-          showMessage("registerError", "⚠ Username already taken", "error");
-          return;
-        }
+  // Get the appropriate submit button based on current step
+  let submitBtn;
+  if (role === 'admin') {
+    submitBtn = document.querySelector('#step1 button[type="button"]');
+  } else {
+    submitBtn = document.querySelector('#step2 button[type="submit"]');
+  }
 
-        const fullNameQuery = query(collection(db, "users"), where("fullName", "==", fullName));
-        const fullNameSnapshot = await getDocs(fullNameQuery);
-        if (!fullNameSnapshot.empty) {
-          showMessage("registerError", "⚠ Full name already exists in the system", "error");
-          return;
-        }
+  const originalBtnText = submitBtn.innerHTML;
 
-        const mobileQuery = query(collection(db, "users"), where("mobile", "==", mobile));
-        const mobileSnapshot = await getDocs(mobileQuery);
-        if (!mobileSnapshot.empty) {
-          showMessage("registerError", "⚠ Mobile number already registered", "error");
-          return;
-        }
+  try {
+    // Check for duplicates
+    const usernameQuery = query(collection(db, "users"), where("username", "==", username));
+    const usernameSnapshot = await getDocs(usernameQuery);
+    if (!usernameSnapshot.empty) {
+      showToast('Username already taken', 'error', 'Duplicate Entry');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+      return;
+    }
 
-        const emailQuery = query(collection(db, "users"), where("email", "==", email));
-        const emailSnapshot = await getDocs(emailQuery);
-        if (!emailSnapshot.empty) {
-          showMessage("registerError", "⚠ Email already registered", "error");
-          return;
-        }
+    const fullNameQuery = query(collection(db, "users"), where("fullName", "==", fullName));
+    const fullNameSnapshot = await getDocs(fullNameQuery);
+    if (!fullNameSnapshot.empty) {
+      showToast('Full name already exists in the system', 'error', 'Duplicate Entry');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+      return;
+    }
 
-        const adminUser = auth.currentUser;
-        if (!adminUser) {
-          showMessage("registerError", "⚠ Admin session expired. Please log in again.", "error");
-          return;
-        }
+    const mobileQuery = query(collection(db, "users"), where("mobile", "==", mobile));
+    const mobileSnapshot = await getDocs(mobileQuery);
+    if (!mobileSnapshot.empty) {
+      showToast('Mobile number already registered', 'error', 'Duplicate Entry');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+      return;
+    }
 
-        const tempApp = initializeApp(firebaseConfig, "TempApp");
-        const tempAuth = getAuth(tempApp);
+    const emailQuery = query(collection(db, "users"), where("email", "==", email));
+    const emailSnapshot = await getDocs(emailQuery);
+    if (!emailSnapshot.empty) {
+      showToast('Email already registered', 'error', 'Duplicate Entry');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+      return;
+    }
 
-        const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
-        const newUser = userCredential.user;
+    const adminUser = auth.currentUser;
+    if (!adminUser) {
+      showToast('Admin session expired. Please log in again.', 'error', 'Session Expired');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = originalBtnText;
+      return;
+    }
 
-        await sendEmailVerification(newUser);
+    const tempApp = initializeApp(firebaseConfig, "TempApp" + Date.now());
+    const tempAuth = getAuth(tempApp);
 
-// Generate initial session ID for new user
-const initialSessionId = `session_${newUser.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const userCredential = await createUserWithEmailAndPassword(tempAuth, email, password);
+    const newUser = userCredential.user;
 
-await setDoc(doc(db, "users", newUser.uid), {
-  fullName,
-  username,
-  mobile,
-  gender,
-  email,
-  role,
-  availability: false,
-  emailVerified: false,
-  createdAt: new Date().toISOString(),
-  currentSessionId: initialSessionId,
-  lastLogin: null
+    await sendEmailVerification(newUser);
+
+    const initialSessionId = `session_${newUser.uid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    await setDoc(doc(db, "users", newUser.uid), {
+      firstName,
+      lastName,
+      fullName,
+      username,
+      mobile,
+      gender,
+      email,
+      role,
+      schedule,
+      availability: false,
+      emailVerified: false,
+      archived: false,
+      createdAt: new Date().toISOString(),
+      currentSessionId: initialSessionId,
+      lastLogin: null
+    });
+
+    await tempAuth.signOut();
+
+    const accountType = role === 'admin' ? 'Admin' : 'Staff';
+    showToast(`${accountType} account created successfully! Verification email sent.`, 'success', 'Account Created');
+    
+    // Reset form
+    document.getElementById("registerForm").reset();
+    goToStep1();
+    document.querySelectorAll('.time-slot').forEach(slot => slot.classList.remove('selected'));
+
+    // Restore button
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fa-solid fa-arrow-right mr-2"></i>Next';
+
+  } catch (err) {
+    console.error('Registration error:', err);
+    showToast(err.message, 'error', 'Registration Failed');
+    
+    // Restore button on error
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = originalBtnText;
+  }
 });
 
-        await tempAuth.signOut();
-
-        showMessage("registerSuccess", "✅ Account created successfully! Verification email sent.", "success");
-        document.getElementById("registerForm").reset();
-
+    // Load Archived Accounts
+    window.loadArchivedAccounts = async function() {
+      const archivedList = document.getElementById('archivedAccountsList');
+      archivedList.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-3xl text-[#da5c73]"></i></div>';
+      
+      try {
+        const usersQuery = query(collection(db, "users"), where("archived", "==", true));
+        const snapshot = await getDocs(usersQuery);
+        
+        if (snapshot.empty) {
+          archivedList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fa-solid fa-inbox mr-2"></i>No archived accounts</div>';
+          return;
+        }
+        
+        archivedList.innerHTML = '';
+        const now = new Date();
+        
+snapshot.forEach((docSnap) => {
+  const user = docSnap.data();
+  const userId = docSnap.id;
+  const archivedDate = user.archivedAt ? new Date(user.archivedAt) : null;
+  const daysSinceArchived = archivedDate ? Math.ceil((now - archivedDate) / (1000 * 60 * 60 * 24)) : 0;
+  
+  const card = document.createElement('div');
+  card.className = 'archive-card';
+          
+card.innerHTML = `
+  <div class="flex justify-between items-start mb-3">
+    <div class="flex-1">
+      <h4 class="font-semibold text-gray-800 text-lg">${user.fullName || 'N/A'}</h4>
+      <p class="text-sm text-gray-600"><i class="fa-solid fa-envelope mr-1"></i>${user.email}</p>
+      <p class="text-sm text-gray-600"><i class="fa-solid fa-user-tie mr-1"></i>${user.role || 'N/A'}</p>
+      <p class="text-sm text-gray-500"><i class="fa-solid fa-clock mr-1"></i>${user.schedule || 'No schedule'}</p>
+      <p class="text-sm text-gray-400 mt-2"><i class="fa-solid fa-calendar mr-1"></i>Archived ${daysSinceArchived} ${daysSinceArchived === 1 ? 'day' : 'days'} ago</p>
+    </div>
+  </div>
+  <div class="flex gap-2 mt-3">
+    <button class="btn-view" data-action="view" data-user-id="${userId}">
+      <i class="fa-solid fa-eye mr-1"></i>View Info
+    </button>
+    <button class="btn-restore" data-action="restore" data-user-id="${userId}">
+      <i class="fa-solid fa-rotate-left mr-1"></i>Restore
+    </button>
+  </div>
+`;
+          archivedList.appendChild(card);
+        });
+        
+        if (archivedList.children.length === 0) {
+          archivedList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fa-solid fa-inbox mr-2"></i>No archived accounts</div>';
+        }
       } catch (err) {
-        showMessage("registerError", "⚠ " + err.message, "error");
+        showToast('Failed to load archived accounts', 'error', 'Load Error');
+        archivedList.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fa-solid fa-exclamation-circle mr-2"></i>Error loading accounts</div>';
       }
-    });
+    }
+
+
+    // Load Active Users (for archiving) - Only Staff
+    let allActiveUsers = [];
+    
+    window.loadActiveUsers = async function() {
+      const activeList = document.getElementById('activeUsersList');
+      activeList.innerHTML = '<div class="text-center py-8"><i class="fa-solid fa-spinner fa-spin text-3xl text-[#da5c73]"></i></div>';
+      
+      try {
+        // Get all users and filter in JavaScript to avoid index requirements
+        const usersQuery = query(collection(db, "users"));
+        const snapshot = await getDocs(usersQuery);
+        
+        allActiveUsers = [];
+        snapshot.forEach((docSnap) => {
+          const user = docSnap.data();
+          const userId = docSnap.id;
+          // Filter: only staff, not archived
+          if (user.role === "staff" && user.archived !== true) {
+            allActiveUsers.push({ id: userId, ...user });
+          }
+        });
+        
+        displayActiveUsers(allActiveUsers);
+      } catch (err) {
+        console.error('Error loading users:', err);
+        showToast('Failed to load active users', 'error', 'Load Error');
+        activeList.innerHTML = '<div class="text-center py-8 text-red-500"><i class="fa-solid fa-exclamation-circle mr-2"></i>Error loading users</div>';
+      }
+    }
+
+function displayActiveUsers(users) {
+  const activeList = document.getElementById('activeUsersList');
+  
+  if (users.length === 0) {
+    activeList.innerHTML = '<div class="text-center py-8 text-gray-500"><i class="fa-solid fa-inbox mr-2"></i>No staff accounts available to archive</div>';
+    return;
+  }
+  
+  activeList.innerHTML = '';
+  users.forEach(user => {
+    const card = document.createElement('div');
+    card.className = 'archive-card';
+    card.innerHTML = `
+      <div class="flex justify-between items-center">
+        <div class="flex-1">
+          <h4 class="font-semibold text-gray-800 text-lg">${user.fullName || 'N/A'}</h4>
+          <p class="text-sm text-gray-600"><i class="fa-solid fa-at mr-1"></i><strong>Username:</strong> ${user.username || 'N/A'}</p>
+          <p class="text-sm text-gray-600"><i class="fa-solid fa-envelope mr-1"></i>${user.email}</p>
+          <p class="text-sm text-gray-600"><i class="fa-solid fa-user-tie mr-1"></i>${user.role || 'N/A'}</p>
+          <p class="text-sm text-gray-500"><i class="fa-solid fa-clock mr-1"></i>${user.schedule || 'No schedule'}</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-view" data-action="view" data-user-id="${user.id}">
+            <i class="fa-solid fa-eye mr-1"></i>View
+          </button>
+          <button class="btn-archive" data-action="archive" data-user-id="${user.id}">
+            <i class="fa-solid fa-archive mr-1"></i>Archive
+          </button>
+        </div>
+      </div>
+    `;
+    activeList.appendChild(card);
+  });
+}
+
+
+    // View User Info
+    window.viewUserInfo = async function(userId) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", userId));
+        if (userDoc.exists()) {
+          showUserInfo(userId, userDoc.data());
+        } else {
+          showToast('User not found', 'error', 'Not Found');
+        }
+      } catch (err) {
+        showToast('Failed to load user info', 'error', 'Load Error');
+      }
+    }
+    
+window.restoreAccount = async function(userId) {
+  window.showConfirmModal(
+    '<i class="fa-solid fa-rotate-left mr-2 text-green-600"></i>Restore Account',
+    'Restore this account?<br><br><strong>Action:</strong><br>• The user will be able to log in again<br>• Account will be fully reactivated<br>• All user data will remain intact',
+    async () => {
+      try {
+        await updateDoc(doc(db, "users", userId), {
+          archived: false,
+          archivedAt: null,
+          restoredAt: new Date().toISOString()
+        });
+        
+        showToast('Account restored successfully. The user can now log in again.', 'success', 'Account Restored');
+        
+        // ALWAYS reload both lists to ensure proper state
+        await loadArchivedAccounts();
+        await loadActiveUsers();
+        
+      } catch (err) {
+        console.error('Restore error:', err);
+        showToast('Failed to restore account', 'error', 'Restore Failed');
+      }
+    },
+    'Restore',
+    '#10b981',
+    true
+  );
+}
+
+window.archiveAccount = async function(userId) {
+  window.showConfirmModal(
+    '<i class="fa-solid fa-archive mr-2 text-yellow-600"></i>Archive Account',
+    'Archive this account?<br><br><strong>⚠️ Warning:</strong><br>• The user will not be able to log in<br>• User data will be preserved<br>• Can be restored anytime<br>• User will be logged out immediately',
+    async () => {
+      try {
+        // Generate new session ID to invalidate current session
+        const newSessionId = `session_archived_${userId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await updateDoc(doc(db, "users", userId), {
+          archived: true,
+          archivedAt: new Date().toISOString(),
+          currentSessionId: newSessionId,
+          availability: false
+        });
+        
+        showToast('Account archived successfully. User has been logged out.', 'success', 'Account Archived');
+        
+        // ALWAYS reload both lists to ensure proper state
+        await loadActiveUsers();
+        await loadArchivedAccounts();
+        
+      } catch (err) {
+        console.error('Archive error:', err);
+        showToast('Failed to archive account', 'error', 'Archive Failed');
+      }
+    },
+    'Archive',
+    '#f59e0b',
+    true
+  );
+}
 
     // Change Password Form
     document.getElementById("changePassForm")?.addEventListener("submit", async (e) => {
@@ -694,69 +1966,89 @@ await setDoc(doc(db, "users", newUser.uid), {
       const email = document.getElementById("resetEmail").value.trim();
       
       if (!email) {
-        showMessage("resetError", "⚠ Please enter your email.", "error");
+        showToast('Please enter your email', 'warning', 'Email Required');
         return;
       }
       
 try {
   await sendPasswordResetEmail(auth, email);
   
-  // Invalidate sessions when password reset is sent
-  try {
-    const emailQuery = query(collection(db, "users"), where("email", "==", email));
-    const emailSnapshot = await getDocs(emailQuery);
-    
-    if (!emailSnapshot.empty) {
-      const userDoc = emailSnapshot.docs[0];
-      const newSessionId = `session_${userDoc.id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      await updateDoc(doc(db, "users", userDoc.id), {
-        currentSessionId: newSessionId,
-        passwordResetSentAt: new Date().toISOString()
-      });
-      
-      console.log('Session invalidated for password reset');
-    }
-  } catch (invalidateErr) {
-    console.error('Error invalidating session:', invalidateErr);
-  }
-  
-  showMessage("resetSuccess", "✅ Password reset email sent! Check your inbox. All active sessions will be logged out.", "success");
+  showToast('Password reset email sent! Check your inbox. Click the link in the email to change your password.', 'success', 'Reset Link Sent');
   document.getElementById("changePassForm").reset();
-        
+      
         const cooldownEnd = Date.now() + (COOLDOWN_TIME * 1000);
         localStorage.setItem('passwordResetCooldown', cooldownEnd.toString());
         startResetCooldown(COOLDOWN_TIME);
         
       } catch (err) {
-        let errorMessage = "⚠ ";
+        let errorMessage = '';
         
         switch (err.code) {
           case 'auth/invalid-email':
-            errorMessage += "Invalid email address.";
+            errorMessage = 'Invalid email address';
             break;
           case 'auth/user-not-found':
-            errorMessage += "No account found with this email.";
+            errorMessage = 'No account found with this email';
             break;
           case 'auth/too-many-requests':
-            errorMessage += "Too many requests. Please try again later.";
+            errorMessage = 'Too many requests. Please try again later';
             break;
           default:
-            errorMessage += err.message;
+            errorMessage = err.message;
         }
         
-        showMessage("resetError", errorMessage, "error");
+        showToast(errorMessage, 'error', 'Reset Failed');
       }
     });
 
-// Cleanup listeners on page unload
-window.addEventListener('beforeunload', () => {
-  if (inventoryListener) inventoryListener();
-  if (purchaseOrderListener) purchaseOrderListener();
-  if (sessionMonitor) sessionMonitor();
-});
+    window.addEventListener('beforeunload', () => {
+      if (inventoryListener) inventoryListener();
+      if (purchaseOrderListener) purchaseOrderListener();
+      if (sessionMonitor) sessionMonitor();
+    });
 
   </script>
+  
+
+<!-- Confirmation Modal -->
+<div class="modal" id="confirmModal">
+  <div class="modal-content" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="confirmModalTitle">Confirm Action</h3>
+      <button class="modal-close" onclick="window.closeConfirmModal()">&times;</button>
+    </div>
+    <div style="padding: 1.5rem;">
+      <p id="confirmModalMessage" style="color: #374151; font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem;"></p>
+      
+      <!-- Password Input Field -->
+      <div id="passwordConfirmSection" style="display: none; margin-bottom: 1.5rem;">
+        <label style="display: block; font-weight: 600; color: #374151; margin-bottom: 0.5rem; font-size: 0.875rem;">
+          <i class="fa-solid fa-lock mr-2"></i>Enter Your Password to Confirm *
+        </label>
+<input 
+  type="password" 
+  id="confirmPasswordModal" 
+  class="input-field" 
+  placeholder="Enter your admin password"
+  style="width: 100%;"
+>
+        <p id="passwordError" style="color: #dc2626; font-size: 0.75rem; margin-top: 0.5rem; display: none;">
+          <i class="fa-solid fa-exclamation-circle mr-1"></i>
+          <span id="passwordErrorText"></span>
+        </p>
+      </div>
+      
+      <div style="display: flex; gap: 1rem;">
+        <button onclick="window.closeConfirmModal()" style="flex: 1; padding: 0.75rem; background: #e5e7eb; color: #374151; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+          <i class="fa-solid fa-times mr-2"></i>Cancel
+        </button>
+        <button id="confirmModalBtn" onclick="window.executeConfirmAction()" style="flex: 1; padding: 0.75rem; background: #da5c73; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+          <i class="fa-solid fa-check mr-2"></i>Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>

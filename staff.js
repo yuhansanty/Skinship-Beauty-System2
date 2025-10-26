@@ -49,10 +49,50 @@ let staffListener = null;
 let inventoryListener = null;
 let purchaseOrderListener = null;
 let sessionMonitor = null;
-
-// Cache
 let userDataCache = null;
 let inventoryDataCache = [];
+
+// Toast notification system
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  
+  const icons = {
+    success: 'fa-circle-check',
+    error: 'fa-circle-xmark',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  const titles = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info'
+  };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="fas ${icons[type]} toast-icon"></i>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+window.showToast = showToast;
 
 // ==================== ROLE-BASED VISIBILITY ====================
 
@@ -99,7 +139,7 @@ function setupSessionMonitoring(userId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+showToast('Your session has been ended because someone else logged in or your password was changed', 'warning', 5000);
       
       // Force logout
       signOut(auth).then(() => {
@@ -130,6 +170,7 @@ function determineStatus(qty, minStock) {
   return 'in-stock';
 }
 
+// Monitor inventory for overstock, low stock, and out of stock
 function monitorInventory() {
   if (inventoryListener) {
     inventoryListener();
@@ -138,25 +179,20 @@ function monitorInventory() {
   inventoryListener = onSnapshot(
     collection(db, "inventory"),
     (snapshot) => {
-      inventoryDataCache = [];
+      const inventoryData = [];
       snapshot.forEach(doc => {
         const product = doc.data();
-        const qty = product.qty || 0;
-        const price = product.price || 0;
-        const minStock = product.minStock || 10;
-        
-        // Recalculate status based on current quantity
-        product.status = determineStatus(qty, minStock);
-        
-        // Recalculate total
-        product.total = qty * price;
-        
-        inventoryDataCache.push({
+        inventoryData.push({
           id: doc.id,
           ...product
         });
       });
-      updateInventoryBubble();
+      
+      const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
+      const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
+      const overstockCount = inventoryData.filter(item => item.status === 'overstock').length;
+      
+      updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
     },
     (error) => {
       console.error('Error monitoring inventory:', error);
@@ -164,14 +200,7 @@ function monitorInventory() {
   );
 }
 
-function updateInventoryBubble() {
-  const noStockCount = inventoryDataCache.filter(item => item.status === 'out-of-stock').length;
-  const lowStockCount = inventoryDataCache.filter(item => item.status === 'low-stock').length;
-  const overstockCount = inventoryDataCache.filter(item => {
-    const minStockThreshold = item.minStock || 10;
-    return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
-  }).length;
-  
+function updateInventoryBubble(noStock, lowStock, overstock) {
   const button = document.querySelector('button[title="Inventory"]');
   if (!button) return;
   
@@ -184,17 +213,17 @@ function updateInventoryBubble() {
     button.appendChild(bubble);
   }
   
-  // Priority: No Stock (Red) > Low Stock (Yellow) > Overstock (Blue)
-  if (noStockCount > 0) {
-    bubble.textContent = noStockCount > 99 ? '99+' : noStockCount;
+  // Priority: No stock (red) > Low stock (yellow) > Overstock (blue)
+  if (noStock > 0) {
+    bubble.textContent = noStock > 99 ? '99+' : noStock;
     bubble.style.backgroundColor = '#dc2626'; // Red
     bubble.style.display = 'flex';
-  } else if (lowStockCount > 0) {
-    bubble.textContent = lowStockCount > 99 ? '99+' : lowStockCount;
+  } else if (lowStock > 0) {
+    bubble.textContent = lowStock > 99 ? '99+' : lowStock;
     bubble.style.backgroundColor = '#f59e0b'; // Yellow
     bubble.style.display = 'flex';
-  } else if (overstockCount > 0) {
-    bubble.textContent = overstockCount > 99 ? '99+' : overstockCount;
+  } else if (overstock > 0) {
+    bubble.textContent = overstock > 99 ? '99+' : overstock;
     bubble.style.backgroundColor = '#3b82f6'; // Blue
     bubble.style.display = 'flex';
   } else {
@@ -240,38 +269,6 @@ function updatePurchaseOrderBubble(count) {
   } else {
     bubble.style.display = 'none';
   }
-}
-
-// ==================== HISTORY MODAL ====================
-
-window.openHistory = async function(staffId, staffName) {
-  const historyList = document.getElementById("historyList");
-  const paginationControls = document.getElementById("paginationControls");
-  const historyStaffName = document.getElementById("historyStaffName");
-  
-  historyList.innerHTML = `<tr><td colspan="2" style="text-align: center; padding: 2rem; color: var(--text-secondary);">
-    <i class="fa-solid fa-spinner fa-spin" style="font-size: 2rem;"></i>
-    <p style="margin-top: 1rem;">Loading history...</p>
-  </td></tr>`;
-  paginationControls.innerHTML = "";
-  historyStaffName.textContent = staffName;
-  
-  document.getElementById("historyModal").classList.add("show");
-
-  currentStaffId = staffId;
-  currentStaffName = staffName;
-  
-  const q = query(
-    collection(db, "staffLogs", staffId, "history"), 
-    orderBy("timestamp", "desc")
-  );
-  
-  const snap = await getDocs(q);
-  
-  allHistoryData = snap.docs.map(docSnap => docSnap.data());
-  currentPage = 1;
-  
-  displayHistoryPage();
 }
 
 function displayHistoryPage() {
@@ -393,14 +390,6 @@ function createPaginationButton(content, disabled, onClick) {
   return btn;
 }
 
-window.closeHistory = function() {
-  document.getElementById("historyModal").classList.remove("show");
-  currentPage = 1;
-  allHistoryData = [];
-  currentStaffId = null;
-  currentStaffName = null;
-}
-
 // ==================== STAFF DISPLAY ====================
 
 function displayStaffCards(staffData) {
@@ -421,7 +410,32 @@ function displayStaffCards(staffData) {
     card.style.animationDelay = `${index * 0.05}s`;
     card.setAttribute('data-staff-id', staff.id);
     
-    card.innerHTML = `
+    // Format schedule for display - different for admin vs staff
+    let scheduleDisplay = "No schedule";
+    let scheduleIcon = "fa-clock";
+    
+    if (staff.role === 'admin') {
+      scheduleDisplay = "Admin Account";
+      scheduleIcon = "fa-user-shield";
+    } else {
+      // Format schedule for staff
+      const schedule = staff.schedule || "";
+      
+      if (schedule.includes("10:00-13:00")) {
+        scheduleIcon = "fa-sun";
+        scheduleDisplay = "10:00 AM - 1:00 PM (Morning)";
+      } else if (schedule.includes("13:00-17:00")) {
+        scheduleIcon = "fa-cloud-sun";
+        scheduleDisplay = "1:00 PM - 5:00 PM (Afternoon)";
+      } else if (schedule.includes("17:00-21:00")) {
+        scheduleIcon = "fa-moon";
+        scheduleDisplay = "5:00 PM - 9:00 PM (Evening)";
+      } else if (schedule) {
+        scheduleDisplay = schedule;
+      }
+    }
+    
+card.innerHTML = `
       <div class="staff-card-header">
         <div class="staff-info">
           <h3>${staff.fullName}</h3>
@@ -430,10 +444,10 @@ function displayStaffCards(staffData) {
             ${staff.gender}
           </div>
         </div>
-        <div class="availability-badge ${staff.isAvailable ? 'available' : 'unavailable'}">
+            <div class="availability-badge ${staff.isAbsent ? 'absent' : (staff.onLaunchBreak ? 'on-break' : (staff.isAvailable ? 'available' : 'unavailable'))}">
           <i class="fa-solid fa-circle"></i>
-          ${staff.isAvailable ? 'Available' : 'Unavailable'}
-        </div>
+          ${staff.isAbsent ? 'Absent' : (staff.onLaunchBreak ? 'On Break' : (staff.isAvailable ? 'Available' : 'Unavailable'))}
+        </div>      
       </div>
       
       <div class="staff-details">
@@ -447,35 +461,66 @@ function displayStaffCards(staffData) {
         
         <div class="detail-row">
           <span class="detail-label">
-            <i class="fa-solid fa-clock"></i>
-            Clock In
+            <i class="fa-solid fa-user-tag"></i>
+            Role
           </span>
-          <span class="detail-value ${staff.clockIn !== 'N/A' ? 'active' : ''}">${staff.clockIn}</span>
+          <span class="detail-value ${staff.role === 'admin' ? 'admin-role' : ''}">${staff.role}</span>
         </div>
         
         <div class="detail-row">
           <span class="detail-label">
-            <i class="fa-solid fa-clock-rotate-left"></i>
-            Clock Out
+            <i class="fa-solid ${scheduleIcon}"></i>
+            Schedule
           </span>
-          <span class="detail-value">${staff.clockOut}</span>
+          <span class="detail-value ${staff.role === 'admin' ? 'admin-schedule' : ''}">${scheduleDisplay}</span>
         </div>
       </div>
       
-      <div class="staff-actions">
-        <button class="btn btn-primary" onclick="openHistory('${staff.id}', '${staff.fullName.replace(/'/g, "\\'")}')">
-          <i class="fa-solid fa-history"></i>
-          View History
-        </button>
-      </div>
+${staff.role !== 'admin' && !staff.isArchived ? `
+        <div class="staff-actions">
+          <button class="btn btn-break ${staff.onLaunchBreak ? 'active' : ''}" data-staff-id="${staff.id}" data-break-status="${staff.onLaunchBreak || false}" ${staff.isAbsent ? 'disabled' : ''}>
+            <i class="fa-solid fa-${staff.onLaunchBreak ? 'play' : 'utensils'}"></i>
+            ${staff.onLaunchBreak ? 'End Break' : 'Launch Break'}
+          </button>
+          <button class="btn btn-absent ${staff.isAbsent ? 'active' : ''}" data-staff-id="${staff.id}" data-absent-status="${staff.isAbsent || false}">
+            <i class="fa-solid fa-${staff.isAbsent ? 'user-check' : 'user-xmark'}"></i>
+            ${staff.isAbsent ? 'Mark Present' : 'Mark Absent'}
+          </button>
+        </div>
+      ` : ''}
+      
+      ${staff.isArchived ? '<div class="archived-overlay"><div class="archived-label">ARCHIVED</div><div class="archived-subtitle">Account Inactive</div></div>' : ''}
     `;
+    
+    // Add archived class if staff is archived
+    if (staff.isArchived) {
+      card.classList.add('archived');
+    }
     
     staffGrid.appendChild(card);
   });
 }
 
-// ==================== SEARCH FUNCTIONALITY ====================
+// Add event listeners for break and absent buttons
+document.addEventListener('click', (e) => {
+  if (e.target.closest('.btn-break')) {
+    const button = e.target.closest('.btn-break');
+    const staffId = button.getAttribute('data-staff-id');
+    const currentBreakStatus = button.getAttribute('data-break-status') === 'true';
+    
+    toggleLaunchBreak(staffId, currentBreakStatus);
+  }
+  
+  if (e.target.closest('.btn-absent')) {
+    const button = e.target.closest('.btn-absent');
+    const staffId = button.getAttribute('data-staff-id');
+    const currentAbsentStatus = button.getAttribute('data-absent-status') === 'true';
+    
+    toggleAbsent(staffId, currentAbsentStatus);
+  }
+});
 
+// ==================== SEARCH FUNCTIONALITY ====================
 searchInput.addEventListener('input', (e) => {
   const searchTerm = e.target.value.toLowerCase().trim();
   
@@ -488,104 +533,220 @@ searchInput.addEventListener('input', (e) => {
     const fullName = (staff.fullName || '').toLowerCase();
     const gender = (staff.gender || '').toLowerCase();
     const mobile = (staff.mobile || '').toLowerCase();
+    const schedule = (staff.schedule || '').toLowerCase();
     
     return fullName.includes(searchTerm) ||
            gender === searchTerm ||
-           mobile.includes(searchTerm);
+           mobile.includes(searchTerm) ||
+           schedule.includes(searchTerm);
   });
   
   displayStaffCards(filteredData);
 });
 
-// ==================== CLOCK OUT HANDLING ====================
-
-async function handleClockOut() {
-  const user = auth.currentUser;
-  if (!user) return;
-  
+// Handle launch break toggle
+async function toggleLaunchBreak(staffId, currentBreakStatus) {
   try {
-    const today = new Date().toLocaleDateString();
-    const logsRef = collection(db, "staffLogs", user.uid, "history");
+    const staffRef = doc(db, "users", staffId);
+    const newBreakStatus = !currentBreakStatus;
     
-    const todayQuery = query(logsRef, where("date", "==", today), limit(1));
-    const todaySnap = await getDocs(todayQuery);
-    
-    if (!todaySnap.empty) {
-      const activeLog = todaySnap.docs[0];
-      if (!activeLog.data().clockOut) {
-        await setDoc(doc(db, "staffLogs", user.uid, "history", activeLog.id), {
-          clockOut: new Date().toLocaleString()
-        }, { merge: true });
-      }
+    if (newBreakStatus) {
+      // Starting break - save current availability and set to false
+      const staffDoc = await getDoc(staffRef);
+      const currentAvailability = staffDoc.data().availability || false;
+      
+      await updateDoc(staffRef, {
+        onLaunchBreak: true,
+        availability: false,
+        availabilityBeforeBreak: currentAvailability, // Save the state
+        lastUpdated: serverTimestamp()
+      });
+    } else {
+      // Ending break - restore previous availability
+      const staffDoc = await getDoc(staffRef);
+      const previousAvailability = staffDoc.data().availabilityBeforeBreak || false;
+      
+      await updateDoc(staffRef, {
+        onLaunchBreak: false,
+        availability: previousAvailability, // Restore previous state
+        lastUpdated: serverTimestamp()
+      });
     }
-
-    const staffRef = doc(db, "users", user.uid);
-    await updateDoc(staffRef, { 
-      availability: false,
-      lastUpdated: serverTimestamp()
-    });
     
-    console.log("User clocked out and set to unavailable");
+    console.log(`Staff ${staffId} launch break status updated to: ${newBreakStatus}`);
   } catch (error) {
-    console.error("Error during clock out:", error);
+    console.error("Error toggling launch break:", error);
+showToast("Failed to update launch break status. Please try again.", 'error');
   }
 }
 
-// ==================== OPTIMIZED STAFF DATA LOADING ====================
+// Global variables for absent modal
+let pendingAbsentStaffId = null;
+let pendingAbsentStatus = false;
+
+// Handle absent toggle
+async function toggleAbsent(staffId, currentAbsentStatus) {
+  const newAbsentStatus = !currentAbsentStatus;
+  
+  // Find staff name
+  const staffData = allStaffData.find(s => s.id === staffId);
+  const staffName = staffData ? staffData.fullName : 'Unknown';
+  
+  // Store pending action
+  pendingAbsentStaffId = staffId;
+  pendingAbsentStatus = newAbsentStatus;
+  
+  // Update modal content based on action
+  const modal = document.getElementById('absentModal');
+  const title = document.getElementById('absentModalTitle');
+  const message = document.getElementById('absentModalMessage');
+  const warning = document.getElementById('absentWarning');
+  const success = document.getElementById('absentSuccess');
+  const iconContainer = document.getElementById('absentIconContainer');
+  const confirmBtn = document.getElementById('confirmAbsentBtn');
+  const staffNameSpan = document.getElementById('absentStaffName');
+  
+  staffNameSpan.textContent = staffName;
+  
+  if (newAbsentStatus) {
+    // Marking as absent
+    title.textContent = 'Mark as Absent';
+    message.textContent = 'Are you sure you want to mark this staff member as ABSENT?';
+    warning.style.display = 'flex';
+    success.style.display = 'none';
+    iconContainer.innerHTML = '<i class="fa-solid fa-user-xmark"></i>';
+    iconContainer.style.background = 'linear-gradient(135deg, #fecaca 0%, #ef4444 100%)';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-user-xmark"></i> Mark Absent';
+    confirmBtn.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+  } else {
+    // Marking as present
+    title.textContent = 'Mark as Present';
+    message.textContent = 'Are you sure you want to mark this staff member as PRESENT?';
+    warning.style.display = 'none';
+    success.style.display = 'flex';
+    iconContainer.innerHTML = '<i class="fa-solid fa-user-check"></i>';
+    iconContainer.style.background = 'linear-gradient(135deg, #d1fae5 0%, #10b981 100%)';
+    confirmBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Mark Present';
+    confirmBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+  }
+  
+  // Show modal
+  modal.classList.add('show');
+}
+
+// Confirm absent toggle
+window.confirmAbsentToggle = async function() {
+  const confirmBtn = document.getElementById('confirmAbsentBtn');
+  confirmBtn.classList.add('loading');
+  confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Processing...';
+  
+  try {
+    const staffRef = doc(db, "users", pendingAbsentStaffId);
+    
+    if (pendingAbsentStatus) {
+      // Marking as absent
+      const staffDoc = await getDoc(staffRef);
+      const currentAvailability = staffDoc.data().availability || false;
+      
+      await updateDoc(staffRef, {
+        isAbsent: true,
+        availability: false,
+        onLaunchBreak: false, // Clear break status
+        availabilityBeforeAbsent: currentAvailability,
+        lastUpdated: serverTimestamp()
+      });
+    } else {
+      // Marking as present
+      await updateDoc(staffRef, {
+        isAbsent: false,
+        availability: false, // Stay unavailable, they need to manually go online
+        lastUpdated: serverTimestamp()
+      });
+    }
+    
+    console.log(`Staff ${pendingAbsentStaffId} absent status updated to: ${pendingAbsentStatus}`);
+    hideAbsentModal();
+    
+  } catch (error) {
+    console.error("Error toggling absent status:", error);
+showToast("Failed to update absent status. Please try again.", 'error');
+    confirmBtn.classList.remove('loading');
+    confirmBtn.innerHTML = pendingAbsentStatus ? 
+      '<i class="fa-solid fa-user-xmark"></i> Mark Absent' : 
+      '<i class="fa-solid fa-user-check"></i> Mark Present';
+  }
+}
+
+// Hide absent modal
+window.hideAbsentModal = function() {
+  const modal = document.getElementById('absentModal');
+  modal.classList.remove('show');
+  
+  // Reset button state
+  const confirmBtn = document.getElementById('confirmAbsentBtn');
+  confirmBtn.classList.remove('loading');
+  
+  // Clear pending data
+  pendingAbsentStaffId = null;
+  pendingAbsentStatus = false;
+}
+
+// Close absent modal on outside click
+document.getElementById('absentModal')?.addEventListener('click', function(e) {
+  if (e.target === this) {
+    hideAbsentModal();
+  }
+});
+
+// Close absent modal on Escape key
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('absentModal');
+    if (modal && modal.classList.contains('show')) {
+      hideAbsentModal();
+    }
+  }
+});
 
 async function loadAllStaffData() {
   try {
-    // Single read: Get all users at once
     const usersSnapshot = await getDocs(collection(db, "users"));
     
-    // Build a map of users
-    const usersMap = new Map();
-    usersSnapshot.forEach(doc => {
-      usersMap.set(doc.id, {
-        id: doc.id,
-        ...doc.data()
-      });
-    });
-    
-    // Map to store latest logs per staff
-    const latestLogsMap = new Map();
-    const staffIds = Array.from(usersMap.keys());
-    
-    // Fetch latest log for each staff (limit 1)
-    const logPromises = staffIds.map(async (staffId) => {
-      const logsQuery = query(
-        collection(db, "staffLogs", staffId, "history"),
-        orderBy("timestamp", "desc"),
-        limit(1)
-      );
-      
-      const logsSnap = await getDocs(logsQuery);
-      const latest = logsSnap.docs[0]?.data() || {};
-      latestLogsMap.set(staffId, latest);
-    });
-    
-    await Promise.all(logPromises);
-    
-    // Build staff data array
     const staffData = [];
-    usersMap.forEach((userData, staffId) => {
-      const latest = latestLogsMap.get(staffId) || {};
-      const isClockedIn = latest.clockIn && !latest.clockOut;
-      const isAvailable = userData.availability === true && isClockedIn;
+    usersSnapshot.forEach(doc => {
+      const userData = doc.data();
       
-      staffData.push({
-        id: staffId,
+      // Get availability from user document
+      const isAvailable = userData.availability === true;
+      const isArchived = userData.archived === true; // Add archived status
+      
+staffData.push({
+        id: doc.id,
         fullName: userData.fullName || "N/A",
         gender: userData.gender || "N/A",
         mobile: userData.mobile || "N/A",
-        isAvailable,
-        clockIn: latest.clockIn || "N/A",
-        clockOut: latest.clockOut || "N/A"
+        role: userData.role || "staff",
+        schedule: userData.schedule || "No schedule assigned",
+        isAvailable: isAvailable,
+        isArchived: isArchived,
+        onLaunchBreak: userData.onLaunchBreak || false,
+        isAbsent: userData.isAbsent || false
       });
     });
     
-    // Sort by availability
-    staffData.sort((a, b) => b.isAvailable - a.isAvailable);
+    // Sort by archived status first (active first), then by availability, then alphabetically
+    staffData.sort((a, b) => {
+      // Archived accounts go to the end
+      if (a.isArchived !== b.isArchived) {
+        return a.isArchived - b.isArchived;
+      }
+      // Then sort by availability
+      if (a.isAvailable !== b.isAvailable) {
+        return b.isAvailable - a.isAvailable;
+      }
+      // Finally sort alphabetically
+      return a.fullName.localeCompare(b.fullName);
+    });
     
     allStaffData = staffData;
     displayStaffCards(allStaffData);
@@ -594,7 +755,6 @@ async function loadAllStaffData() {
     console.error("Error loading staff data:", error);
   }
 }
-
 // ==================== SETUP REAL-TIME LISTENER (OPTIMIZED) ====================
 
 function setupStaffListener() {
@@ -663,35 +823,25 @@ onAuthStateChanged(auth, async (user) => {
       applyRoleBasedVisibility(currentUserRole);
     }
 
-    const today = new Date().toLocaleDateString();
-    const logsRef = collection(db, "staffLogs", user.uid, "history");
+// Set user as available when they log in (unless absent)
+    const staffRef = doc(db, "users", user.uid);
+    const staffDoc = await getDoc(staffRef);
+    const staffData = staffDoc.data();
     
-    const todayQuery = query(logsRef, where("date", "==", today), limit(1));
-    const todaySnap = await getDocs(todayQuery);
-    
-    let needsNewLog = true;
-    if (!todaySnap.empty) {
-      const activeSession = todaySnap.docs.find(doc => !doc.data().clockOut);
-      if (activeSession) {
-        needsNewLog = false;
-      }
-    }
-    
-    if (needsNewLog) {
-      await addDoc(logsRef, {
-        date: today,
-        clockIn: new Date().toLocaleString(),
-        clockOut: null,
-        timestamp: serverTimestamp()
+    // Only set to available if not marked absent
+    if (!staffData.isAbsent) {
+      await updateDoc(staffRef, { 
+        availability: true,
+        lastUpdated: serverTimestamp()
+      });
+    } else {
+      // Keep them unavailable if absent
+      await updateDoc(staffRef, { 
+        availability: false,
+        lastUpdated: serverTimestamp()
       });
     }
 
-    const staffRef = doc(db, "users", user.uid);
-    await updateDoc(staffRef, { 
-      availability: true,
-      lastUpdated: serverTimestamp()
-    });
-    
     await loadAllStaffData();
 
     setupSessionMonitoring(user.uid);
@@ -721,7 +871,19 @@ window.confirmLogout = async function() {
   confirmBtn.innerHTML = '<i class="fa-solid fa-spinner"></i> Logging out...';
 
   try {
-    await handleClockOut();
+    // Set user as unavailable when logging out
+    const user = auth.currentUser;
+    if (user) {
+      const staffRef = doc(db, "users", user.uid);
+      await updateDoc(staffRef, { 
+        availability: false,
+        onLaunchBreak: false, // Clear break status on logout
+        lastUpdated: serverTimestamp()
+      });
+      
+      // Wait a bit to ensure Firestore updates propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
     
     // Detach all listeners
     if (staffListener) staffListener();
@@ -734,6 +896,7 @@ window.confirmLogout = async function() {
     inventoryDataCache = [];
     
     localStorage.removeItem('currentUserRole');
+    sessionStorage.removeItem('sessionId');
     
     await signOut(auth);
     window.location.href = "index.html";
@@ -741,7 +904,8 @@ window.confirmLogout = async function() {
     console.error("Logout error:", error);
     confirmBtn.classList.remove('loading');
     confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-    alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
+    // Force logout anyway
     await signOut(auth);
     window.location.href = "index.html";
   }
@@ -767,11 +931,33 @@ window.showLogoutModal = function() {
 }
 
 window.addEventListener("beforeunload", async (e) => {
+  // Set user as unavailable when closing browser/tab
+  const user = auth.currentUser;
+  if (user) {
+    const staffRef = doc(db, "users", user.uid);
+    // Use navigator.sendBeacon for more reliable updates during unload
+    const data = JSON.stringify({
+      availability: false,
+      onLaunchBreak: false,
+      lastUpdated: new Date().toISOString()
+    });
+    
+    try {
+      await updateDoc(staffRef, { 
+        availability: false,
+        onLaunchBreak: false,
+        lastUpdated: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("Error updating availability on unload:", err);
+    }
+  }
+  
+  // Detach all listeners
   if (staffListener) staffListener();
   if (inventoryListener) inventoryListener();
   if (purchaseOrderListener) purchaseOrderListener();
   if (sessionMonitor) sessionMonitor();
-  await handleClockOut();
 });
 
 window.addEventListener('click', (e) => {

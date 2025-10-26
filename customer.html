@@ -408,6 +408,135 @@
       visibility: visible;
     }
 
+    /* Toast Notification Styles */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 300px;
+  max-width: 500px;
+  pointer-events: all;
+  animation: slideIn 0.3s ease-out;
+  border-left: 4px solid #3b82f6;
+}
+
+.toast.success {
+  border-left-color: #10b981;
+}
+
+.toast.error {
+  border-left-color: #ef4444;
+}
+
+.toast.warning {
+  border-left-color: #f59e0b;
+}
+
+.toast.info {
+  border-left-color: #3b82f6;
+}
+
+.toast-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.toast.success .toast-icon {
+  color: #10b981;
+}
+
+.toast.error .toast-icon {
+  color: #ef4444;
+}
+
+.toast.warning .toast-icon {
+  color: #f59e0b;
+}
+
+.toast.info .toast-icon {
+  color: #3b82f6;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-title {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.toast-message {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  background: #f3f4f6;
+  color: #1f2937;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(400px);
+    opacity: 0;
+  }
+}
+
+.toast.hiding {
+  animation: slideOut 0.3s ease-in forwards;
+}
+
     .logout-modal {
       background: white;
       border-radius: 1rem;
@@ -604,7 +733,8 @@
   </style>
 </head>
 <body class="bg-[#e6bfc7] min-h-screen flex w-full h-full">
-
+  <!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
   <!-- Sidebar -->
   <aside class="fixed top-0 left-0 w-20 bg-[#f7d4d0] flex flex-col items-center py-4 gap-2 shadow-lg rounded-r-3xl sidebar h-screen overflow-y-auto">
     <div class="mb-6 mt-2">
@@ -963,7 +1093,7 @@ function setupSessionMonitoring(userId) {
       console.log('Session invalidated - another login detected or password changed');
       
       // Show notification before logout
-      alert('Your session has been ended because:\n• Someone else logged into this account, or\n• Your password was changed');
+showToast('Your session has been ended because someone else logged in or your password was changed', 'warning', 5000);
       
       // Force logout
       signOut(auth).then(() => {
@@ -1141,9 +1271,9 @@ async function confirmCancellation() {
       }
       
       // Show success message
-      alert(customerEmail 
-        ? 'Customer updated successfully! Cancellation email sent.' 
-        : 'Customer status updated to Cancelled!');
+showToast(customerEmail 
+  ? 'Customer updated successfully! Cancellation email sent.' 
+  : 'Customer status updated to Cancelled!', 'success');
       
       // Clear pending update
       window.pendingCustomerUpdate = null;
@@ -1156,7 +1286,7 @@ async function confirmCancellation() {
       
     } catch (error) {
       console.error("Error updating customer with cancellation:", error);
-      alert('Failed to update customer. Please try again.');
+showToast('Failed to update customer. Please try again.', 'error');
       window.pendingCustomerUpdate = null;
       document.getElementById('cancellationModal').classList.remove('show');
     }
@@ -1279,7 +1409,7 @@ window.confirmCancellation = confirmCancellation;
       return 'in-stock';
     }
 
-    function monitorInventoryStatus() {
+function monitorInventoryStatus() {
       if (inventoryListener) {
         inventoryListener();
       }
@@ -1290,22 +1420,12 @@ window.confirmCancellation = confirmCancellation;
           const inventoryData = [];
           snapshot.forEach(doc => {
             const product = doc.data();
-            const qty = product.qty || 0;
-            const price = product.price || 0;
-            const minStock = product.minStock || 10;
-            
-            product.status = determineStatus(qty, minStock);
-            product.total = qty * price;
-            
             inventoryData.push({ id: doc.id, ...product });
           });
 
           const noStockCount = inventoryData.filter(item => item.status === 'out-of-stock').length;
           const lowStockCount = inventoryData.filter(item => item.status === 'low-stock').length;
-          const overstockCount = inventoryData.filter(item => {
-            const minStockThreshold = item.minStock || 10;
-            return item.qty > (minStockThreshold * 1.5) && item.qty > 0;
-          }).length;
+          const overstockCount = inventoryData.filter(item => item.status === 'overstock').length;
           
           updateInventoryBubble(noStockCount, lowStockCount, overstockCount);
         },
@@ -1344,25 +1464,7 @@ window.confirmCancellation = confirmCancellation;
         bubble.style.display = 'none';
       }
     }
-
-    function monitorPurchaseOrders() {
-      if (purchaseOrderListener) {
-        purchaseOrderListener();
-      }
-
-      purchaseOrderListener = onSnapshot(
-        query(collection(db, 'purchaseOrders'), where('status', '==', 'pending')),
-        (snapshot) => {
-          const newOrderCount = snapshot.size;
-          console.log('Purchase orders pending:', newOrderCount);
-          updatePurchaseOrderBubble(newOrderCount);
-        },
-        (error) => {
-          console.error('Error monitoring purchase orders:', error);
-        }
-      );
-    }
-
+    
     function updatePurchaseOrderBubble(count) {
       const button = document.getElementById('purchaseOrderBtn');
       if (!button) return;
@@ -1444,7 +1546,7 @@ window.confirmCancellation = confirmCancellation;
         console.error("Logout error:", error);
         confirmBtn.classList.remove('loading');
         confirmBtn.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Logout';
-        alert("An error occurred during logout. Please try again.");
+showToast("An error occurred during logout. Please try again.", 'error');
         await signOut(auth);
         window.location.href = "index.html";
       }
@@ -1507,6 +1609,48 @@ window.addEventListener("beforeunload", async (e) => {
   await handleClockOut();
 });
 
+// Toast notification system
+function showToast(message, type = 'info', duration = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  
+  const icons = {
+    success: 'fa-circle-check',
+    error: 'fa-circle-xmark',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
+  };
+  
+  const titles = {
+    success: 'Success',
+    error: 'Error',
+    warning: 'Warning',
+    info: 'Info'
+  };
+  
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `
+    <i class="fas ${icons[type]} toast-icon"></i>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type]}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close" onclick="this.closest('.toast').remove()">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+window.showToast = showToast;
+
     window.db = db;
     window.currentUserId = currentUserId;
     window.servicesCache = servicesCache;
@@ -1557,7 +1701,7 @@ window.addEventListener("beforeunload", async (e) => {
     function editSelectedCustomer() {
       const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
       if (checkedBoxes.length !== 1) {
-        alert('Please select exactly one customer to edit');
+showToast('Please select exactly one customer to edit', 'warning');
         return;
       }
 
@@ -1565,7 +1709,7 @@ window.addEventListener("beforeunload", async (e) => {
       const customer = allCustomers.find(c => c.id === customerId);
       
       if (!customer) {
-        alert('Customer not found');
+showToast('Customer not found', 'error');
         return;
       }
 
@@ -1575,7 +1719,7 @@ window.addEventListener("beforeunload", async (e) => {
     function openBulkStatusModal() {
       const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
       if (checkedBoxes.length < 2) {
-        alert('Please select at least 2 customers to update status');
+showToast('Please select at least 2 customers to update status', 'warning');
         return;
       }
 
@@ -1588,25 +1732,30 @@ window.addEventListener("beforeunload", async (e) => {
       document.getElementById('bulkStatusModal').classList.remove('show');
     }
 
-    async function saveBulkStatus() {
-      const newStatus = document.getElementById('bulkStatusSelect').value;
-      
-      if (!newStatus) {
-        alert('Please select a status');
-        return;
-      }
+async function saveBulkStatus() {
+  const newStatus = document.getElementById('bulkStatusSelect').value;
+  const statusError = document.createElement('span');
+  statusError.className = 'error-message show';
+  statusError.style.color = '#ef4444';
+  statusError.style.fontSize = '12px';
+  statusError.style.marginTop = '4px';
+  statusError.textContent = 'Please select a status';
+  
+  // Remove any existing error message
+  const existingError = document.querySelector('#bulkStatusModal .error-message');
+  if (existingError) existingError.remove();
+  
+  if (!newStatus) {
+    document.getElementById('bulkStatusSelect').parentElement.appendChild(statusError);
+    return;
+  }
 
-      const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
-      const customerIds = Array.from(checkedBoxes).map(cb => cb.value);
+  const checkedBoxes = document.querySelectorAll('.customer-checkbox:checked');
+  const customerIds = Array.from(checkedBoxes).map(cb => cb.value);
 
-      if (customerIds.length < 2) {
-        alert('Please select at least 2 customers');
-        return;
-      }
-
-      if (!confirm(`Are you sure you want to update ${customerIds.length} customers to "${newStatus}" status?`)) {
-        return;
-      }
+  if (customerIds.length < 2) {
+    return;
+  }
 
       try {
         const { doc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
@@ -1616,16 +1765,15 @@ window.addEventListener("beforeunload", async (e) => {
           await window.updateDoc(customerDoc, { status: newStatus });
         });
 
-        await Promise.all(updatePromises);
-        
-        alert(`Successfully updated ${customerIds.length} customers to "${newStatus}" status!`);
-        closeBulkStatusModal();
-        
-        document.querySelectorAll('.customer-checkbox').forEach(cb => cb.checked = false);
-        updateEditButton();
+await Promise.all(updatePromises);
+
+closeBulkStatusModal();
+
+document.querySelectorAll('.customer-checkbox').forEach(cb => cb.checked = false);
+updateEditButton();
       } catch (error) {
         console.error("Error updating customer statuses:", error);
-        alert('Failed to update customer statuses. Please try again.');
+showToast('Failed to update customer statuses. Please try again.', 'error');
       }
     }
 
@@ -2164,22 +2312,73 @@ if (Array.isArray(c.services) && c.services.length > 0) {
       updateEditButton();
     }
 
-    async function deleteCustomer() {
-      if (!selectedCustomerId) return;
-      
-      if (!confirm('Are you sure you want to delete this customer?')) return;
-      
-      try {
-        const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
-        const customerDoc = doc(window.db, "appointments", selectedCustomerId);
-        await deleteDoc(customerDoc);
-        alert('Customer deleted successfully!');
-        closeEditModal();
-      } catch (error) {
-        console.error("Error deleting customer:", error);
-        alert('Failed to delete customer. Please try again.');
-      }
+async function deleteCustomer() {
+  if (!selectedCustomerId) return;
+  
+  // Show the logout-style confirmation modal
+  const deleteModal = document.createElement('div');
+  deleteModal.className = 'modal-overlay show';
+  deleteModal.innerHTML = `
+    <div class="logout-modal">
+      <div class="logout-modal-header">
+        <div class="logout-icon" style="background: linear-gradient(135deg, #fecaca 0%, #ef4444 100%);">
+          <i class="fa-solid fa-trash-alt"></i>
+        </div>
+        <h2>Confirm Delete</h2>
+        <p>Are you sure you want to delete this customer?</p>
+      </div>
+
+      <div class="logout-modal-body">
+        <div class="logout-info-item">
+          <i class="fa-solid fa-exclamation-triangle"></i>
+          <span>This action cannot be undone</span>
+        </div>
+        <div class="logout-info-item">
+          <i class="fa-solid fa-user-slash"></i>
+          <span>Customer data will be permanently removed</span>
+        </div>
+      </div>
+
+      <div class="logout-modal-actions">
+        <button class="logout-btn logout-btn-cancel" onclick="this.closest('.modal-overlay').remove()">
+          <i class="fa-solid fa-xmark"></i>
+          Cancel
+        </button>
+        <button class="logout-btn logout-btn-confirm" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);" id="confirmDeleteBtn">
+          <i class="fa-solid fa-trash-alt"></i>
+          Delete
+        </button>
+      </div>
+    </div>
+  `;
+  
+  document.body.appendChild(deleteModal);
+  
+  // Handle delete confirmation
+  document.getElementById('confirmDeleteBtn').onclick = async function() {
+    this.classList.add('loading');
+    this.innerHTML = '<i class="fa-solid fa-spinner"></i> Deleting...';
+    
+    try {
+      const { doc, deleteDoc } = await import("https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js");
+      const customerDoc = doc(window.db, "appointments", selectedCustomerId);
+      await deleteDoc(customerDoc);
+      deleteModal.remove();
+      closeEditModal();
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      this.classList.remove('loading');
+      this.innerHTML = '<i class="fa-solid fa-trash-alt"></i> Delete';
     }
+  };
+  
+  // Close on backdrop click
+  deleteModal.addEventListener('click', function(e) {
+    if (e.target === deleteModal) {
+      deleteModal.remove();
+    }
+  });
+}
 
     async function saveCustomer() {
       const customerName = document.getElementById('customerName').value.trim();
@@ -2285,9 +2484,6 @@ if (editMode && selectedCustomerId) {
       service: selectedServices.map(s => s.name).join(', ') 
     };
     await window.sendAppointmentEmail(emailData);
-    alert('Customer updated successfully! Email notification sent.');
-  } else {
-    alert('Customer updated successfully!');
   }
 } else {
   customerData.createdAt = serverTimestamp();
@@ -2302,14 +2498,12 @@ if (editMode && selectedCustomerId) {
     };
     await window.sendAppointmentEmail(emailData);
   }
-  
-  alert('Customer added successfully!');
 }
         
         closeEditModal();
       } catch (error) {
-        console.error("Error saving customer:", error);
-        alert('Failed to save customer. Please try again.');
+console.error("Error saving customer:", error);
+showToast('Failed to save customer. Please try again.', 'error');
       }
     }
 
